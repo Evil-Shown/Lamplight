@@ -1,4 +1,6 @@
-# Library App
+# SLIIT-BookBench
+
+SLIIT campus library app – browse books, reserve seats, join waitlists, and scan QR codes for check-in.
 
 Mobile UI for the **Library Book Reservation & Reading Room Seat Booking System**.
 
