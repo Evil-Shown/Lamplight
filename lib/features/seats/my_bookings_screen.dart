@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../features/qr/qr_scan_screen.dart';
@@ -17,7 +18,7 @@ class MyBookingsScreen extends StatelessWidget {
     final timeFmt = DateFormat('h:mm a');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My seat bookings')),
+      appBar: AppBar(title: Text('My seat bookings', style: AppText.serif(22))),
       body: bookings.isEmpty
           ? const EmptyState(
               icon: Icons.event_seat_outlined,
@@ -31,9 +32,8 @@ class MyBookingsScreen extends StatelessWidget {
                 final b = bookings[index];
                 final grace = b.gracePeriodEndsAt;
 
-                return SoftCard(
-                  elevated: true,
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                return TicketCard(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -41,7 +41,7 @@ class MyBookingsScreen extends StatelessWidget {
                         children: [
                           const IconBadge(
                             icon: Icons.event_seat_rounded,
-                            color: AppColors.secondary,
+                            color: AppColors.inkSoft,
                             size: 48,
                           ),
                           const SizedBox(width: AppSpacing.md),
@@ -49,25 +49,20 @@ class MyBookingsScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Seat ${b.seat.label}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                ),
+                                Text('Seat ${b.seat.label}',
+                                    style: AppText.serif(17, ls: -0.2)),
                                 Text(
                                   'Floor ${b.seat.floor} · ${b.seat.section}',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                  style: AppText.sans(12.5,
+                                      color: AppColors.textSecondary),
                                 ),
                               ],
                             ),
                           ),
                           const StatusChip(
                             label: 'Active',
-                            color: AppColors.success,
-                            icon: Icons.check,
+                            color: AppColors.stampGreen,
+                            pulse: true,
                             compact: true,
                           ),
                         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../features/qr/qr_scan_screen.dart';
@@ -14,7 +15,7 @@ class MyReservationsScreen extends StatelessWidget {
     final reservations = MockData.activeReservations;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My reservations')),
+      appBar: AppBar(title: Text('My reservations', style: AppText.serif(22))),
       body: reservations.isEmpty
           ? EmptyState(
               icon: Icons.bookmark_border_rounded,
@@ -28,9 +29,8 @@ class MyReservationsScreen extends StatelessWidget {
               itemCount: reservations.length,
               itemBuilder: (context, index) {
                 final r = reservations[index];
-                return SoftCard(
-                  elevated: true,
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                return TicketCard(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -40,8 +40,9 @@ class MyReservationsScreen extends StatelessWidget {
                           BookCover(
                             title: r.book.title,
                             color: r.book.coverColor,
-                            width: 56,
-                            height: 78,
+                            isbn: r.book.isbn,
+                            width: 54,
+                            height: 76,
                           ),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
@@ -50,22 +51,18 @@ class MyReservationsScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   r.book.title,
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                  style: AppText.serif(16, ls: -0.2, height: 1.2),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 3),
                                 Text(
                                   r.book.author,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                  style:
+                                      AppText.sans(12, color: AppColors.textSecondary),
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
                                 const StatusChip(
                                   label: 'Ready for pickup',
-                                  color: AppColors.success,
-                                  icon: Icons.check_circle_outline,
+                                  color: AppColors.stampGreen,
                                   compact: true,
                                 ),
                               ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import 'my_reservations_screen.dart';
@@ -15,19 +17,18 @@ class ReservationConfirmationScreen extends StatelessWidget {
     final pickupBy = DateTime.now().add(const Duration(days: 2));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reservation')),
+      appBar: AppBar(title: Text('Reservation', style: AppText.serif(22))),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             const Spacer(),
             SuccessHero(
-              title: 'You\'re all set',
+              title: "You're all set.",
               subtitle: book.title,
             ),
             const SizedBox(height: AppSpacing.xl),
-            SoftCard(
-              elevated: true,
+            TicketCard(
               child: Column(
                 children: [
                   SummaryRow(

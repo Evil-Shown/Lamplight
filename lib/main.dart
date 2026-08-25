@@ -8,8 +8,8 @@ void main() {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFFFFFFFF),
-      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFF141A28),
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   runApp(const LibraryApp());
