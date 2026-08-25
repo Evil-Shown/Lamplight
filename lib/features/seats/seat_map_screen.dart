@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
@@ -36,10 +37,19 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   Widget build(BuildContext context) {
     final seats = _filteredSeats;
     final available = seats.where((s) => s.status == SeatStatus.available).length;
+    final best = _bestMatch(seats);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reading room'),
+        toolbarHeight: 84,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Eyebrow('READING ROOM'),
+            const SizedBox(height: 3),
+            Text('Find a seat', style: AppText.serif(24)),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'My bookings',
@@ -70,56 +80,72 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             selected: _sectionFilter,
             onSelected: (v) => setState(() => _sectionFilter = v),
           ),
+          const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: SoftCard(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '$available available · ${seats.length} shown',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
+                  Text.rich(
+                    TextSpan(
+                      text: '$available',
+                      style: AppText.serif(16, color: AppColors.goldDeep, ls: 0),
+                      children: [
+                        TextSpan(
+                          text: ' available of ${seats.length} shown',
+                          style: AppText.sans(13, w: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
-                  const _LegendDot(color: AppColors.seatAvailable, label: 'Free'),
-                  const SizedBox(width: 12),
-                  const _LegendDot(color: AppColors.seatReserved, label: 'Hold'),
-                  const SizedBox(width: 12),
-                  const _LegendDot(color: AppColors.seatOccupied, label: 'Busy'),
+                  const SizedBox(height: 10),
+                  const Row(
+                    children: [
+                      _LegendDot(color: AppColors.seatAvailable, label: 'Free'),
+                      SizedBox(width: 14),
+                      _LegendDot(color: AppColors.seatReserved, label: 'Hold'),
+                      SizedBox(width: 14),
+                      _LegendDot(color: AppColors.seatOccupied, label: 'Busy'),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
+          if (best != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: BestMatchCard(
+                seatLabel: best.label,
+                description:
+                    '${best.hasPowerOutlet ? 'Power outlet' : 'Standard desk'} · ${best.distanceFromEntranceMeters} m from entrance · ${best.section}',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: best)),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
           Expanded(
             child: _mapView
-                ? _SeatGrid(
-                    seats: seats,
-                    onSeatTap: (seat) => _openSeat(context, seat),
-                  )
-                : _SeatList(
-                    seats: seats,
-                    onSeatTap: (seat) => _openSeat(context, seat),
-                  ),
+                ? _SeatGrid(seats: seats, best: best)
+                : _SeatList(seats: seats),
           ),
         ],
       ),
     );
   }
 
-  void _openSeat(BuildContext context, Seat seat) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat)),
-    );
+  Seat? _bestMatch(List<Seat> seats) {
+    final withPower =
+        seats.where((s) => s.status == SeatStatus.available && s.hasPowerOutlet);
+    if (withPower.isNotEmpty) return withPower.first;
+    final anyFree = seats.where((s) => s.status == SeatStatus.available);
+    return anyFree.isEmpty ? null : anyFree.first;
   }
 }
 
@@ -135,34 +161,29 @@ class _LegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 4),
-            ],
-          ),
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-        ),
+        Text(label, style: AppText.sans(11.5, w: FontWeight.w500, color: AppColors.textSecondary)),
       ],
     );
   }
 }
 
 class _SeatGrid extends StatelessWidget {
-  const _SeatGrid({required this.seats, required this.onSeatTap});
+  const _SeatGrid({required this.seats, required this.best});
 
   final List<Seat> seats;
-  final ValueChanged<Seat> onSeatTap;
+  final Seat? best;
+
+  static const _rowLabels = {
+    0: 'WINDOW SIDE',
+    1: 'CARREL DESKS',
+    2: 'GROUP TABLES',
+    3: 'LOUNGE SIDE',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -174,74 +195,193 @@ class _SeatGrid extends StatelessWidget {
       );
     }
 
-    final maxRow = seats.map((s) => s.row).reduce((a, b) => a > b ? a : b);
     final maxCol = seats.map((s) => s.col).reduce((a, b) => a > b ? a : b);
+    final rowsPresent = seats.map((s) => s.row).toSet().toList()..sort();
 
-    return InteractiveViewer(
-      minScale: 0.85,
-      maxScale: 2.2,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.md,
-          AppNavInset.bottom,
-        ),
-        child: SoftCard(
-          elevated: true,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.door_front_door_outlined, size: 18, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(
-                      'Entrance',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppNavInset.bottom,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SoftCard(
+            elevated: true,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                // Dashed entrance strip
+                CustomPaint(
+                  foregroundPainter: DashedRRectPainter(
+                    color: AppColors.goldDeep.withValues(alpha: 0.55),
+                    radius: AppRadii.sm,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: AppColors.paperDeep.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.south_rounded,
+                            size: 14, color: AppColors.goldDeep),
+                        const SizedBox(width: 6),
+                        Text('ENTRANCE', style: AppText.mono(10.5, ls: 3, color: AppColors.goldDeep)),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              for (var row = 0; row <= maxRow; row++) ...[
+                const SizedBox(height: AppSpacing.lg),
+                for (final (i, row) in rowsPresent.indexed) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'ROW ${String.fromCharCode(65 + row)} — ${_rowLabels[row] ?? ''}',
+                      style: AppText.mono(9.5, ls: 2),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var col = 0; col <= maxCol; col++)
+                        _SeatTile(
+                          seat: seats.cast<Seat?>().firstWhere(
+                                (s) => s!.row == row && s.col == col,
+                                orElse: () => null,
+                              ),
+                          recommended: best?.id,
+                        ),
+                    ],
+                  ),
+                  if (i < rowsPresent.length - 1) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    const DashedRule(),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                ],
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (var col = 0; col <= maxCol; col++)
-                      _SeatTile(
-                        seat: seats.cast<Seat?>().firstWhere(
-                              (s) => s!.row == row && s.col == col,
-                              orElse: () => null,
-                            ),
-                        onTap: onSeatTap,
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.goldDeep,
+                        shape: BoxShape.circle,
                       ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text('MARKS POWER OUTLET', style: AppText.mono(9, ls: 2)),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
               ],
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          _OtherSections(seats: seats),
+        ],
       ),
     );
   }
 }
 
+class _OtherSections extends StatelessWidget {
+  const _OtherSections({required this.seats});
+
+  final List<Seat> seats;
+
+  @override
+  Widget build(BuildContext context) {
+    final groupFree = MockData.seats
+        .where((s) => s.section == 'Group Study' && s.status == SeatStatus.available)
+        .length;
+    final floor2Free = MockData.seats
+        .where((s) => s.floor == 2 && s.status == SeatStatus.available)
+        .length;
+    final showSections = seats.any((s) => s.section != 'Group Study') ||
+        seats.any((s) => s.floor != 2);
+    if (!showSections) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Other sections', style: AppText.serif(19)),
+        const SizedBox(height: AppSpacing.sm + 2),
+        Row(
+          children: [
+            Expanded(
+              child: SoftCard(
+                elevated: true,
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Eyebrow('GROUP STUDY'),
+                    const SizedBox(height: 4),
+                    Text.rich(
+                      TextSpan(
+                        text: '$groupFree',
+                        style: AppText.serif(22, color: AppColors.goldDeep, ls: 0),
+                        children: [
+                          TextSpan(
+                            text: ' rooms free',
+                            style: AppText.sans(12, w: FontWeight.w500,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: SoftCard(
+                elevated: true,
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Eyebrow('FLOOR 2'),
+                    const SizedBox(height: 4),
+                    Text.rich(
+                      TextSpan(
+                        text: '$floor2Free',
+                        style: AppText.serif(22, color: AppColors.goldDeep, ls: 0),
+                        children: [
+                          TextSpan(
+                            text: ' seats free',
+                            style: AppText.sans(12, w: FontWeight.w500,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _SeatTile extends StatelessWidget {
-  const _SeatTile({required this.seat, required this.onTap});
+  const _SeatTile({required this.seat, this.recommended});
 
   final Seat? seat;
-  final ValueChanged<Seat> onTap;
+  final String? recommended;
 
   Color get _color {
     if (seat == null) return Colors.transparent;
@@ -259,53 +399,55 @@ class _SeatTile extends StatelessWidget {
     }
 
     final color = _color;
+    final isBest = seat!.id == recommended;
     return Padding(
       padding: const EdgeInsets.all(3),
       child: Semantics(
-        label: 'Seat ${seat!.label}, ${seatStatusLabel(seat!.status.name)}',
+        label:
+            'Seat ${seat!.label}, ${seatStatusLabel(seat!.status.name)}${seat!.hasPowerOutlet ? ', power outlet' : ''}',
         button: true,
         child: Material(
-          color: color.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(12),
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
           child: InkWell(
-            onTap: () => onTap(seat!),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat!)),
+            ),
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               width: 48,
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.18),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isBest ? AppColors.gold : color,
+                  width: isBest ? 2.2 : 1.6,
+                ),
+                boxShadow: isBest
+                    ? [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
               ),
               child: Stack(
                 children: [
                   Center(
                     child: Text(
                       seat!.label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        color: color,
-                      ),
+                      style: AppText.mono(12, w: FontWeight.w700, ls: 0.5, color: color),
                     ),
                   ),
                   if (seat!.hasPowerOutlet)
                     const Positioned(
-                      right: 4,
-                      bottom: 3,
-                      child: Icon(
-                        Icons.bolt_rounded,
-                        size: 12,
-                        color: Color(0xFFB97A16),
-                      ),
+                      right: 5,
+                      bottom: 4,
+                      child: Icon(Icons.bolt_rounded, size: 11, color: AppColors.goldDeep),
                     ),
                 ],
               ),
@@ -318,10 +460,9 @@ class _SeatTile extends StatelessWidget {
 }
 
 class _SeatList extends StatelessWidget {
-  const _SeatList({required this.seats, required this.onSeatTap});
+  const _SeatList({required this.seats});
 
   final List<Seat> seats;
-  final ValueChanged<Seat> onSeatTap;
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +477,7 @@ class _SeatList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
-        AppSpacing.md,
+        0,
         AppSpacing.md,
         AppNavInset.bottom,
       ),
@@ -352,14 +493,17 @@ class _SeatList extends StatelessWidget {
 
         return SoftCard(
           elevated: true,
-          onTap: () => onSeatTap(seat),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat)),
+          ),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(Icons.event_seat_rounded, color: color, size: 22),
@@ -369,14 +513,11 @@ class _SeatList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text('Seat ${seat.label}', style: AppText.serif(16.5, ls: -0.2)),
+                    const SizedBox(height: 2),
                     Text(
-                      'Seat ${seat.label}',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Floor ${seat.floor} · ${seat.section} · ${seat.distanceFromEntranceMeters}m in',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      'Floor ${seat.floor} · ${seat.section} · ${seat.distanceFromEntranceMeters} m in',
+                      style: AppText.sans(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),

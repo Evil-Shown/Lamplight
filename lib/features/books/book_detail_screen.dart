@@ -15,13 +15,13 @@ class BookDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final canReserve = book.availability == BookAvailability.available;
     final (statusLabel, statusColor) = switch (book.availability) {
-      BookAvailability.available => ('Available now', AppColors.success),
-      BookAvailability.onLoan => ('On loan', AppColors.warning),
-      BookAvailability.reserved => ('Reserved', AppColors.error),
+      BookAvailability.available => ('Available now', AppColors.stampGreen),
+      BookAvailability.onLoan => ('On loan', AppColors.stampGold),
+      BookAvailability.reserved => ('Reserved', AppColors.stampRed),
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Book details')),
+      appBar: AppBar(title: Text('Book details', style: AppText.serif(22))),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -33,33 +33,39 @@ class BookDetailScreen extends StatelessWidget {
                 BookCover(
                   title: book.title,
                   color: book.coverColor,
-                  width: 120,
-                  height: 168,
+                  isbn: book.isbn,
+                  width: 124,
+                  height: 172,
                   radius: 14,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   book.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
+                  style: AppText.serif(23),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 1.6,
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   book.author,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: AppText.sans(14, w: FontWeight.w500, color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 StatusChip(
                   label: statusLabel,
                   color: statusColor,
-                  icon: canReserve ? Icons.check_circle_outline : Icons.schedule,
+                  pulse: canReserve,
                 ),
               ],
             ),
@@ -114,7 +120,8 @@ class BookDetailScreen extends StatelessWidget {
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("You're on the waitlist — we'll notify you when it's free."),
+                      content:
+                          Text("You're on the waitlist — we'll notify you when it's free."),
                     ),
                   );
                 },

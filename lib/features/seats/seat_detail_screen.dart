@@ -26,7 +26,7 @@ class SeatDetailScreen extends StatelessWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text('Seat ${seat.label}')),
+      appBar: AppBar(title: Text('Seat ${seat.label}', style: AppText.serif(22))),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -36,27 +36,27 @@ class SeatDetailScreen extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  width: 96,
-                  height: 96,
+                  width: 108,
+                  height: 108,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: statusColor.withValues(alpha: 0.12),
-                    boxShadow: AppShadows.soft,
+                    color: statusColor.withValues(alpha: 0.10),
+                    border: Border.all(
+                      color: canBook
+                          ? AppColors.gold.withValues(alpha: 0.55)
+                          : statusColor.withValues(alpha: 0.35),
+                      width: 1.6,
+                    ),
                   ),
-                  child: Icon(Icons.event_seat_rounded, size: 48, color: statusColor),
+                  child: Icon(Icons.event_seat_rounded, size: 46, color: statusColor),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Seat ${seat.label}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
+                Text('Seat ${seat.label}', style: AppText.serif(25)),
                 const SizedBox(height: AppSpacing.sm),
                 StatusChip(
                   label: seatStatusLabel(seat.status.name),
                   color: statusColor,
-                  icon: canBook ? Icons.check_circle_outline : Icons.lock_outline_rounded,
+                  pulse: canBook,
                 ),
               ],
             ),
@@ -104,7 +104,8 @@ class SeatDetailScreen extends StatelessWidget {
             : OutlinedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Added to waitlist for this section.')),
+                    const SnackBar(
+                        content: Text('Added to waitlist for this section.')),
                   );
                 },
                 icon: const Icon(Icons.hourglass_top_rounded),
