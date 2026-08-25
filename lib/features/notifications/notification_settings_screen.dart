@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 
@@ -12,22 +13,18 @@ class NotificationSettingsScreen extends StatefulWidget {
       _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   NotificationPreferences _prefs = const NotificationPreferences();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text('Notifications', style: AppText.serif(22))),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Text(
-            'Delivery channels',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
+          const Eyebrow('DELIVERY CHANNELS'),
           const SizedBox(height: AppSpacing.sm),
           SoftCard(
             elevated: true,
@@ -35,35 +32,36 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             child: Column(
               children: [
                 _ToggleTile(
+                  icon: Icons.notifications_active_rounded,
                   title: 'Push notifications',
                   subtitle: 'Instant alerts on your device',
                   value: _prefs.pushEnabled,
-                  onChanged: (v) => setState(() => _prefs = _prefs.copyWith(pushEnabled: v)),
+                  onChanged: (v) =>
+                      setState(() => _prefs = _prefs.copyWith(pushEnabled: v)),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 66),
                 _ToggleTile(
+                  icon: Icons.mail_outline_rounded,
                   title: 'Email',
                   subtitle: 'Reservation summaries and reminders',
                   value: _prefs.emailEnabled,
-                  onChanged: (v) => setState(() => _prefs = _prefs.copyWith(emailEnabled: v)),
+                  onChanged: (v) =>
+                      setState(() => _prefs = _prefs.copyWith(emailEnabled: v)),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 66),
                 _ToggleTile(
+                  icon: Icons.sms_outlined,
                   title: 'SMS',
                   subtitle: 'Text message alerts',
                   value: _prefs.smsEnabled,
-                  onChanged: (v) => setState(() => _prefs = _prefs.copyWith(smsEnabled: v)),
+                  onChanged: (v) =>
+                      setState(() => _prefs = _prefs.copyWith(smsEnabled: v)),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Reminders',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
+          const Eyebrow('REMINDERS'),
           const SizedBox(height: AppSpacing.sm),
           SoftCard(
             elevated: true,
@@ -71,27 +69,30 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             child: Column(
               children: [
                 _ToggleTile(
+                  icon: Icons.alarm_rounded,
                   title: 'Before reservation starts',
                   subtitle: '15 minutes before your booking',
                   value: _prefs.reminderBeforeStart,
-                  onChanged: (v) =>
-                      setState(() => _prefs = _prefs.copyWith(reminderBeforeStart: v)),
+                  onChanged: (v) => setState(
+                      () => _prefs = _prefs.copyWith(reminderBeforeStart: v)),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 66),
                 _ToggleTile(
+                  icon: Icons.update_rounded,
                   title: 'Before reservation expires',
                   subtitle: '30 minutes before pickup or booking ends',
                   value: _prefs.reminderBeforeExpiry,
-                  onChanged: (v) =>
-                      setState(() => _prefs = _prefs.copyWith(reminderBeforeExpiry: v)),
+                  onChanged: (v) => setState(
+                      () => _prefs = _prefs.copyWith(reminderBeforeExpiry: v)),
                 ),
-                const Divider(height: 1),
+                const Divider(height: 1, indent: 66),
                 _ToggleTile(
+                  icon: Icons.hourglass_top_rounded,
                   title: 'Waitlist updates',
                   subtitle: 'When you move up or a spot opens',
                   value: _prefs.waitlistUpdates,
-                  onChanged: (v) =>
-                      setState(() => _prefs = _prefs.copyWith(waitlistUpdates: v)),
+                  onChanged: (v) => setState(
+                      () => _prefs = _prefs.copyWith(waitlistUpdates: v)),
                 ),
               ],
             ),
@@ -112,12 +113,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
 class _ToggleTile extends StatelessWidget {
   const _ToggleTile({
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
@@ -126,10 +129,11 @@ class _ToggleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      secondary: IconBadge(icon: icon, size: 40),
+      title: Text(title, style: AppText.sans(14.5, w: FontWeight.w700)),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: AppText.sans(12.5, color: AppColors.textSecondary),
       ),
       value: value,
       onChanged: onChanged,
