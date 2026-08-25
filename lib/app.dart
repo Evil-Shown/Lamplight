@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_shell.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_frame.dart';
 import 'core/widgets/ledger_widgets.dart';
 
 class LibraryApp extends StatelessWidget {
@@ -13,6 +14,7 @@ class LibraryApp extends StatelessWidget {
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      builder: (context, child) => AppFrame(child: child ?? const SizedBox.shrink()),
       home: const _AppEntry(),
     );
   }

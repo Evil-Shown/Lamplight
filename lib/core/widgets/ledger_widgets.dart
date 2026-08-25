@@ -22,6 +22,8 @@ class Eyebrow extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       textAlign: textAlign,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
       style: AppText.mono(10.5, w: FontWeight.w600, ls: 3, color: color),
     );
   }

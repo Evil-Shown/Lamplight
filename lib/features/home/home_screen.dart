@@ -307,16 +307,18 @@ class _LedgerHero extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
-                  color: AppColors.gold.withValues(alpha: 0.08),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadii.full),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
+                    color: AppColors.gold.withValues(alpha: 0.08),
+                  ),
+                  child: const Eyebrow('✦ LIBRARY+', color: AppColors.gold),
                 ),
-                child: const Eyebrow('✦ LIBRARY+', color: AppColors.gold),
               ),
-              const Spacer(),
+              const SizedBox(width: AppSpacing.sm),
               Material(
                 color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(14),
@@ -404,6 +406,9 @@ class _HeroStat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppText.sans(11, w: FontWeight.w500,
                 color: AppColors.paper.withValues(alpha: 0.5)),
           ),
@@ -418,27 +423,22 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionTile(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 340;
+        final tiles = [
+          _ActionTile(
             icon: Icons.search_rounded,
             label: 'Search',
             onTap: () => AppShell.switchTab(context, 1),
           ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _ActionTile(
+          _ActionTile(
             icon: Icons.event_seat_rounded,
             label: 'Book Seat',
             tint: AppColors.stampGreen,
             onTap: () => AppShell.switchTab(context, 2),
           ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _ActionTile(
+          _ActionTile(
             icon: Icons.bookmark_rounded,
             label: 'My Holds',
             tint: AppColors.stampGold,
@@ -448,10 +448,7 @@ class _QuickActions extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
             ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _ActionTile(
+          _ActionTile(
             icon: Icons.qr_code_rounded,
             label: 'Scan QR',
             tint: AppColors.inkSoft,
@@ -462,8 +459,34 @@ class _QuickActions extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ],
+        ];
+
+        if (narrow) {
+          return Column(
+            children: [
+              for (var i = 0; i < tiles.length; i += 2) ...[
+                if (i > 0) const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(child: tiles[i]),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(child: tiles[i + 1]),
+                  ],
+                ),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var i = 0; i < tiles.length; i++) ...[
+              if (i > 0) const SizedBox(width: AppSpacing.sm),
+              Expanded(child: tiles[i]),
+            ],
+          ],
+        );
+      },
     );
   }
 }
