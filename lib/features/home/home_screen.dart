@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../app_shell.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
@@ -26,135 +27,99 @@ class HomeScreen extends StatelessWidget {
             : 'Good evening';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _HeroHeader(greeting: greeting, name: firstName)),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppNavInset.bottom),
-              sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _StatsRow(),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        'Quick actions',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            MediaQuery.paddingOf(context).top + AppSpacing.md,
+            AppSpacing.md,
+            AppNavInset.bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LedgerHero(greeting: greeting, name: firstName),
+              const SizedBox(height: AppSpacing.xl),
+              Text('Quick actions', style: AppText.serif(20)),
+              const SizedBox(height: AppSpacing.md),
+              const _QuickActions(),
+              const SizedBox(height: AppSpacing.xl),
+              Text('Today at a glance', style: AppText.serif(20)),
+              const SizedBox(height: AppSpacing.md),
+              ..._buildGlanceCards(context),
+              const SizedBox(height: AppSpacing.xl),
+              Text('Discover', style: AppText.serif(20)),
+              const SizedBox(height: AppSpacing.md),
+              SoftCard(
+                elevated: true,
+                onTap: () => AppShell.switchTab(context, 1),
+                child: Row(
+                  children: [
+                    BookCover(
+                      title: MockData.books.first.title,
+                      color: MockData.books.first.coverColor,
+                      isbn: MockData.books.first.isbn,
+                      width: 46,
+                      height: 64,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Browse the catalog', style: AppText.serif(16.5, ls: -0.2)),
+                          const SizedBox(height: 3),
+                          Eyebrow(
+                            '${MockData.books.length} titles ready · reserve in seconds',
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _QuickActions(),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        'Your library today',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      ..._buildActivityCards(context),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        'Discover',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SoftCard(
-                        elevated: true,
-                        onTap: () => AppShell.switchTab(context, 1),
-                        child: Row(
-                          children: [
-                            BookCover(
-                              title: MockData.books.first.title,
-                              color: MockData.books.first.coverColor,
-                              width: 52,
-                              height: 72,
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Browse the catalog',
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${MockData.books.length} titles ready · reserve in seconds',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SoftCard(
-                        elevated: true,
-                        onTap: () => AppShell.switchTab(context, 2),
-                        child: Row(
-                          children: [
-                            const IconBadge(icon: Icons.event_seat_rounded, size: 52),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Find a quiet seat',
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${MockData.seats.where((s) => s.status == SeatStatus.available).length} seats open right now',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
-                          ],
-                        ),
-                      ),
+                    ),
+                    const _InkArrow(),
                   ],
                 ),
-              ]),
-            ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SoftCard(
+                elevated: true,
+                onTap: () => AppShell.switchTab(context, 2),
+                child: Row(
+                  children: [
+                    const IconBadge(icon: Icons.event_seat_rounded, size: 48),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Find a quiet seat', style: AppText.serif(16.5, ls: -0.2)),
+                          const SizedBox(height: 3),
+                          Eyebrow(
+                            '${MockData.seats.where((s) => s.status == SeatStatus.available).length} seats open right now',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const _InkArrow(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildActivityCards(BuildContext context) {
+  List<Widget> _buildGlanceCards(BuildContext context) {
     final cards = <Widget>[];
 
     if (MockData.activeBookings.isNotEmpty) {
       final b = MockData.activeBookings.first;
       final grace = b.gracePeriodEndsAt;
       cards.add(
-        SoftCard(
-          elevated: true,
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        TicketCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
@@ -164,24 +129,26 @@ class HomeScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const IconBadge(icon: Icons.event_seat_rounded, color: AppColors.secondary),
+                  const IconBadge(icon: Icons.event_seat_rounded, color: AppColors.inkSoft),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Seat ${b.seat.label}',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                        ),
+                        Text('Seat ${b.seat.label}', style: AppText.serif(17, ls: -0.2)),
+                        const SizedBox(height: 2),
                         Text(
                           'Floor ${b.seat.floor} · ${b.seat.section}',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: AppText.sans(12.5, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
                   ),
-                  const StatusChip(label: 'Active', color: AppColors.success, icon: Icons.check_circle),
+                  const StatusChip(
+                    label: 'Active',
+                    color: AppColors.stampGreen,
+                    pulse: true,
+                  ),
                 ],
               ),
               if (grace != null) ...[
@@ -190,7 +157,7 @@ class HomeScreen extends StatelessWidget {
                   tone: AlertTone.warning,
                   icon: Icons.timer_outlined,
                   message:
-                      'Check in within ${_remaining(grace)} or this seat will be released.',
+                      'Check in within ${_remaining(grace)} or the seat returns to the floor.',
                 ),
               ],
             ],
@@ -202,9 +169,8 @@ class HomeScreen extends StatelessWidget {
     if (MockData.activeReservations.isNotEmpty) {
       final r = MockData.activeReservations.first;
       cards.add(
-        SoftCard(
-          elevated: true,
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        TicketCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
@@ -214,8 +180,9 @@ class HomeScreen extends StatelessWidget {
               BookCover(
                 title: r.book.title,
                 color: r.book.coverColor,
-                width: 48,
-                height: 66,
+                isbn: r.book.isbn,
+                width: 44,
+                height: 62,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -224,19 +191,19 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       r.book.title,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: AppText.serif(15.5, ls: -0.2),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       'Pickup by ${DateFormat('MMM d').format(r.pickupBy)}',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: AppText.sans(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
-              const StatusChip(label: 'Reserved', color: AppColors.warning),
+              const StatusChip(label: 'Reserved', color: AppColors.stampGold),
             ],
           ),
         ),
@@ -246,36 +213,36 @@ class HomeScreen extends StatelessWidget {
     if (MockData.waitlistEntries.isNotEmpty) {
       final w = MockData.waitlistEntries.first;
       cards.add(
-        SoftCard(
-          elevated: true,
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        TicketCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const WaitlistScreen()),
           ),
           child: Row(
             children: [
-              IconBadge(
-                icon: w.type.name == 'book'
-                    ? Icons.menu_book_rounded
-                    : Icons.hourglass_top_rounded,
-                color: AppColors.warning,
-              ),
+              const IconBadge(icon: Icons.hourglass_top_rounded, color: AppColors.stampGold),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(w.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 4),
+                    Text(w.title, style: AppText.serif(15.5, ls: -0.2)),
+                    const SizedBox(height: 3),
                     Text(
                       'Position #${w.position} in line',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: AppText.sans(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+              if (w.estimatedWait != null)
+                Text(
+                  '~${w.estimatedWait!.inMinutes}m',
+                  style: AppText.mono(11, ls: 1.2, color: AppColors.goldDeep),
+                ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.textFaint),
             ],
           ),
         ),
@@ -287,9 +254,7 @@ class HomeScreen extends StatelessWidget {
         SoftCard(
           child: Text(
             'Nothing active yet — reserve a book or book a seat to get started.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: AppText.sans(13.5, color: AppColors.textSecondary),
           ),
         ),
       );
@@ -306,199 +271,141 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HeroHeader extends StatelessWidget {
-  const _HeroHeader({required this.greeting, required this.name});
+class _InkArrow extends StatelessWidget {
+  const _InkArrow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: const BoxDecoration(
+        color: AppColors.ink,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.arrow_forward_rounded, size: 17, color: AppColors.paper),
+    );
+  }
+}
+
+/// The hero ledger — ink panel, date eyebrow, serif greeting, gold stat boxes.
+class _LedgerHero extends StatelessWidget {
+  const _LedgerHero({required this.greeting, required this.name});
 
   final String greeting;
   final String name;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F3D2E),
-            Color(0xFF1B5E45),
-            Color(0xFF2D6A4F),
-          ],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
-      child: Stack(
-        children: [
-          Positioned(right: -52, top: -40, child: _heroCircle(180, 0.07)),
-          Positioned(left: -44, bottom: -64, child: _heroCircle(170, 0.06)),
-          Positioned(right: 52, bottom: -34, child: _heroCircle(96, 0.05)),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              MediaQuery.paddingOf(context).top + AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.xl,
-            ),
-            child: Column(
+    final available =
+        MockData.seats.where((s) => s.status == SeatStatus.available).length;
+    final dateLabel = DateFormat('EEEE, MMM d').format(DateTime.now());
+
+    return InkPanel(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
+                  color: AppColors.gold.withValues(alpha: 0.08),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.local_library_rounded, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      AppStrings.appName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+                child: const Eyebrow('✦ LIBRARY+', color: AppColors.gold),
               ),
               const Spacer(),
-              IconButton(
-                tooltip: 'Scan QR',
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.14),
-                  foregroundColor: Colors.white,
-                ),
-                icon: const Icon(Icons.qr_code_scanner_rounded),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const QrScanScreen(mode: QrScanMode.seatCheckIn),
+              Material(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QrScanScreen(mode: QrScanMode.seatCheckIn),
+                    ),
+                  ),
+                  child: const SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: Icon(Icons.qr_code_scanner_rounded,
+                        color: AppColors.gold, size: 22),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
+          Eyebrow('LEDGER — $dateLabel', color: AppColors.gold.withValues(alpha: 0.8)),
+          const SizedBox(height: AppSpacing.sm + 2),
           Text(
-            '$greeting,',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontWeight: FontWeight.w500,
-                ),
+            '$greeting,\n$name.',
+            style: AppText.serif(30, w: FontWeight.w700, color: AppColors.paper, height: 1.15),
           ),
+          const SizedBox(height: AppSpacing.sm + 2),
           Text(
-            name,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
+            'Open until 10:00 PM · quiet study & group rooms',
+            style: AppText.sans(13.5, color: AppColors.paper.withValues(alpha: 0.6), height: 1.4),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Books, seats, and waitlists — all in one calm place.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  height: 1.4,
+          const SizedBox(height: AppSpacing.md),
+          const DashedRule(),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: _HeroStat(
+                  value: '${MockData.activeReservations.length}',
+                  label: 'Reserved',
                 ),
-          ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _HeroStat(
+                  value: '${MockData.activeBookings.length}',
+                  label: 'Booked',
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _HeroStat(value: '$available', label: 'Seats open'),
+              ),
             ],
           ),
-        ),
         ],
       ),
     );
   }
-
-  Widget _heroCircle(double size, double opacity) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
-      ),
-    );
-  }
 }
 
-class _StatsRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final available =
-        MockData.seats.where((s) => s.status == SeatStatus.available).length;
-    return Row(
-      children: [
-        Expanded(
-          child: _StatTile(
-            label: 'Reservations',
-            value: '${MockData.activeReservations.length}',
-            icon: Icons.bookmark_rounded,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _StatTile(
-            label: 'Bookings',
-            value: '${MockData.activeBookings.length}',
-            icon: Icons.event_available_rounded,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _StatTile(
-            label: 'Open seats',
-            value: '$available',
-            icon: Icons.chair_alt_rounded,
-          ),
-        ),
-      ],
-    );
-  }
-}
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({required this.value, required this.label});
 
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
   final String value;
-  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
-      elevated: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-              letterSpacing: -0.5,
-            ),
+            style: AppText.serif(24, w: FontWeight.w700, color: AppColors.gold, ls: 0),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppText.sans(11, w: FontWeight.w500,
+                color: AppColors.paper.withValues(alpha: 0.5)),
           ),
         ],
       ),
@@ -507,33 +414,34 @@ class _StatTile extends StatelessWidget {
 }
 
 class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: _ActionPill(
+          child: _ActionTile(
             icon: Icons.search_rounded,
-            label: 'Search\nBooks',
-            color: AppColors.primary,
+            label: 'Search',
             onTap: () => AppShell.switchTab(context, 1),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: _ActionPill(
+          child: _ActionTile(
             icon: Icons.event_seat_rounded,
-            label: 'Book\na Seat',
-            color: AppColors.secondary,
+            label: 'Book Seat',
+            tint: AppColors.stampGreen,
             onTap: () => AppShell.switchTab(context, 2),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: _ActionPill(
+          child: _ActionTile(
             icon: Icons.bookmark_rounded,
-            label: 'My\nHolds',
-            color: AppColors.warning,
+            label: 'My Holds',
+            tint: AppColors.stampGold,
             badge: MockData.activeReservations.length,
             onTap: () => Navigator.push(
               context,
@@ -543,10 +451,10 @@ class _QuickActions extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: _ActionPill(
-            icon: Icons.qr_code_scanner_rounded,
-            label: 'Scan\nQR',
-            color: AppColors.info,
+          child: _ActionTile(
+            icon: Icons.qr_code_rounded,
+            label: 'Scan QR',
+            tint: AppColors.inkSoft,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -560,18 +468,18 @@ class _QuickActions extends StatelessWidget {
   }
 }
 
-class _ActionPill extends StatelessWidget {
-  const _ActionPill({
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
     required this.icon,
     required this.label,
-    required this.color,
     required this.onTap,
+    this.tint = AppColors.goldDeep,
     this.badge,
   });
 
   final IconData icon;
   final String label;
-  final Color color;
+  final Color tint;
   final VoidCallback onTap;
   final int? badge;
 
@@ -579,7 +487,7 @@ class _ActionPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return SoftCard(
       elevated: true,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
       onTap: onTap,
       child: Column(
         children: [
@@ -590,43 +498,34 @@ class _ActionPill extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: tint.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: tint, size: 21),
               ),
               if (badge != null && badge! > 0)
                 Positioned(
-                  right: -4,
-                  top: -4,
+                  right: -5,
+                  top: -5,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    width: 18,
+                    height: 18,
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.goldDeep,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.paperCard, width: 2),
                     ),
                     child: Text(
                       '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppText.sans(9, w: FontWeight.w800, color: AppColors.paper),
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              height: 1.2,
-            ),
-          ),
+          const SizedBox(height: 9),
+          Text(label, style: AppText.sans(11.5, w: FontWeight.w600)),
         ],
       ),
     );
