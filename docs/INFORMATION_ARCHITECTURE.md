@@ -1,5 +1,21 @@
 # Information Architecture — Library App
 
+> **Migration notice (2026-10-07):** This original Assignment-era screen checklist contains deleted file paths and an outdated primary navigation. Use [`README.md`](README.md), [`FEATURES.md`](FEATURES.md), [`UI_DESIGN.md`](UI_DESIGN.md), and [`HIGH_LEVEL_ARCHITECTURE.md`](HIGH_LEVEL_ARCHITECTURE.md) as the implementation source of truth. During the `go_router` migration, replace this file with generated/verified route documentation.
+
+## Current canonical primary navigation
+
+- Student: Home · Seats · Books · Bookings · Profile.
+- Staff: Home · Seats · Catalog · Bookings · Staff.
+- Waitlists are inside Bookings and feature flows, not a primary tab.
+
+## Current replacement paths
+
+- Unified reservations: `features/reservations/reservations_screen.dart`.
+- Notification feed: `features/notifications/notifications_screen.dart`.
+- Notification settings: `features/settings/settings_screen.dart`.
+- Student QR display: `features/qr/qr_ticket_screen.dart`.
+- Staff scanner: `features/staff/staff_scanner_screen.dart` (currently simulated).
+
 Screen checklist mapped to functional requirements (FR01–FR19).
 
 ## Navigation
