@@ -99,8 +99,7 @@ class BookingConfirmationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 26),
           PrimaryButton(
-            label: 'View Reservations',
-            tone: ButtonTone.secondary,
+            label: 'Show QR pass',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => QrTicketScreen(booking: booking),
@@ -109,7 +108,8 @@ class BookingConfirmationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           PrimaryButton(
-            label: 'Back to Home',
+            label: 'Done',
+            tone: ButtonTone.secondary,
             onPressed: () =>
                 Navigator.of(context).popUntil((route) => route.isFirst),
           ),

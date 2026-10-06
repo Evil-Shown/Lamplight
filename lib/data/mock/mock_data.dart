@@ -176,6 +176,8 @@ class MockData {
     for (var row = 0; row < 4; row++) {
       for (var col = 0; col < 4; col++) {
         final label = '${row + 1}${String.fromCharCode(65 + col)}';
+        // 2C is the researched recommendation: quiet, power, and a window.
+        final featured = label == '2C';
         seats.add(
           Seat(
             id: 's${row}_$col',
@@ -183,14 +185,15 @@ class MockData {
             floor: 2,
             section: 'Quiet Wing',
             status: statuses[row][col],
-            category: col < 2
+            category: featured || col < 2
                 ? SeatCategory.quietZone
                 : (col == 2
                     ? SeatCategory.individualPod
                     : SeatCategory.collaborative),
-            hasPowerOutlet: col != 1,
+            hasPowerOutlet: featured || col != 1,
             hasMonitor: col == 3,
-            nearWindow: col == 3,
+            nearWindow: featured || col == 3,
+            standingDesk: col == 0,
             row: row,
             col: col,
           ),
