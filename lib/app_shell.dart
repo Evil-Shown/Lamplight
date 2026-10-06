@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
+
+import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'features/account/account_screen.dart';
 import 'features/books/book_search_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/reservations/reservations_screen.dart';
 import 'features/seats/seat_map_screen.dart';
-import 'features/waitlist/waitlist_screen.dart';
+import 'features/staff/staff_dashboard_screen.dart';
 
+/// Tab indices, shared so screens can jump between them by name.
+class AppTab {
+  AppTab._();
+
+  static const home = 0;
+  static const seats = 1;
+  static const books = 2;
+  static const bookings = 3;
+  static const profile = 4;
+}
+
+/// The role-aware bottom navigation.
+///
+/// The prototype ships two bars: `Home · Seats · Books · Bookings ·
+/// Profile` for students and `Home · Seats · Catalog · Bookings · Staff`
+/// for library staff, so the destination list is built from the signed-in
+/// role rather than being fixed.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -20,91 +40,83 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  void switchTo(int index) => setState(() => _index = index);
+  void switchTo(int index) {
+    if (index < 0 || index >= _destinations.length) return;
+    setState(() => _index = index);
+  }
+
+  List<_Destination> get _destinations => isStaff ? _staffTabs : _studentTabs;
+
+  bool get isStaff => AppScope.of(context).isStaff;
+
+  static const _studentTabs = <_Destination>[
+    _Destination(Icons.home_outlined, Icons.home_rounded, 'Home'),
+    _Destination(Icons.event_seat_outlined, Icons.event_seat_rounded, 'Seats'),
+    _Destination(Icons.menu_book_outlined, Icons.menu_book_rounded, 'Books'),
+    _Destination(Icons.confirmation_number_outlined,
+        Icons.confirmation_number_rounded, 'Bookings'),
+    _Destination(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+  ];
+
+  static const _staffTabs = <_Destination>[
+    _Destination(Icons.home_outlined, Icons.home_rounded, 'Home'),
+    _Destination(Icons.event_seat_outlined, Icons.event_seat_rounded, 'Seats'),
+    _Destination(Icons.library_books_outlined, Icons.library_books_rounded,
+        'Catalog'),
+    _Destination(Icons.confirmation_number_outlined,
+        Icons.confirmation_number_rounded, 'Bookings'),
+    _Destination(Icons.badge_outlined, Icons.badge_rounded, 'Staff'),
+  ];
+
+  List<Widget> get _screens => isStaff
+      ? const [
+          StaffDashboardScreen(),
+          SeatMapScreen(),
+          BookSearchScreen(),
+          ReservationsScreen(),
+          StaffDashboardScreen(),
+        ]
+      : const [
+          HomeScreen(),
+          SeatMapScreen(),
+          BookSearchScreen(),
+          ReservationsScreen(),
+          AccountScreen(),
+        ];
 
   @override
   Widget build(BuildContext context) {
+    final destinations = _destinations;
+    final screens = _screens;
+    final safeIndex = _index.clamp(0, destinations.length - 1);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          HomeScreen(),
-          BookSearchScreen(),
-          SeatMapScreen(),
-          WaitlistScreen(),
-          AccountScreen(),
-        ],
-      ),
+      body: IndexedStack(index: safeIndex, children: screens),
       bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.inkDeep,
-          border: Border(
-            top: BorderSide(color: AppColors.gold.withValues(alpha: 0.28)),
-          ),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            backgroundColor: AppColors.inkDeep,
-            surfaceTintColor: Colors.transparent,
-            indicatorColor: AppColors.gold.withValues(alpha: 0.16),
-            indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return AppText.sans(
-                11,
-                w: selected ? FontWeight.w700 : FontWeight.w500,
-                ls: 0.2,
-                color: selected
-                    ? AppColors.gold
-                    : AppColors.paper.withValues(alpha: 0.38),
-              );
-            }),
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return IconThemeData(
-                size: 23,
-                color: selected
-                    ? AppColors.gold
-                    : AppColors.paper.withValues(alpha: 0.38),
-              );
-            }),
-          ),
-          child: NavigationBar(
-            height: 76,
-            selectedIndex: _index,
-            onDestinationSelected: switchTo,
-            destinations: const [
+        child: NavigationBar(
+          selectedIndex: safeIndex,
+          onDestinationSelected: switchTo,
+          destinations: [
+            for (final d in destinations)
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Home',
+                icon: Icon(d.icon),
+                selectedIcon: Icon(d.selectedIcon),
+                label: d.label,
               ),
-              NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book_rounded),
-                label: 'Books',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.event_seat_outlined),
-                selectedIcon: Icon(Icons.event_seat_rounded),
-                label: 'Seats',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.hourglass_top_outlined),
-                selectedIcon: Icon(Icons.hourglass_top_rounded),
-                label: 'Waitlist',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline_rounded),
-                selectedIcon: Icon(Icons.person_rounded),
-                label: 'Account',
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _Destination {
+  const _Destination(this.icon, this.selectedIcon, this.label);
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
 }

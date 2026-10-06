@@ -1,7 +1,8 @@
 class AppStrings {
   static const appName = 'Library+';
-  static const searchBooksHint = 'Search title, author, subject, ISBN…';
-  static const searchSeatsHint = 'Filter by floor or section…';
+  static const portalName = 'SLIIT QUICK BOOK';
+  static const searchBooksHint = 'Search by title, author, ISBN…';
+  static const seatSearchHint = 'Filter by floor or section…';
 }
 
 class AppSpacing {
@@ -18,7 +19,7 @@ class AppTouchTarget {
   static const minSize = 48.0;
 }
 
-/// Extra bottom inset so list content clears the floating pill nav bar.
+/// Extra bottom inset so scroll content clears the navigation bar.
 class AppNavInset {
   static const bottom = 96.0;
 }
