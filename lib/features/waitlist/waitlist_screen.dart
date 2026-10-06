@@ -1,121 +1,119 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ledger_widgets.dart';
-import '../../core/widgets/shared_widgets.dart';
-import '../../data/mock/mock_data.dart';
-import '../../models/models.dart';
 
+import '../../core/state/app_state.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/shared_widgets.dart';
+import '../../models/models.dart';
+import 'waitlist_joined_screen.dart';
+
+/// P-09 Waiting List.
+///
+/// Shown when the wanted seat is taken: what the user is waiting for, their
+/// preferences, their place in the queue, and the join action.
 class WaitlistScreen extends StatelessWidget {
   const WaitlistScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final entries = MockData.waitlistEntries;
+    final state = AppScope.of(context);
+    final alreadyWaiting = state.waitlist.isNotEmpty;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        toolbarHeight: 84,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Eyebrow('YOUR QUEUE'),
-            const SizedBox(height: 3),
-            Text('Waitlist', style: AppText.serif(24)),
-          ],
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'How waitlist works',
-            icon: const Icon(Icons.info_outline_rounded),
-            onPressed: () => _showInfo(context),
-          ),
-        ],
+        title: Text('Waiting List',
+            style: AppText.title(17, w: FontWeight.w600)),
       ),
-      body: entries.isEmpty
-          ? const EmptyState(
-              icon: Icons.hourglass_empty_rounded,
-              title: "You're not waiting on anything",
-              message:
-                  'When a book or seat is unavailable, join the waitlist from its detail screen.',
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.sm,
-                AppSpacing.md,
-                AppNavInset.bottom,
-              ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        children: [
+          const Callout(
+            icon: Icons.warning_amber_rounded,
+            tone: CalloutTone.warning,
+            message:
+                'This seat is currently unavailable. Seat 2C is occupied '
+                'until 5:00 PM.',
+          ),
+          const SizedBox(height: 22),
+          const SectionLabel('Your preferences'),
+          const SizedBox(height: 10),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _PreferenceChip(label: 'Quiet Area'),
+              _PreferenceChip(label: 'Power Outlet'),
+              _PreferenceChip(label: 'Floor 2'),
+            ],
+          ),
+          const SizedBox(height: 30),
+          Center(
+            child: Column(
               children: [
-                const AlertBanner(
-                  tone: AlertTone.success,
-                  icon: Icons.notifications_active_outlined,
-                  message:
-                      "We'll notify you automatically the moment you reach the front.",
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ...entries.map((e) => _WaitlistCard(entry: e)),
-                const SizedBox(height: AppSpacing.lg),
-                Center(
-                  child: Text(
-                    '— end of your queue —',
-                    style: AppText.serif(14,
-                        w: FontWeight.w500, italic: true, color: AppColors.textFaint),
+                ShaderMask(
+                  shaderCallback: (bounds) => AppGradients.aurora
+                      .createShader(bounds),
+                  child: CountUp(
+                    value: 3,
+                    style: AppText.display(
+                      58,
+                      w: FontWeight.w800,
+                      ls: -1.6,
+                      color: Colors.white,
+                    ),
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text('Your position in queue',
+                    style: AppText.body(14, color: AppColors.textSecondary)),
+                const SizedBox(height: 4),
+                Text(
+                  'Estimated Wait: Approximately 45 minutes',
+                  style: AppText.body(12.5, color: AppColors.textFaint),
                 ),
               ],
             ),
-    );
-  }
-
-  void _showInfo(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding:
-            const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('How the waitlist works', style: AppText.serif(20)),
-            const SizedBox(height: AppSpacing.lg),
-            const _InfoBullet(
-              icon: Icons.person_add_alt_1_rounded,
-              text: 'Join when a book or seat is full.',
-            ),
-            const _InfoBullet(
-              icon: Icons.notifications_active_outlined,
-              text: 'The next person is notified automatically.',
-            ),
-            const _InfoBullet(
-              icon: Icons.timer_outlined,
-              text: 'A grace countdown shows before the spot is released.',
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoBullet extends StatelessWidget {
-  const _InfoBullet({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        children: [
-          IconBadge(icon: icon, size: 40),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(text, style: AppText.sans(14, height: 1.35)),
+          ),
+          const SizedBox(height: 30),
+          Callout(
+            icon: Icons.notifications_active_outlined,
+            message:
+                'You will be notified via push notification and email when a '
+                'matching seat becomes available.',
+          ),
+          const SizedBox(height: 26),
+          PrimaryButton(
+            label: alreadyWaiting ? 'Already on the waitlist' : 'Join Waiting List',
+            onPressed: alreadyWaiting
+                ? null
+                : () {
+                    final entry = AppScope.read(context).joinWaitlist(
+                      title: 'Seat 2C',
+                      subtitle: 'Floor 2 · Quiet Wing',
+                      seatPreference: 'Quiet Area + Power Outlet',
+                    );
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => WaitlistJoinedScreen(entry: entry),
+                      ),
+                    );
+                  },
+          ),
+          const SizedBox(height: 10),
+          PrimaryButton(
+            label: 'Cancel',
+            tone: ButtonTone.secondary,
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
         ],
       ),
@@ -123,116 +121,21 @@ class _InfoBullet extends StatelessWidget {
   }
 }
 
-class _WaitlistCard extends StatelessWidget {
-  const _WaitlistCard({required this.entry});
+class _PreferenceChip extends StatelessWidget {
+  const _PreferenceChip({required this.label});
 
-  final WaitlistEntry entry;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final isBook = entry.type == WaitlistType.book;
-    final icon = isBook ? Icons.menu_book_rounded : Icons.event_seat_rounded;
-
-    final coverBook = MockData.books
-        .where((b) => b.title == entry.title)
-        .firstOrNull;
-
-    return TicketCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (isBook && coverBook != null)
-                BookCover(
-                  title: coverBook.title,
-                  color: coverBook.coverColor,
-                  isbn: coverBook.isbn,
-                  width: 44,
-                  height: 60,
-                )
-              else
-                IconBadge(
-                  icon: icon,
-                  color: isBook ? AppColors.stampRed : AppColors.inkSoft,
-                  size: 46,
-                ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(entry.title, style: AppText.serif(16.5, ls: -0.2)),
-                    const SizedBox(height: 2),
-                    Text(
-                      isBook
-                          ? 'By ${MockData.books.where((b) => b.title == entry.title).firstOrNull?.author ?? 'the author'}'
-                          : 'Any available desk',
-                      style: AppText.sans(12.5, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              StatusChip(
-                label: 'Pos. ${entry.position}',
-                color: AppColors.inkSoft,
-                compact: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const DashedRule(),
-          const SizedBox(height: AppSpacing.sm + 2),
-          if (entry.estimatedWait != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
-              child: Row(
-                children: [
-                  const Icon(Icons.schedule_rounded,
-                      size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Estimated wait ',
-                    style: AppText.sans(13, color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    '~${entry.estimatedWait!.inMinutes} minutes',
-                    style: AppText.sans(13, w: FontWeight.w700),
-                  ),
-                ],
-              ),
-            ),
-          if (entry.gracePeriodEndsAt != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
-              child: AlertBanner(
-                tone: AlertTone.danger,
-                icon: Icons.timer_outlined,
-                message:
-                    'Claim within ${_countdown(entry.gracePeriodEndsAt!)} or it passes to the next reader.',
-              ),
-            ),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Left waitlist.')),
-                );
-              },
-              child: const Text('Leave waitlist'),
-            ),
-          ),
-        ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+        border: Border.all(color: AppColors.border),
       ),
+      child: Text(label, style: AppText.label(12.5, w: FontWeight.w600)),
     );
-  }
-
-  String _countdown(DateTime deadline) {
-    final diff = deadline.difference(DateTime.now());
-    if (diff.isNegative) return '0:00';
-    return '${diff.inMinutes}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 }
