@@ -29,11 +29,14 @@ class SeatFilters {
       !standingDesk;
 
   bool matches(Seat seat) {
+    final floorNumber = int.tryParse(floor.replaceAll(RegExp(r'[^0-9]'), ''));
+    if (floorNumber != null && seat.floor != floorNumber) return false;
     if (categories.isNotEmpty && !categories.contains(seat.category)) {
       return false;
     }
     if (powerOutlet && !seat.hasPowerOutlet) return false;
     if (monitor && !seat.hasMonitor) return false;
+    if (standingDesk && !seat.standingDesk) return false;
     return true;
   }
 

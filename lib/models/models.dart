@@ -53,6 +53,7 @@ class Seat {
     required this.hasPowerOutlet,
     required this.hasMonitor,
     required this.nearWindow,
+    this.standingDesk = false,
     required this.row,
     required this.col,
   });
@@ -66,8 +67,35 @@ class Seat {
   final bool hasPowerOutlet;
   final bool hasMonitor;
   final bool nearWindow;
+  final bool standingDesk;
   final int row;
   final int col;
+
+  Seat copyWith({SeatStatus? status}) => Seat(
+        id: id,
+        label: label,
+        floor: floor,
+        section: section,
+        status: status ?? this.status,
+        category: category,
+        hasPowerOutlet: hasPowerOutlet,
+        hasMonitor: hasMonitor,
+        nearWindow: nearWindow,
+        standingDesk: standingDesk,
+        row: row,
+        col: col,
+      );
+
+  /// Short reasons shown on the recommendation card.
+  List<String> get matchReasons {
+    final reasons = <String>[];
+    if (category == SeatCategory.quietZone) reasons.add('Quiet area');
+    if (hasPowerOutlet) reasons.add('Power outlet');
+    if (nearWindow) reasons.add('Near window');
+    if (hasMonitor) reasons.add('Monitor');
+    if (standingDesk) reasons.add('Standing desk');
+    return reasons;
+  }
 
   String get zoneLabel {
     switch (category) {
