@@ -1,26 +1,47 @@
 import 'package:flutter/material.dart';
+
 import 'app_shell.dart';
 import 'core/constants/app_constants.dart';
+import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_frame.dart';
 import 'core/widgets/ledger_widgets.dart';
+import 'features/auth/login_screen.dart';
 
-class LibraryApp extends StatelessWidget {
+class LibraryApp extends StatefulWidget {
   const LibraryApp({super.key});
 
   @override
+  State<LibraryApp> createState() => _LibraryAppState();
+}
+
+class _LibraryAppState extends State<LibraryApp> {
+  final AppState _state = AppState();
+
+  @override
+  void dispose() {
+    _state.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppStrings.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      builder: (context, child) => AppFrame(child: child ?? const SizedBox.shrink()),
-      home: const _AppEntry(),
+    return AppScope(
+      state: _state,
+      child: MaterialApp(
+        title: AppStrings.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        builder: (context, child) =>
+            AppFrame(child: child ?? const SizedBox.shrink()),
+        home: const _AppEntry(),
+      ),
     );
   }
 }
 
-/// Shows the animated "Opening" once, then hands over to the shell.
+/// Splash once, then the login screen or the shell depending on whether
+/// anyone is signed in.
 class _AppEntry extends StatefulWidget {
   const _AppEntry();
 
@@ -35,11 +56,26 @@ class _AppEntryState extends State<_AppEntry> {
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 450),
-      child: _opened
-          ? const AppShell(key: ValueKey('shell'))
-          : SplashScreen(key: const ValueKey('splash'), onDone: () {
-              if (mounted) setState(() => _opened = true);
-            }),
+      child: !_opened
+          ? SplashScreen(
+              key: const ValueKey('splash'),
+              onDone: () {
+                if (mounted) setState(() => _opened = true);
+              },
+            )
+          : const _SignedInGate(),
     );
+  }
+}
+
+class _SignedInGate extends StatelessWidget {
+  const _SignedInGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final signedIn = AppScope.of(context).isSignedIn;
+    return signedIn
+        ? const AppShell(key: ValueKey('shell'))
+        : const LoginScreen(key: ValueKey('login'));
   }
 }
