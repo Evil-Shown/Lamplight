@@ -275,11 +275,37 @@ class _SeatBookingCard extends StatelessWidget {
                 child: PrimaryButton(
                   label: 'Cancel',
                   tone: ButtonTone.secondary,
-                  onPressed: () {
-                    AppScope.read(context).leaveWaitlist(booking.id);
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Cancel this seat?'),
+                        content: Text(
+                          'Seat ${booking.seat.label} will be released and '
+                          'offered to the next person waiting.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: const Text('Keep booking'),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: const Text('Cancel booking'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true || !context.mounted) return;
+                    AppScope.read(context).cancelSeatBooking(booking.id);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Seat booking cancelled')),
+                      SnackBar(
+                        content: Text(
+                          'Seat ${booking.seat.label} booking cancelled',
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -331,36 +357,53 @@ class _WaitlistCard extends StatelessWidget {
           builder: (_) => WaitlistJoinedScreen(entry: entry),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const IconBadge(icon: Icons.hourglass_top_rounded, size: 46),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.title, style: AppText.title(15, w: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(entry.subtitle,
-                    style: AppText.body(12.5, color: AppColors.textSecondary)),
-                if (entry.estimatedWaitMinutes != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Estimated wait ~${entry.estimatedWaitMinutes} min',
-                    style: AppText.body(12, color: AppColors.textFaint),
-                  ),
-                ],
-              ],
-            ),
+          Row(
+            children: [
+              const IconBadge(icon: Icons.hourglass_top_rounded, size: 46),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(entry.title,
+                        style: AppText.title(15, w: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(entry.subtitle,
+                        style:
+                            AppText.body(12.5, color: AppColors.textSecondary)),
+                    if (entry.estimatedWaitMinutes != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Estimated wait ~${entry.estimatedWaitMinutes} min',
+                        style: AppText.body(12, color: AppColors.textFaint),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              CountUp(
+                value: entry.position,
+                style: AppText.display(
+                  24,
+                  w: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+                prefix: '#',
+              ),
+            ],
           ),
-          CountUp(
-            value: entry.position,
-            style: AppText.display(
-              24,
-              w: FontWeight.w800,
-              color: AppColors.primary,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => AppScope.read(context).leaveWaitlist(entry.id),
+              child: Text(
+                'Leave queue',
+                style: AppText.label(13,
+                    w: FontWeight.w600, color: AppColors.error),
+              ),
             ),
-            prefix: '#',
           ),
         ],
       ),

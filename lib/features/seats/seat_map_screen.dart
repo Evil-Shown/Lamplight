@@ -22,17 +22,36 @@ class SeatMapScreen extends StatefulWidget {
 class _SeatMapScreenState extends State<SeatMapScreen> {
   SeatFilters _filters = const SeatFilters();
   Seat? _selected;
+  String _view = 'Map';
 
   List<Seat> get _visible {
     final seats = AppScope.of(context).seats;
     return seats.where(_filters.matches).toList();
   }
 
-  Seat? get _recommended {
-    final available = _visible.where((s) => s.status == SeatStatus.available);
-    final withPower = available.where((s) => s.hasPowerOutlet);
-    return withPower.isNotEmpty ? withPower.first : null;
+  /// Highest-scoring free seat, with the reasons shown on the card.
+  ({Seat seat, List<String> reasons})? get _recommended {
+    final available =
+        _visible.where((seat) => seat.status == SeatStatus.available);
+    Seat? best;
+    var bestScore = -1;
+    for (final seat in available) {
+      var score = 0;
+      if (seat.category == SeatCategory.quietZone) score += 3;
+      if (seat.hasPowerOutlet) score += 3;
+      if (seat.nearWindow) score += 2;
+      if (seat.hasMonitor) score += 1;
+      if (seat.standingDesk) score += 1;
+      if (score > bestScore) {
+        best = seat;
+        bestScore = score;
+      }
+    }
+    if (best == null) return null;
+    return (seat: best, reasons: best.matchReasons);
   }
+
+  bool get _canPop => ModalRoute.of(context)?.canPop ?? false;
 
   Future<void> _openFilters() async {
     final result = await SeatFilterSheet.show(context, _filters);
@@ -52,10 +71,12 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        leading: _canPop
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+                onPressed: () => Navigator.of(context).maybePop(),
+              )
+            : const SizedBox(width: 48),
         title: Text('Seat Map', style: AppText.title(17, w: FontWeight.w600)),
       ),
       body: Column(
@@ -70,9 +91,10 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
           ),
           FilterChipRow(
             options: const ['Quiet Area', 'Power Outlet'],
-            selected: _filters.categories.contains(SeatCategory.quietZone)
-                ? 'Quiet Area'
-                : (_filters.powerOutlet ? 'Power Outlet' : ''),
+            selected: '',
+            isSelectedOf: (option) => option == 'Quiet Area'
+                ? _filters.categories.contains(SeatCategory.quietZone)
+                : _filters.powerOutlet,
             onSelected: (option) => setState(() {
               if (option == 'Quiet Area') {
                 final next = Set<SeatCategory>.from(_filters.categories);
@@ -115,28 +137,57 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          SegmentedTabs(
+            options: const ['Map', 'List'],
+            selected: _view,
+            onSelected: (value) => setState(() => _view = value),
+          ),
           const SizedBox(height: 6),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               child: Column(
                 children: [
-                  StaggeredEntrance(child: _SeatGridCard(
-                    seats: visible,
-                    selected: _selected,
-                    onSelect: (seat) => setState(() => _selected = seat),
-                  )),
-                  const SizedBox(height: 16),
-                  const _Legend(),
-                  if (_recommended != null) ...[
-                    const SizedBox(height: 18),
+                  if (_recommended == null)
+                    const SurfaceCard(
+                      child: Text(
+                        'No free seat matches these filters. Reset them to see the full floor.',
+                      ),
+                    )
+                  else
                     StaggeredEntrance(
-                      index: 1,
                       child: _RecommendedCard(
-                        seat: _recommended!,
-                        onTap: () => _openDetail(_recommended!),
+                        seat: _recommended!.seat,
+                        reasons: _recommended!.reasons,
+                        onTap: () => _openDetail(_recommended!.seat),
                       ),
                     ),
+                  const SizedBox(height: 16),
+                  if (visible.isEmpty)
+                    const EmptyState(
+                      icon: Icons.event_seat_outlined,
+                      title: 'No seats on this floor',
+                      message:
+                          'Try another floor, or clear the area and facility filters.',
+                    )
+                  else if (_view == 'List')
+                    _SeatList(
+                      seats: visible,
+                      selected: _selected,
+                      onSelect: (seat) => setState(() => _selected = seat),
+                      onOpen: _openDetail,
+                    )
+                  else ...[
+                    StaggeredEntrance(
+                      child: _SeatGridCard(
+                        seats: visible,
+                        selected: _selected,
+                        onSelect: (seat) => setState(() => _selected = seat),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const _Legend(),
                   ],
                 ],
               ),
@@ -300,13 +351,11 @@ class _SeatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectable = seat.status != SeatStatus.occupied;
-
     return Semantics(
       label: 'Seat ${seat.label}, ${_statusLabel(seat.status)}',
       button: true,
       child: GestureDetector(
-        onTap: selectable ? () => onTap(seat) : null,
+        onTap: () => onTap(seat),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
@@ -404,14 +453,78 @@ class _Legend extends StatelessWidget {
   }
 }
 
+class _SeatList extends StatelessWidget {
+  const _SeatList({
+    required this.seats,
+    required this.selected,
+    required this.onSelect,
+    required this.onOpen,
+  });
+
+  final List<Seat> seats;
+  final Seat? selected;
+  final ValueChanged<Seat> onSelect;
+  final ValueChanged<Seat> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final seat in seats) ...[
+          SurfaceCard(
+            onTap: () {
+              onSelect(seat);
+              onOpen(seat);
+            },
+            borderColor: selected?.id == seat.id ? AppColors.primary : null,
+            child: Row(
+              children: [
+                Text(seat.label,
+                    style: AppText.title(16, w: FontWeight.w700)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${seat.zoneLabel} · Floor ${seat.floor}',
+                    style: AppText.body(13, color: AppColors.textSecondary),
+                  ),
+                ),
+                StatusPill(
+                  label: switch (seat.status) {
+                    SeatStatus.available => 'Available',
+                    SeatStatus.limited => 'Limited',
+                    SeatStatus.occupied => 'Full',
+                  },
+                  color: switch (seat.status) {
+                    SeatStatus.available => AppColors.success,
+                    SeatStatus.limited => AppColors.warning,
+                    SeatStatus.occupied => AppColors.error,
+                  },
+                  compact: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
 class _RecommendedCard extends StatelessWidget {
-  const _RecommendedCard({required this.seat, required this.onTap});
+  const _RecommendedCard({
+    required this.seat,
+    required this.reasons,
+    required this.onTap,
+  });
 
   final Seat seat;
+  final List<String> reasons;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final why = reasons.isEmpty ? seat.zoneLabel : reasons.join(' · ');
     return SurfaceCard(
       onTap: onTap,
       gradient: AppGradients.auroraSoft,
@@ -432,7 +545,7 @@ class _RecommendedCard extends StatelessWidget {
                     style: AppText.title(15.5, w: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text(
-                  '${seat.zoneLabel} · ${seat.hasPowerOutlet ? 'Power Outlet' : 'Standard desk'}',
+                  why,
                   style: AppText.body(12.5, color: AppColors.textSecondary),
                 ),
               ],

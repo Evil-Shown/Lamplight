@@ -626,6 +626,7 @@ class FilterChipRow extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     this.iconBuilder,
+    this.isSelectedOf,
     this.padding = const EdgeInsets.symmetric(horizontal: 16),
   });
 
@@ -633,6 +634,7 @@ class FilterChipRow extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelected;
   final IconData Function(String)? iconBuilder;
+  final bool Function(String option)? isSelectedOf;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -646,7 +648,8 @@ class FilterChipRow extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final option = options[i];
-          final isSelected = option == selected;
+          final isSelected =
+              isSelectedOf?.call(option) ?? option == selected;
           final icon = iconBuilder?.call(option);
           return PressScale(
             onTap: () => onSelected(option),

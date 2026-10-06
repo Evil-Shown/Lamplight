@@ -5,24 +5,102 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../waitlist/waitlist_screen.dart';
 import 'booking_confirmation_screen.dart';
-import '../waitlist/waitlist_joined_screen.dart';
 
 /// P-07 Seat Details.
 ///
-/// The seat's identity, its feature chips, the reservation period, and the
-/// amenities included — with reserve or join-waitlist as the action.
-class SeatDetailScreen extends StatelessWidget {
+/// Identity, amenities, a real date and time-slot picker, then reserve or
+/// join the waiting list.
+class SeatDetailScreen extends StatefulWidget {
   const SeatDetailScreen({super.key, required this.seat});
 
   final Seat seat;
 
+  @override
+  State<SeatDetailScreen> createState() => _SeatDetailScreenState();
+}
+
+class _SlotChoice {
+  const _SlotChoice(this.startHour, this.endHour, this.label);
+
+  final int startHour;
+  final int endHour;
+  final String label;
+
+  bool isPastOn(DateTime day) {
+    final end = DateTime(day.year, day.month, day.day, endHour);
+    return !end.isAfter(DateTime.now());
+  }
+}
+
+class _SeatDetailScreenState extends State<SeatDetailScreen> {
+  static const _slots = [
+    _SlotChoice(8, 10, '8:00 AM – 10:00 AM'),
+    _SlotChoice(10, 12, '10:00 AM – 12:00 PM'),
+    _SlotChoice(12, 14, '12:00 PM – 2:00 PM'),
+    _SlotChoice(14, 17, '2:00 PM – 5:00 PM'),
+    _SlotChoice(17, 19, '5:00 PM – 7:00 PM'),
+  ];
+
+  late DateTime _day;
+  _SlotChoice? _slot;
+
+  Seat get seat => widget.seat;
   bool get _canBook => seat.status == SeatStatus.available;
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
     final now = DateTime.now();
-    final today = DateFormat('d MMM yyyy').format(now);
+    _day = DateTime(now.year, now.month, now.day);
+    _slot = _slots.cast<_SlotChoice?>().firstWhere(
+          (slot) => !slot!.isPastOn(_day),
+          orElse: () => null,
+        );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _day,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 14)),
+    );
+    if (picked == null) return;
+    setState(() {
+      _day = DateTime(picked.year, picked.month, picked.day);
+      if (_slot != null && _slot!.isPastOn(_day)) _slot = null;
+    });
+  }
+
+  void _reserve() {
+    final slot = _slot;
+    if (slot == null) return;
+    final start = DateTime(_day.year, _day.month, _day.day, slot.startHour);
+    final end = DateTime(_day.year, _day.month, _day.day, slot.endHour);
+    final booking = AppScope.read(context).reserveSeat(
+      seat,
+      start: start,
+      end: end,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BookingConfirmationScreen(booking: booking),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final isToday = _day.year == today.year &&
+        _day.month == today.month &&
+        _day.day == today.day;
+    final dateLabel = isToday
+        ? 'Today, ${DateFormat('d MMM yyyy').format(_day)}'
+        : DateFormat('EEE, d MMM yyyy').format(_day);
 
     return AppScaffold(
       title: 'Seat Details',
@@ -86,6 +164,13 @@ class SeatDetailScreen extends StatelessWidget {
                 if (seat.nearWindow)
                   const _FeatureChip(
                       icon: Icons.wb_sunny_outlined, label: 'Near Window'),
+                if (seat.hasMonitor)
+                  const _FeatureChip(
+                      icon: Icons.monitor_rounded, label: 'Monitor'),
+                if (seat.standingDesk)
+                  const _FeatureChip(
+                      icon: Icons.accessibility_new_rounded,
+                      label: 'Standing desk'),
               ],
             ),
           ),
@@ -102,7 +187,7 @@ class SeatDetailScreen extends StatelessWidget {
               child: Column(
                 children: [
                   InkWell(
-                    onTap: () {},
+                    onTap: _pickDate,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 15),
@@ -112,42 +197,30 @@ class SeatDetailScreen extends StatelessWidget {
                               size: 17, color: AppColors.textSecondary),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text('Today, $today',
-                                style: AppText.body(14)),
+                            child: Text(dateLabel, style: AppText.body(14)),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              size: 20, color: AppColors.textFaint),
+                          Text('Change',
+                              style: AppText.label(13,
+                                  w: FontWeight.w600,
+                                  color: AppColors.primary)),
                         ],
                       ),
                     ),
                   ),
                   const Divider(height: 1),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 15),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        const Icon(Icons.schedule_rounded,
-                            size: 17, color: AppColors.textSecondary),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text('2:00 PM – 5:00 PM',
-                              style: AppText.body(14)),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(0, 30),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        for (final slot in _slots)
+                          _SlotChip(
+                            label: slot.label,
+                            selected: _slot == slot,
+                            enabled: !slot.isPastOn(_day),
+                            onTap: () => setState(() => _slot = slot),
                           ),
-                          child: Text('Edit',
-                              style: AppText.label(
-                                13,
-                                w: FontWeight.w600,
-                                color: AppColors.primary,
-                              )),
-                        ),
                       ],
                     ),
                   ),
@@ -161,13 +234,12 @@ class SeatDetailScreen extends StatelessWidget {
             child: SectionLabel('Included amenities'),
           ),
           const SizedBox(height: 10),
-          StaggeredEntrance(
+          const StaggeredEntrance(
             index: 3,
             child: SurfaceCard(
               child: Column(
-                children: const [
-                  _AmenityRow(
-                      label: 'Desk lamp with brightness control'),
+                children: [
+                  _AmenityRow(label: 'Desk lamp with brightness control'),
                   SizedBox(height: 10),
                   _AmenityRow(label: 'Ergonomic adjustable task chair'),
                   SizedBox(height: 10),
@@ -181,34 +253,69 @@ class SeatDetailScreen extends StatelessWidget {
       bottomBar: BottomActionBar(
         child: _canBook
             ? PrimaryButton(
-                label: 'Reserve Seat ${seat.label}',
-                onPressed: () {
-                  final booking = AppScope.read(context).reserveSeat(seat);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          BookingConfirmationScreen(booking: booking),
-                    ),
-                  );
-                },
+                label: _slot == null
+                    ? 'Choose a time slot'
+                    : 'Reserve Seat ${seat.label}',
+                onPressed: _slot == null ? null : _reserve,
               )
             : PrimaryButton(
-                label: 'JOIN WAITLIST',
+                label: 'Join waiting list',
                 icon: Icons.hourglass_bottom_rounded,
                 tone: ButtonTone.secondary,
                 onPressed: () {
-                  final entry = AppScope.read(context).joinWaitlist(
-                    title: 'Seat ${seat.label}',
-                    subtitle: 'Floor 2 · ${seat.section}',
-                    seatPreference: '${seat.zoneLabel} + Power Outlet',
-                  );
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => WaitlistJoinedScreen(entry: entry),
+                      builder: (_) => WaitlistScreen(seat: seat),
                     ),
                   );
                 },
               ),
+      ),
+    );
+  }
+}
+
+class _SlotChip extends StatelessWidget {
+  const _SlotChip({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.4,
+      child: Material(
+        color: selected ? AppColors.primarySoft : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(AppRadii.full),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.full),
+              border: Border.all(
+                color: selected ? AppColors.primary : AppColors.border,
+              ),
+            ),
+            child: Text(
+              label,
+              style: AppText.label(
+                12.5,
+                w: FontWeight.w600,
+                color: selected ? AppColors.primary : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
