@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
+import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
 import 'waitlist_joined_screen.dart';
 
@@ -11,12 +12,38 @@ import 'waitlist_joined_screen.dart';
 /// Shown when the wanted seat is taken: what the user is waiting for, their
 /// preferences, their place in the queue, and the join action.
 class WaitlistScreen extends StatelessWidget {
-  const WaitlistScreen({super.key});
+  const WaitlistScreen({super.key, this.seat});
+
+  final Seat? seat;
+
+  Seat _seat(BuildContext context) {
+    if (seat != null) return seat!;
+    final seats = AppScope.of(context).seats;
+    return seats.firstWhere(
+      (item) => item.label == '2C',
+      orElse: () => MockData.seats.first,
+    );
+  }
+
+  List<String> _preferences(Seat current) {
+    return [
+      current.zoneLabel,
+      if (current.hasPowerOutlet) 'Power Outlet',
+      if (current.nearWindow) 'Near window',
+      'Floor ${current.floor}',
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final current = _seat(context);
     final state = AppScope.of(context);
-    final alreadyWaiting = state.waitlist.isNotEmpty;
+    final mine = state.waitlist.where(
+      (entry) => entry.title == 'Seat ${current.label}',
+    );
+    final alreadyWaiting = mine.isNotEmpty;
+    final position = alreadyWaiting ? mine.first.position : state.waitlist.length + 1;
+    final preferences = _preferences(current);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -37,70 +64,59 @@ class WaitlistScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
-          const Callout(
+          Callout(
             icon: Icons.warning_amber_rounded,
             tone: CalloutTone.warning,
             message:
-                'This seat is currently unavailable. Seat 2C is occupied '
-                'until 5:00 PM.',
+                'Seat ${current.label} is currently unavailable. Join the '
+                'queue and we will tell you when it frees up.',
           ),
           const SizedBox(height: 22),
           const SectionLabel('Your preferences'),
           const SizedBox(height: 10),
-          const Wrap(
+          Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _PreferenceChip(label: 'Quiet Area'),
-              _PreferenceChip(label: 'Power Outlet'),
-              _PreferenceChip(label: 'Floor 2'),
+              for (final label in preferences) _PreferenceChip(label: label),
             ],
           ),
           const SizedBox(height: 30),
           Center(
             child: Column(
               children: [
-                ShaderMask(
-                  shaderCallback: (bounds) => AppGradients.aurora
-                      .createShader(bounds),
-                  child: CountUp(
-                    value: 3,
-                    style: AppText.display(
-                      58,
-                      w: FontWeight.w800,
-                      ls: -1.6,
-                      color: Colors.white,
-                    ),
-                  ),
+                Text(
+                  '#$position',
+                  style: AppText.display(58, w: FontWeight.w800, ls: -1.6,
+                      color: AppColors.primary),
                 ),
                 const SizedBox(height: 4),
                 Text('Your position in queue',
                     style: AppText.body(14, color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
                 Text(
-                  'Estimated Wait: Approximately 45 minutes',
+                  'Estimated wait: about 45 minutes',
                   style: AppText.body(12.5, color: AppColors.textFaint),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 30),
-          Callout(
+          const Callout(
             icon: Icons.notifications_active_outlined,
             message:
-                'You will be notified via push notification and email when a '
-                'matching seat becomes available.',
+                'You will be notified in the app when a matching seat becomes available.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(
-            label: alreadyWaiting ? 'Already on the waitlist' : 'Join Waiting List',
+            label: alreadyWaiting ? 'Already on the waitlist' : 'Join waiting list',
             onPressed: alreadyWaiting
                 ? null
                 : () {
                     final entry = AppScope.read(context).joinWaitlist(
-                      title: 'Seat 2C',
-                      subtitle: 'Floor 2 · Quiet Wing',
-                      seatPreference: 'Quiet Area + Power Outlet',
+                      title: 'Seat ${current.label}',
+                      subtitle: 'Floor ${current.floor} · ${current.section}',
+                      seatPreference: preferences.join(' + '),
                     );
                     Navigator.of(context).push(
                       MaterialPageRoute(

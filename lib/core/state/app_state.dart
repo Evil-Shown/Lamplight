@@ -16,6 +16,7 @@ class AppState extends ChangeNotifier {
   final List<WaitlistEntry> _waitlist = MockData.buildWaitlist();
   final List<AppNotification> _notifications = MockData.buildNotifications();
   final List<QueueEntry> _queue = MockData.buildQueue();
+  final Map<String, SeatStatus> _seatStatus = {};
 
   NotificationPreferences _preferences = const NotificationPreferences();
 
@@ -32,7 +33,10 @@ class AppState extends ChangeNotifier {
   NotificationPreferences get preferences => _preferences;
 
   List<Book> get books => MockData.books;
-  List<Seat> get seats => MockData.seats;
+  List<Seat> get seats => [
+        for (final seat in MockData.seats)
+          seat.copyWith(status: _seatStatus[seat.id] ?? seat.status),
+      ];
   UserProfile get activeProfile => _profile ?? MockData.student;
 
   /// Books waiting for collection, newest deadline first.
@@ -115,18 +119,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  SeatBooking reserveSeat(Seat seat, {DateTime? date}) {
+  SeatBooking reserveSeat(
+    Seat seat, {
+    DateTime? start,
+    DateTime? end,
+  }) {
     final now = DateTime.now();
-    final day = date ?? now;
+    final startTime = start ?? DateTime(now.year, now.month, now.day, 14);
+    final endTime = end ?? DateTime(now.year, now.month, now.day, 17);
     final booking = SeatBooking(
       id: 'LIB-2026-${4851 + _bookings.length}',
       seat: seat,
-      date: day,
-      startTime: DateTime(day.year, day.month, day.day, 14),
-      endTime: DateTime(day.year, day.month, day.day, 17),
+      date: DateTime(startTime.year, startTime.month, startTime.day),
+      startTime: startTime,
+      endTime: endTime,
       qrCode: 'LIB-2026-${4851 + _bookings.length}',
       status: ReservationStatus.active,
     );
+    _seatStatus[seat.id] = SeatStatus.occupied;
     _bookings.insert(0, booking);
     _notifications.insert(
       0,
@@ -141,6 +151,25 @@ class AppState extends ChangeNotifier {
     );
     notifyListeners();
     return booking;
+  }
+
+  void cancelSeatBooking(String id) {
+    final index = _bookings.indexWhere((booking) => booking.id == id);
+    if (index == -1) return;
+    final booking = _bookings.removeAt(index);
+    _seatStatus[booking.seat.id] = SeatStatus.available;
+    _notifications.insert(
+      0,
+      AppNotification(
+        id: 'n${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Seat booking cancelled',
+        body: 'Seat ${booking.seat.label} has been released.',
+        timestamp: DateTime.now(),
+        tone: BannerToneKind.danger,
+        icon: Icons.event_seat_outlined,
+      ),
+    );
+    notifyListeners();
   }
 
   void checkIn() {
@@ -164,7 +193,7 @@ class AppState extends ChangeNotifier {
       type: WaitlistType.seat,
       title: title,
       subtitle: subtitle,
-      position: _waitlist.length + 2,
+      position: _waitlist.length + 1,
       joinedAt: DateTime.now(),
       estimatedWaitMinutes: 45,
       seatPreference: seatPreference,

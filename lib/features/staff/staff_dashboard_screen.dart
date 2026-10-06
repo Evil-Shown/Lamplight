@@ -60,36 +60,38 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.panel,
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    boxShadow: AppShadows.glow(AppColors.primary),
-                  ),
-                  child: Row(
-                    children: [
-                      const CampusMark(size: 36, onDark: true),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Staff Dashboard',
-                              style: AppText.title(16, w: FontWeight.w700,
-                                  color: AppColors.textInverse),
-                            ),
-                            Text(
-                              'Library Control Hub',
-                              style: AppText.body(11.5,
-                                  color: AppColors.textInverse
-                                      .withValues(alpha: 0.66)),
-                            ),
-                          ],
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.panel,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      boxShadow: AppShadows.glow(AppColors.primary),
+                    ),
+                    child: Row(
+                      children: [
+                        const CampusMark(size: 36, onDark: true),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Staff Dashboard',
+                                style: AppText.title(16, w: FontWeight.w700,
+                                    color: AppColors.textInverse),
+                              ),
+                              Text(
+                                'Library Control Hub',
+                                style: AppText.body(11.5,
+                                    color: AppColors.textInverse
+                                        .withValues(alpha: 0.66)),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 IconButton(
