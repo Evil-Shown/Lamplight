@@ -1,555 +1,721 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
 import '../../app_shell.dart';
-import '../../core/constants/app_constants.dart';
+import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
-import '../books/my_reservations_screen.dart';
-import '../qr/qr_scan_screen.dart';
-import '../seats/my_bookings_screen.dart';
-import '../waitlist/waitlist_screen.dart';
+import '../qr/qr_ticket_screen.dart';
+import '../reservations/reservations_screen.dart';
 
+/// P-01 Home.
+///
+/// Campus eyebrow and greeting, the day's study session, a quick-action
+/// grid, the book waiting for collection, and live per-floor occupancy.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final firstName = MockData.userProfile.name.split(' ').first;
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Good morning'
-        : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+    final state = AppScope.of(context);
+    final booking = state.todayBooking;
+    final ready = state.activeReservations.isEmpty
+        ? null
+        : state.activeReservations.first;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        body: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            MediaQuery.paddingOf(context).top + AppSpacing.md,
-            AppSpacing.md,
-            AppNavInset.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _LedgerHero(greeting: greeting, name: firstName),
-              const SizedBox(height: AppSpacing.xl),
-              Text('Quick actions', style: AppText.serif(20)),
-              const SizedBox(height: AppSpacing.md),
-              const _QuickActions(),
-              const SizedBox(height: AppSpacing.xl),
-              Text('Today at a glance', style: AppText.serif(20)),
-              const SizedBox(height: AppSpacing.md),
-              ..._buildGlanceCards(context),
-              const SizedBox(height: AppSpacing.xl),
-              Text('Discover', style: AppText.serif(20)),
-              const SizedBox(height: AppSpacing.md),
-              SoftCard(
-                elevated: true,
-                onTap: () => AppShell.switchTab(context, 1),
-                child: Row(
-                  children: [
-                    BookCover(
-                      title: MockData.books.first.title,
-                      color: MockData.books.first.coverColor,
-                      isbn: MockData.books.first.isbn,
-                      width: 46,
-                      height: 64,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Browse the catalog', style: AppText.serif(16.5, ls: -0.2)),
-                          const SizedBox(height: 3),
-                          Eyebrow(
-                            '${MockData.books.length} titles ready · reserve in seconds',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const _InkArrow(),
-                  ],
-                ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 28),
+          children: [
+            const _HomeHeader(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Text(
+                'Computer Science · ${state.reservations.length} active reservations',
+                style: AppText.body(13, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              SoftCard(
-                elevated: true,
-                onTap: () => AppShell.switchTab(context, 2),
-                child: Row(
-                  children: [
-                    const IconBadge(icon: Icons.event_seat_rounded, size: 48),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Find a quiet seat', style: AppText.serif(16.5, ls: -0.2)),
-                          const SizedBox(height: 3),
-                          Eyebrow(
-                            '${MockData.seats.where((s) => s.status == SeatStatus.available).length} seats open right now',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const _InkArrow(),
-                  ],
+            ),
+            const SizedBox(height: 18),
+            if (booking != null)
+              _TodaySession(booking: booking)
+            else
+              const _NoSessionCard(),
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SectionLabel('Quick actions'),
+            ),
+            const SizedBox(height: 12),
+            const _QuickActions(),
+            if (ready != null) ...[
+              const SizedBox(height: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SectionLabel('Ready for collection'),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: StaggeredEntrance(
+                  index: 2,
+                  child: _ReadyForCollection(reservation: ready),
                 ),
               ),
             ],
-          ),
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _DensityHeader(),
+            ),
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _DensityList(),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  List<Widget> _buildGlanceCards(BuildContext context) {
-    final cards = <Widget>[];
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
 
-    if (MockData.activeBookings.isNotEmpty) {
-      final b = MockData.activeBookings.first;
-      final grace = b.gracePeriodEndsAt;
-      cards.add(
-        TicketCard(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final profile = state.activeProfile;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.success,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'UNILAG CAMPUS',
+                      style:
+                          AppText.overline(11, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                StaggeredEntrance(
+                  index: 1,
+                  child: Text(
+                    '$_greeting, ${profile.firstName}',
+                    style: AppText.display(24, w: FontWeight.w700, ls: -0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                onPressed: () =>
+                    AppShell.switchTab(context, AppTab.bookings),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                ),
+                icon: const Icon(Icons.notifications_none_rounded, size: 21),
+              ),
+              if (state.unreadNotifications > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.error,
+                      border:
+                          Border.all(color: AppColors.surface, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "Today's study session" hero — a gradient panel so the day's
+/// booking is the first thing the eye lands on.
+class _TodaySession extends StatelessWidget {
+  const _TodaySession({required this.booking});
+
+  final SeatBooking booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final startsIn = booking.startTime.difference(DateTime.now());
+    final time =
+        '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: StaggeredEntrance(
+        child: GradientHero(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const IconBadge(icon: Icons.event_seat_rounded, color: AppColors.inkSoft),
-                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Text(
+                      "TODAY'S STUDY SESSION",
+                      style: AppText.overline(
+                        10.5,
+                        ls: 1.6,
+                        color: AppColors.textInverse.withValues(alpha: 0.78),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                      border:
+                          Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Seat ${b.seat.label}', style: AppText.serif(17, ls: -0.2)),
-                        const SizedBox(height: 2),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.textInverse,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
                         Text(
-                          'Floor ${b.seat.floor} · ${b.seat.section}',
-                          style: AppText.sans(12.5, color: AppColors.textSecondary),
+                          'Confirmed',
+                          style: AppText.label(
+                            11,
+                            w: FontWeight.w700,
+                            color: AppColors.textInverse,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const StatusChip(
-                    label: 'Active',
-                    color: AppColors.stampGreen,
-                    pulse: true,
-                  ),
                 ],
               ),
-              if (grace != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                AlertBanner(
-                  tone: AlertTone.warning,
-                  icon: Icons.timer_outlined,
-                  message:
-                      'Check in within ${_remaining(grace)} or the seat returns to the floor.',
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (MockData.activeReservations.isNotEmpty) {
-      final r = MockData.activeReservations.first;
-      cards.add(
-        TicketCard(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
-          ),
-          child: Row(
-            children: [
-              BookCover(
-                title: r.book.title,
-                color: r.book.coverColor,
-                isbn: r.book.isbn,
-                width: 44,
-                height: 62,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      r.book.title,
-                      style: AppText.serif(15.5, ls: -0.2),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Pickup by ${DateFormat('MMM d').format(r.pickupBy)}',
-                      style: AppText.sans(12.5, color: AppColors.textSecondary),
-                    ),
-                  ],
+              const SizedBox(height: 12),
+              Text(
+                'Seat ${booking.seat.label}',
+                style: AppText.display(
+                  30,
+                  w: FontWeight.w800,
+                  ls: -0.9,
+                  color: AppColors.textInverse,
                 ),
               ),
-              const StatusChip(label: 'Reserved', color: AppColors.stampGold),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (MockData.waitlistEntries.isNotEmpty) {
-      final w = MockData.waitlistEntries.first;
-      cards.add(
-        TicketCard(
-          margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const WaitlistScreen()),
-          ),
-          child: Row(
-            children: [
-              const IconBadge(icon: Icons.hourglass_top_rounded, color: AppColors.stampGold),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(w.title, style: AppText.serif(15.5, ls: -0.2)),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Position #${w.position} in line',
-                      style: AppText.sans(12.5, color: AppColors.textSecondary),
-                    ),
-                  ],
+              const SizedBox(height: 3),
+              Text(
+                'Floor ${booking.seat.floor} · ${booking.seat.section}',
+                style: AppText.body(
+                  13.5,
+                  color: AppColors.textInverse.withValues(alpha: 0.82),
                 ),
               ),
-              if (w.estimatedWait != null)
-                Text(
-                  '~${w.estimatedWait!.inMinutes}m',
-                  style: AppText.mono(11, ls: 1.2, color: AppColors.goldDeep),
-                ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textFaint),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (cards.isEmpty) {
-      cards.add(
-        SoftCard(
-          child: Text(
-            'Nothing active yet — reserve a book or book a seat to get started.',
-            style: AppText.sans(13.5, color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-
-    return cards;
-  }
-
-  String _remaining(DateTime deadline) {
-    final diff = deadline.difference(DateTime.now());
-    if (diff.isNegative) return '0 min';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min';
-    return '${diff.inHours}h ${diff.inMinutes % 60}m';
-  }
-}
-
-class _InkArrow extends StatelessWidget {
-  const _InkArrow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: const BoxDecoration(
-        color: AppColors.ink,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.arrow_forward_rounded, size: 17, color: AppColors.paper),
-    );
-  }
-}
-
-/// The hero ledger — ink panel, date eyebrow, serif greeting, gold stat boxes.
-class _LedgerHero extends StatelessWidget {
-  const _LedgerHero({required this.greeting, required this.name});
-
-  final String greeting;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final available =
-        MockData.seats.where((s) => s.status == SeatStatus.available).length;
-    final dateLabel = DateFormat('EEEE, MMM d').format(DateTime.now());
-
-    return InkPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadii.full),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
-                    color: AppColors.gold.withValues(alpha: 0.08),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.schedule_rounded,
+                          size: 15, color: AppColors.textInverse),
+                      const SizedBox(width: 6),
+                      Text(
+                        time,
+                        style: AppText.body(
+                          13.5,
+                          w: FontWeight.w600,
+                          color: AppColors.textInverse,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Eyebrow('✦ LIBRARY+', color: AppColors.gold),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Material(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const QrScanScreen(mode: QrScanMode.seatCheckIn),
+                  if (startsIn.inMinutes > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(AppRadii.full),
+                      ),
+                      child: Text(
+                        'Starts in ${startsIn.inMinutes}m',
+                        style: AppText.label(
+                          11.5,
+                          w: FontWeight.w600,
+                          color: AppColors.textInverse,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: const SizedBox(
-                    width: 46,
-                    height: 46,
-                    child: Icon(Icons.qr_code_scanner_rounded,
-                        color: AppColors.gold, size: 22),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Eyebrow('LEDGER — $dateLabel', color: AppColors.gold.withValues(alpha: 0.8)),
-          const SizedBox(height: AppSpacing.sm + 2),
-          Text(
-            '$greeting,\n$name.',
-            style: AppText.serif(30, w: FontWeight.w700, color: AppColors.paper, height: 1.15),
-          ),
-          const SizedBox(height: AppSpacing.sm + 2),
-          Text(
-            'Open until 10:00 PM · quiet study & group rooms',
-            style: AppText.sans(13.5, color: AppColors.paper.withValues(alpha: 0.6), height: 1.4),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const DashedRule(),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: _HeroStat(
-                  value: '${MockData.activeReservations.length}',
-                  label: 'Reserved',
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _HeroStat(
-                  value: '${MockData.activeBookings.length}',
-                  label: 'Booked',
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _HeroStat(value: '$available', label: 'Seats open'),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.value, required this.label});
-
-  final String value;
-  final String label;
+class _NoSessionCard extends StatelessWidget {
+  const _NoSessionCard();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppText.serif(24, w: FontWeight.w700, color: AppColors.gold, ls: 0),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppText.sans(11, w: FontWeight.w500,
-                color: AppColors.paper.withValues(alpha: 0.5)),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SurfaceCard(
+        child: Row(
+          children: [
+            const IconBadge(icon: Icons.event_seat_outlined, size: 44),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('No active session',
+                      style: AppText.title(15, w: FontWeight.w600)),
+                  const SizedBox(height: 3),
+                  Text('Book a seat to start studying today.',
+                      style: AppText.body(12.5, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => AppShell.switchTab(context, AppTab.seats),
+              child: Text(
+                'Find a seat',
+                style: AppText.label(
+                  13,
+                  w: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+/// The 2x2 quick-action grid. QR check-in is the inverted tile, matching
+/// the prototype.
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 340;
-        final tiles = [
-          _ActionTile(
-            icon: Icons.search_rounded,
-            label: 'Search',
-            onTap: () => AppShell.switchTab(context, 1),
-          ),
-          _ActionTile(
-            icon: Icons.event_seat_rounded,
-            label: 'Book Seat',
-            tint: AppColors.stampGreen,
-            onTap: () => AppShell.switchTab(context, 2),
-          ),
-          _ActionTile(
-            icon: Icons.bookmark_rounded,
-            label: 'My Holds',
-            tint: AppColors.stampGold,
-            badge: MockData.activeReservations.length,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
-            ),
-          ),
-          _ActionTile(
-            icon: Icons.qr_code_rounded,
-            label: 'Scan QR',
-            tint: AppColors.inkSoft,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const QrScanScreen(mode: QrScanMode.seatCheckIn),
-              ),
-            ),
-          ),
-        ];
-
-        if (narrow) {
-          return Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
             children: [
-              for (var i = 0; i < tiles.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(child: tiles[i]),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: tiles[i + 1]),
-                  ],
+              Expanded(
+                child: _ActionTile(
+                  index: 0,
+                  icon: Icons.search_rounded,
+                  label: 'Search books',
+                  caption: 'Find titles and copies',
+                  tint: AppColors.primary,
+                  onTap: () => AppShell.switchTab(context, AppTab.books),
                 ),
-              ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionTile(
+                  index: 1,
+                  icon: Icons.event_seat_rounded,
+                  label: 'Reserve a seat',
+                  caption: 'Live floor availability',
+                  tint: AppColors.accent,
+                  onTap: () => AppShell.switchTab(context, AppTab.seats),
+                ),
+              ),
             ],
-          );
-        }
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionTile(
+                  index: 2,
+                  icon: Icons.confirmation_number_outlined,
+                  label: 'My bookings',
+                  caption: 'Books, seats and waits',
+                  tint: AppColors.cyan,
+                  onTap: () => AppShell.switchTab(context, AppTab.bookings),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QrTile(
+                  onTap: () => _openQr(context),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-        return Row(
-          children: [
-            for (var i = 0; i < tiles.length; i++) ...[
-              if (i > 0) const SizedBox(width: AppSpacing.sm),
-              Expanded(child: tiles[i]),
-            ],
-          ],
-        );
-      },
+  void _openQr(BuildContext context) {
+    final booking = AppScope.read(context).todayBooking;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => booking == null
+            ? const ReservationsScreen()
+            : QrTicketScreen(booking: booking),
+      ),
     );
   }
 }
 
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
+    required this.index,
     required this.icon,
     required this.label,
+    required this.caption,
     required this.onTap,
-    this.tint = AppColors.goldDeep,
-    this.badge,
+    this.tint = AppColors.primary,
   });
 
+  final int index;
   final IconData icon;
   final String label;
-  final Color tint;
+  final String caption;
   final VoidCallback onTap;
-  final int? badge;
+  final Color tint;
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
-      elevated: true,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-      onTap: onTap,
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(13),
+    return StaggeredEntrance(
+      index: index + 4,
+      child: GlassTile(
+        onTap: onTap,
+        tint: tint,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        tint,
+                        Color.alphaBlend(
+                            Colors.black.withValues(alpha: 0.16), tint),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    boxShadow: AppShadows.glow(tint),
+                  ),
+                  child: Icon(icon, size: 18, color: AppColors.textInverse),
                 ),
-                child: Icon(icon, color: tint, size: 21),
-              ),
-              if (badge != null && badge! > 0)
-                Positioned(
-                  right: -5,
-                  top: -5,
-                  child: Container(
-                    width: 18,
-                    height: 18,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.goldDeep,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.paperCard, width: 2),
-                    ),
-                    child: Text(
-                      '$badge',
-                      style: AppText.sans(9, w: FontWeight.w800, color: AppColors.paper),
-                    ),
+                const Spacer(),
+                const Icon(Icons.arrow_outward_rounded,
+                    size: 15, color: AppColors.textFaint),
+              ],
+            ),
+            const SizedBox(height: 11),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title(14, w: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              caption,
+              maxLines: 2,
+              style: AppText.body(11.5, color: AppColors.textSecondary,
+                  height: 1.35),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The book waiting on the hold shelf, with its pickup deadline.
+class _ReadyForCollection extends StatelessWidget {
+  const _ReadyForCollection({required this.reservation});
+
+  final BookReservation reservation;
+
+  @override
+  Widget build(BuildContext context) {
+    final book = reservation.book;
+    final pickupBy = DateFormat('d MMM').format(reservation.pickupBy);
+
+    return SurfaceCard(
+      onTap: () => AppShell.switchTab(context, AppTab.bookings),
+      tint: AppColors.gold,
+      elevated: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BookCover(
+            title: book.title,
+            color: book.coverColor,
+            isbn: book.isbn,
+            width: 44,
+            height: 62,
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(book.title, style: AppText.title(15, w: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(book.author,
+                    style: AppText.body(12.5, color: AppColors.textSecondary)),
+                const SizedBox(height: 9),
+                Text(
+                  'Shelf ${book.shelfLocation} · collect by $pickupBy',
+                  style: AppText.body(12, color: AppColors.textFaint),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(AppRadii.full),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View reservation',
+                        style: AppText.label(
+                          12,
+                          w: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Icon(Icons.arrow_forward_rounded,
+                          size: 14, color: AppColors.primary),
+                    ],
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DensityHeader extends StatelessWidget {
+  const _DensityHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: SectionLabel('Live library density')),
+        const StatusPill(
+          label: 'Live',
+          color: AppColors.success,
+          compact: true,
+          pulse: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// Per-floor occupancy bars. Green under 70%, amber to 90%, red above.
+class _DensityList extends StatelessWidget {
+  const _DensityList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      elevated: true,
+      child: Column(
+        children: [
+          for (var i = 0; i < MockData.floorOccupancy.length; i++) ...[
+            if (i > 0) const Divider(height: 20),
+            _DensityRow(floor: MockData.floorOccupancy[i], index: i),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DensityRow extends StatelessWidget {
+  const _DensityRow({required this.floor, required this.index});
+
+  final FloorOccupancy floor;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (floor.ratio) {
+      < 0.70 => AppColors.success,
+      < 0.90 => AppColors.warning,
+      _ => AppColors.error,
+    };
+
+    return StaggeredEntrance(
+      index: index + 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(floor.name,
+                    style: AppText.body(13, w: FontWeight.w500)),
+              ),
+              Text(
+                '${floor.occupied}/${floor.capacity}',
+                style: AppText.label(
+                  12.5,
+                  w: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 9),
-          Text(label, style: AppText.sans(11.5, w: FontWeight.w600)),
+          const SizedBox(height: 7),
+          MeterBar(value: floor.ratio, color: color),
         ],
+      ),
+    );
+  }
+}
+
+/// The dark QR tile — deliberately the highest-contrast element in the
+/// grid so "check in" is the obvious next action.
+class _QrTile extends StatelessWidget {
+  const _QrTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return StaggeredEntrance(
+      index: 7,
+      child: PressScale(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: AppGradients.panel,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            boxShadow: AppShadows.glow(AppColors.primary),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      border:
+                          Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                    ),
+                    child: const Icon(Icons.qr_code_rounded,
+                        size: 19, color: AppColors.textInverse),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.arrow_outward_rounded,
+                      size: 15, color: AppColors.textFaint),
+                ],
+              ),
+              const SizedBox(height: 11),
+              Text(
+                'QR check-in',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.title(14, w: FontWeight.w700,
+                    color: AppColors.textInverse),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Open digital pass',
+                style: AppText.body(
+                  11.5,
+                  color: AppColors.textInverse.withValues(alpha: 0.62),
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ledger_widgets.dart';
-import '../../core/widgets/shared_widgets.dart';
-import '../../data/mock/mock_data.dart';
-import '../../models/models.dart';
-import 'my_bookings_screen.dart';
-import 'seat_detail_screen.dart';
 
+import '../../core/state/app_state.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/shared_widgets.dart';
+import '../../models/models.dart';
+import 'seat_detail_screen.dart';
+import 'seat_filter_sheet.dart';
+
+/// P-06 Seat Map.
+///
+/// A 4x4 grid of circular seat badges over a white card, a floor picker,
+/// two filter chips that open the filter sheet, the status legend, and a
+/// recommendation card for the best free seat.
 class SeatMapScreen extends StatefulWidget {
   const SeatMapScreen({super.key});
 
@@ -16,521 +20,427 @@ class SeatMapScreen extends StatefulWidget {
 }
 
 class _SeatMapScreenState extends State<SeatMapScreen> {
-  bool _mapView = true;
-  String _floorFilter = 'All floors';
-  String _sectionFilter = 'All sections';
+  SeatFilters _filters = const SeatFilters();
+  Seat? _selected;
 
-  static const _floors = ['All floors', 'Floor 1', 'Floor 2'];
-  static const _sections = ['All sections', 'Quiet Zone', 'Group Study'];
+  List<Seat> get _visible {
+    final seats = AppScope.of(context).seats;
+    return seats.where(_filters.matches).toList();
+  }
 
-  List<Seat> get _filteredSeats {
-    return MockData.seats.where((seat) {
-      final floorMatch =
-          _floorFilter == 'All floors' || _floorFilter == 'Floor ${seat.floor}';
-      final sectionMatch =
-          _sectionFilter == 'All sections' || seat.section == _sectionFilter;
-      return floorMatch && sectionMatch;
-    }).toList();
+  Seat? get _recommended {
+    final available = _visible.where((s) => s.status == SeatStatus.available);
+    final withPower = available.where((s) => s.hasPowerOutlet);
+    return withPower.isNotEmpty ? withPower.first : null;
+  }
+
+  Future<void> _openFilters() async {
+    final result = await SeatFilterSheet.show(context, _filters);
+    if (result != null) setState(() => _filters = result);
   }
 
   @override
   Widget build(BuildContext context) {
-    final seats = _filteredSeats;
-    final available = seats.where((s) => s.status == SeatStatus.available).length;
-    final best = _bestMatch(seats);
+    final visible = _visible;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        toolbarHeight: 84,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Eyebrow('READING ROOM'),
-            const SizedBox(height: 3),
-            Text('Find a seat', style: AppText.serif(24)),
-          ],
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'My bookings',
-            icon: const Icon(Icons.event_available_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
-            ),
-          ),
-          IconButton(
-            tooltip: _mapView ? 'List view' : 'Map view',
-            icon: Icon(_mapView ? Icons.view_list_rounded : Icons.grid_view_rounded),
-            onPressed: () => setState(() => _mapView = !_mapView),
-          ),
-        ],
+        title: Text('Seat Map', style: AppText.title(17, w: FontWeight.w600)),
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FilterChipBar(
-            options: _floors,
-            selected: _floorFilter,
-            onSelected: (v) => setState(() => _floorFilter = v),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          FilterChipBar(
-            options: _sections,
-            selected: _sectionFilter,
-            onSelected: (v) => setState(() => _sectionFilter = v),
-          ),
-          const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: SoftCard(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      text: '$available',
-                      style: AppText.serif(16, color: AppColors.goldDeep, ls: 0),
-                      children: [
-                        TextSpan(
-                          text: ' available of ${seats.length} shown',
-                          style: AppText.sans(13, w: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    children: [
-                      _LegendDot(color: AppColors.seatAvailable, label: 'Free'),
-                      SizedBox(width: 14),
-                      _LegendDot(color: AppColors.seatReserved, label: 'Hold'),
-                      SizedBox(width: 14),
-                      _LegendDot(color: AppColors.seatOccupied, label: 'Busy'),
-                    ],
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+            child: _FloorPicker(
+              value: _filters.floor,
+              onChanged: (value) =>
+                  setState(() => _filters = _filters.copyWith(floor: value)),
             ),
           ),
-          if (best != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: BestMatchCard(
-                seatLabel: best.label,
-                description:
-                    '${best.hasPowerOutlet ? 'Power outlet' : 'Standard desk'} · ${best.distanceFromEntranceMeters} m from entrance · ${best.section}',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: best)),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: _mapView
-                ? _SeatGrid(seats: seats, best: best)
-                : _SeatList(seats: seats),
+          FilterChipRow(
+            options: const ['Quiet Area', 'Power Outlet'],
+            selected: _filters.categories.contains(SeatCategory.quietZone)
+                ? 'Quiet Area'
+                : (_filters.powerOutlet ? 'Power Outlet' : ''),
+            onSelected: (option) => setState(() {
+              if (option == 'Quiet Area') {
+                final next = Set<SeatCategory>.from(_filters.categories);
+                if (!next.remove(SeatCategory.quietZone)) {
+                  next.add(SeatCategory.quietZone);
+                }
+                _filters = _filters.copyWith(categories: next);
+              } else {
+                _filters = _filters.copyWith(powerOutlet: !_filters.powerOutlet);
+              }
+            }),
+            iconBuilder: (option) => option == 'Quiet Area'
+                ? Icons.volume_off_rounded
+                : Icons.power_rounded,
           ),
-        ],
-      ),
-    );
-  }
-
-  Seat? _bestMatch(List<Seat> seats) {
-    final withPower =
-        seats.where((s) => s.status == SeatStatus.available && s.hasPowerOutlet);
-    if (withPower.isNotEmpty) return withPower.first;
-    final anyFree = seats.where((s) => s.status == SeatStatus.available);
-    return anyFree.isEmpty ? null : anyFree.first;
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(label, style: AppText.sans(11.5, w: FontWeight.w500, color: AppColors.textSecondary)),
-      ],
-    );
-  }
-}
-
-class _SeatGrid extends StatelessWidget {
-  const _SeatGrid({required this.seats, required this.best});
-
-  final List<Seat> seats;
-  final Seat? best;
-
-  static const _rowLabels = {
-    0: 'WINDOW SIDE',
-    1: 'CARREL DESKS',
-    2: 'GROUP TABLES',
-    3: 'LOUNGE SIDE',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    if (seats.isEmpty) {
-      return const EmptyState(
-        icon: Icons.event_seat_outlined,
-        title: 'No seats match',
-        message: 'Try changing floor or section filters.',
-      );
-    }
-
-    final maxCol = seats.map((s) => s.col).reduce((a, b) => a > b ? a : b);
-    final rowsPresent = seats.map((s) => s.row).toSet().toList()..sort();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        0,
-        AppSpacing.md,
-        AppNavInset.bottom,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SoftCard(
-            elevated: true,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               children: [
-                // Dashed entrance strip
-                CustomPaint(
-                  foregroundPainter: DashedRRectPainter(
-                    color: AppColors.goldDeep.withValues(alpha: 0.55),
-                    radius: AppRadii.sm,
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: AppColors.paperDeep.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(AppRadii.sm),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.south_rounded,
-                            size: 14, color: AppColors.goldDeep),
-                        const SizedBox(width: 6),
-                        Text('ENTRANCE', style: AppText.mono(10.5, ls: 3, color: AppColors.goldDeep)),
-                      ],
-                    ),
+                Expanded(
+                  child: Text(
+                    '${visible.where((s) => s.status == SeatStatus.available).length} '
+                    'of ${visible.length} seats available',
+                    style: AppText.body(12.5, color: AppColors.textSecondary),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                for (final (i, row) in rowsPresent.indexed) ...[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'ROW ${String.fromCharCode(65 + row)} — ${_rowLabels[row] ?? ''}',
-                      style: AppText.mono(9.5, ls: 2),
-                    ),
+                TextButton.icon(
+                  onPressed: _openFilters,
+                  icon: const Icon(Icons.tune_rounded, size: 17),
+                  label: const Text('Filters'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 34),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: AppText.label(13, w: FontWeight.w600),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var col = 0; col <= maxCol; col++)
-                        _SeatTile(
-                          seat: seats.cast<Seat?>().firstWhere(
-                                (s) => s!.row == row && s.col == col,
-                                orElse: () => null,
-                              ),
-                          recommended: best?.id,
-                        ),
-                    ],
-                  ),
-                  if (i < rowsPresent.length - 1) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    const DashedRule(),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                ],
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppColors.goldDeep,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text('MARKS POWER OUTLET', style: AppText.mono(9, ls: 2)),
-                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _OtherSections(seats: seats),
+          const SizedBox(height: 6),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              child: Column(
+                children: [
+                  StaggeredEntrance(child: _SeatGridCard(
+                    seats: visible,
+                    selected: _selected,
+                    onSelect: (seat) => setState(() => _selected = seat),
+                  )),
+                  const SizedBox(height: 16),
+                  const _Legend(),
+                  if (_recommended != null) ...[
+                    const SizedBox(height: 18),
+                    StaggeredEntrance(
+                      index: 1,
+                      child: _RecommendedCard(
+                        seat: _recommended!,
+                        onTap: () => _openDetail(_recommended!),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _selected == null
+          ? null
+          : BottomActionBar(
+              child: PrimaryButton(
+                label: 'Select Seat ${_selected!.label}',
+                onPressed: () => _openDetail(_selected!),
+              ),
+            ),
+    );
+  }
+
+  void _openDetail(Seat seat) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat)),
+    );
+  }
+}
+
+class _FloorPicker extends StatelessWidget {
+  const _FloorPicker({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.apartment_rounded, size: 18,
+              color: AppColors.textSecondary),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Floor',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          ),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isDense: true,
+              icon: const Icon(Icons.expand_more_rounded,
+                  size: 20, color: AppColors.textFaint),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              style: AppText.body(14),
+              items: const [
+                DropdownMenuItem(value: 'Floor 1', child: Text('Floor 1')),
+                DropdownMenuItem(value: 'Floor 2', child: Text('Floor 2')),
+                DropdownMenuItem(value: 'Floor 3', child: Text('Floor 3')),
+              ],
+              onChanged: (v) {
+                if (v != null) onChanged(v);
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _OtherSections extends StatelessWidget {
-  const _OtherSections({required this.seats});
+/// The 4x4 grid of circular seat badges.
+class _SeatGridCard extends StatelessWidget {
+  const _SeatGridCard({
+    required this.seats,
+    required this.selected,
+    required this.onSelect,
+  });
 
   final List<Seat> seats;
+  final Seat? selected;
+  final ValueChanged<Seat> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final groupFree = MockData.seats
-        .where((s) => s.section == 'Group Study' && s.status == SeatStatus.available)
-        .length;
-    final floor2Free = MockData.seats
-        .where((s) => s.floor == 2 && s.status == SeatStatus.available)
-        .length;
-    final showSections = seats.any((s) => s.section != 'Group Study') ||
-        seats.any((s) => s.floor != 2);
-    if (!showSections) return const SizedBox.shrink();
+    // Preserve the 4-column grid even when filters hide some seats.
+    final grid = List<Seat?>.filled(16, null);
+    for (final seat in seats) {
+      final index = seat.row * 4 + seat.col;
+      if (index >= 0 && index < 16) grid[index] = seat;
+    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Other sections', style: AppText.serif(19)),
-        const SizedBox(height: AppSpacing.sm + 2),
-        Row(
-          children: [
-            Expanded(
-              child: SoftCard(
-                elevated: true,
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Eyebrow('GROUP STUDY'),
-                    const SizedBox(height: 4),
-                    Text.rich(
-                      TextSpan(
-                        text: '$groupFree',
-                        style: AppText.serif(22, color: AppColors.goldDeep, ls: 0),
-                        children: [
-                          TextSpan(
-                            text: ' rooms free',
-                            style: AppText.sans(12, w: FontWeight.w500,
-                                color: AppColors.textSecondary),
+    return SurfaceCard(
+      elevated: true,
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
+      // A cool tint lifts the map off the page without shouting.
+      tint: AppColors.primary.withValues(alpha: 0.20),
+      child: Column(
+        children: [
+          for (var row = 0; row < 4; row++) ...[
+            if (row > 0) const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var col = 0; col < 4; col++) ...[
+                  if (col > 0) const SizedBox(width: 12),
+                  SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: grid[row * 4 + col] == null
+                        ? const SizedBox.shrink()
+                        : _SeatBadge(
+                            seat: grid[row * 4 + col]!,
+                            isSelected: selected?.id == grid[row * 4 + col]!.id,
+                            onTap: onSelect,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: SoftCard(
-                elevated: true,
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Eyebrow('FLOOR 2'),
-                    const SizedBox(height: 4),
-                    Text.rich(
-                      TextSpan(
-                        text: '$floor2Free',
-                        style: AppText.serif(22, color: AppColors.goldDeep, ls: 0),
-                        children: [
-                          TextSpan(
-                            text: ' seats free',
-                            style: AppText.sans(12, w: FontWeight.w500,
-                                color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                ],
+              ],
             ),
           ],
+          const SizedBox(height: 18),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.south_rounded, size: 15,
+                  color: AppColors.textFaint),
+              const SizedBox(width: 6),
+              Text('ENTRANCE',
+                  style: AppText.overline(10, color: AppColors.textFaint)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeatBadge extends StatelessWidget {
+  const _SeatBadge({
+    required this.seat,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Seat seat;
+  final bool isSelected;
+  final ValueChanged<Seat> onTap;
+
+  Color get _color => isSelected
+      ? AppColors.seatSelected
+      : switch (seat.status) {
+          SeatStatus.available => AppColors.seatAvailable,
+          SeatStatus.limited => AppColors.seatLimited,
+          SeatStatus.occupied => AppColors.seatOccupied,
+        };
+
+  @override
+  Widget build(BuildContext context) {
+    final selectable = seat.status != SeatStatus.occupied;
+
+    return Semantics(
+      label: 'Seat ${seat.label}, ${_statusLabel(seat.status)}',
+      button: true,
+      child: GestureDetector(
+        onTap: selectable ? () => onTap(seat) : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.alphaBlend(
+                    Colors.white.withValues(alpha: 0.22), _color),
+                _color,
+              ],
+            ),
+            boxShadow: isSelected
+                ? AppShadows.glow(_color)
+                : [
+                    BoxShadow(
+                      color: _color.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                seat.label,
+                style: AppText.title(
+                  13,
+                  w: FontWeight.w700,
+                  color: AppColors.textInverse,
+                ),
+              ),
+              if (seat.hasPowerOutlet && seat.status != SeatStatus.occupied)
+                Positioned(
+                  right: 7,
+                  bottom: 9,
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  String _statusLabel(SeatStatus status) => switch (status) {
+        SeatStatus.available => 'available',
+        SeatStatus.limited => 'limited',
+        SeatStatus.occupied => 'full',
+      };
+}
+
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (AppColors.seatAvailable, 'Available'),
+      (AppColors.seatLimited, 'Limited'),
+      (AppColors.seatOccupied, 'Full'),
+      (AppColors.seatSelected, 'Selected'),
+    ];
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 16,
+      runSpacing: 8,
+      children: [
+        for (final (color, label) in items)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+              ),
+              const SizedBox(width: 6),
+              Text(label, style: AppText.body(11.5, color: AppColors.textSecondary)),
+            ],
+          ),
       ],
     );
   }
 }
 
-class _SeatTile extends StatelessWidget {
-  const _SeatTile({required this.seat, this.recommended});
+class _RecommendedCard extends StatelessWidget {
+  const _RecommendedCard({required this.seat, required this.onTap});
 
-  final Seat? seat;
-  final String? recommended;
-
-  Color get _color {
-    if (seat == null) return Colors.transparent;
-    return switch (seat!.status) {
-      SeatStatus.available => AppColors.seatAvailable,
-      SeatStatus.reserved => AppColors.seatReserved,
-      SeatStatus.occupied => AppColors.seatOccupied,
-    };
-  }
+  final Seat seat;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (seat == null) {
-      return const SizedBox(width: 48, height: 48);
-    }
-
-    final color = _color;
-    final isBest = seat!.id == recommended;
-    return Padding(
-      padding: const EdgeInsets.all(3),
-      child: Semantics(
-        label:
-            'Seat ${seat!.label}, ${seatStatusLabel(seat!.status.name)}${seat!.hasPowerOutlet ? ', power outlet' : ''}',
-        button: true,
-        child: Material(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat!)),
-            ),
-            borderRadius: BorderRadius.circular(14),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isBest ? AppColors.gold : color,
-                  width: isBest ? 2.2 : 1.6,
+    return SurfaceCard(
+      onTap: onTap,
+      gradient: AppGradients.auroraSoft,
+      borderColor: AppColors.primary.withValues(alpha: 0.28),
+      tint: AppColors.primary,
+      child: Row(
+        children: [
+          const IconBadge(
+              icon: Icons.auto_awesome_rounded, size: 40, color: AppColors.success),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionLabel('Recommended for you'),
+                const SizedBox(height: 5),
+                Text('Seat ${seat.label}',
+                    style: AppText.title(15.5, w: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(
+                  '${seat.zoneLabel} · ${seat.hasPowerOutlet ? 'Power Outlet' : 'Standard desk'}',
+                  style: AppText.body(12.5, color: AppColors.textSecondary),
                 ),
-                boxShadow: isBest
-                    ? [
-                        BoxShadow(
-                          color: AppColors.gold.withValues(alpha: 0.35),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Text(
-                      seat!.label,
-                      style: AppText.mono(12, w: FontWeight.w700, ls: 0.5, color: color),
-                    ),
-                  ),
-                  if (seat!.hasPowerOutlet)
-                    const Positioned(
-                      right: 5,
-                      bottom: 4,
-                      child: Icon(Icons.bolt_rounded, size: 11, color: AppColors.goldDeep),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
-        ),
+          const StatusPill(label: 'Recommended', color: AppColors.success, compact: true),
+        ],
       ),
-    );
-  }
-}
-
-class _SeatList extends StatelessWidget {
-  const _SeatList({required this.seats});
-
-  final List<Seat> seats;
-
-  @override
-  Widget build(BuildContext context) {
-    if (seats.isEmpty) {
-      return const EmptyState(
-        icon: Icons.event_seat_outlined,
-        title: 'No seats match',
-        message: 'Try changing floor or section filters.',
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        0,
-        AppSpacing.md,
-        AppNavInset.bottom,
-      ),
-      itemCount: seats.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
-        final seat = seats[index];
-        final color = switch (seat.status) {
-          SeatStatus.available => AppColors.seatAvailable,
-          SeatStatus.reserved => AppColors.seatReserved,
-          SeatStatus.occupied => AppColors.seatOccupied,
-        };
-
-        return SoftCard(
-          elevated: true,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(Icons.event_seat_rounded, color: color, size: 22),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Seat ${seat.label}', style: AppText.serif(16.5, ls: -0.2)),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Floor ${seat.floor} · ${seat.section} · ${seat.distanceFromEntranceMeters} m in',
-                      style: AppText.sans(12.5, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              StatusChip(
-                label: seatStatusLabel(seat.status.name),
-                color: color,
-                compact: true,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
