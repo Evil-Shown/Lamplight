@@ -215,22 +215,23 @@ class StatePill extends StatelessWidget {
   const StatePill({
     super.key,
     required this.label,
-    this.color = AppColors.primary,
+    this.color,
     this.background,
     this.pulse = true,
   });
 
   final String label;
-  final Color color;
+  final Color? color;
   final Color? background;
   final bool pulse;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: background ?? color.withValues(alpha: 0.10),
+        color: background ?? effectiveColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AppRadii.full),
       ),
       child: Row(
@@ -240,13 +241,15 @@ class StatePill extends StatelessWidget {
             Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+              decoration:
+                  BoxDecoration(shape: BoxShape.circle, color: effectiveColor),
             ),
             const SizedBox(width: 6),
           ],
           Text(
             label,
-            style: AppText.label(11, w: FontWeight.w700, ls: 0.6, color: color),
+            style: AppText.label(
+                11, w: FontWeight.w700, ls: 0.6, color: effectiveColor),
           ),
         ],
       ),

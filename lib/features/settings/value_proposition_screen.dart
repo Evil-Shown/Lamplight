@@ -55,7 +55,7 @@ class _FeatureCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle_rounded,
+          Icon(Icons.check_circle_rounded,
               size: 19, color: AppColors.success),
           const SizedBox(width: 12),
           Expanded(

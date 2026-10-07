@@ -114,7 +114,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'FLOOR ${seat.floor}',
+                    'FLOOR ${seat.floor} · ${seat.zoneLabel.toUpperCase()}',
                     style: AppText.overline(
                       10.5,
                       ls: 1.8,
@@ -127,57 +127,50 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                     style: AppText.display(30, w: FontWeight.w800, ls: -0.9,
                         color: AppColors.textInverse),
                   ),
-                  const SizedBox(height: 10),
-                  StatusPill(
-                    color: AppColors.textInverse,
-                    background: Colors.white.withValues(alpha: 0.20),
-                    label: switch (seat.status) {
-                      SeatStatus.available => 'Available Now',
-                      SeatStatus.limited => 'Limited availability',
-                      SeatStatus.occupied => 'Currently occupied',
-                    },
-                    pulse: _canBook,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Single desk · ${_categoryLabel(seat.category)} zone',
+                    style: AppText.body(
+                      13,
+                      color: AppColors.textInverse.withValues(alpha: 0.80),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      StatusPill(
+                        color: AppColors.textInverse,
+                        background: Colors.white.withValues(alpha: 0.20),
+                        label: switch (seat.status) {
+                          SeatStatus.available => 'Available Now',
+                          SeatStatus.limited => 'Limited availability',
+                          SeatStatus.occupied => 'Currently occupied',
+                        },
+                        pulse: _canBook,
+                      ),
+                      if (seat.hasMonitor)
+                        StatusPill(
+                          color: AppColors.textInverse,
+                          background: Colors.white.withValues(alpha: 0.14),
+                          label: 'Dual 4K monitors',
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 20),
+          StaggeredEntrance(
+            index: 1,
+            child: _ZoneStrip(seat: seat),
+          ),
           const SizedBox(height: 22),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 4),
-            child: SectionLabel('Features'),
-          ),
-          const SizedBox(height: 10),
-          StaggeredEntrance(
-            index: 1,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _FeatureChip(
-                  icon: Icons.volume_off_rounded,
-                  label: seat.zoneLabel,
-                ),
-                if (seat.hasPowerOutlet)
-                  const _FeatureChip(
-                      icon: Icons.power_rounded, label: 'Power Outlet'),
-                if (seat.nearWindow)
-                  const _FeatureChip(
-                      icon: Icons.wb_sunny_outlined, label: 'Near Window'),
-                if (seat.hasMonitor)
-                  const _FeatureChip(
-                      icon: Icons.monitor_rounded, label: 'Monitor'),
-                if (seat.standingDesk)
-                  const _FeatureChip(
-                      icon: Icons.accessibility_new_rounded,
-                      label: 'Standing desk'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: SectionLabel('Reservation period'),
+            child: SectionLabel('Renting time'),
           ),
           const SizedBox(height: 10),
           StaggeredEntrance(
@@ -193,7 +186,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                           horizontal: 16, vertical: 15),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today_rounded,
+                          Icon(Icons.calendar_today_rounded,
                               size: 17, color: AppColors.textSecondary),
                           const SizedBox(width: 12),
                           Expanded(
@@ -207,56 +200,132 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                       ),
                     ),
                   ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final slot in _slots)
-                          _SlotChip(
-                            label: slot.label,
-                            selected: _slot == slot,
-                            enabled: !slot.isPastOn(_day),
-                            onTap: () => setState(() => _slot = slot),
-                          ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: SectionLabel('Select available time slot'),
+                ),
+                Text(
+                  'Local timezone',
+                  style: AppText.body(11, color: AppColors.textFaint),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          StaggeredEntrance(
+            index: 3,
+            child: Column(
+              children: [
+                for (var i = 0; i < _slots.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _SlotRow(
+                    label: _slots[i].label,
+                    badge: _slotBadge(i),
+                    availability: _slotAvailability(i),
+                    selected: _slot == _slots[i],
+                    enabled: !_slots[i].isPastOn(_day),
+                    onTap: () {
+                      Haptics.selection();
+                      setState(() => _slot = _slots[i]);
+                    },
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 4),
-            child: SectionLabel('Included amenities'),
+            child: SectionLabel('Included seat amenities'),
           ),
           const SizedBox(height: 10),
-          const StaggeredEntrance(
-            index: 3,
+          StaggeredEntrance(
+            index: 4,
             child: SurfaceCard(
               child: Column(
                 children: [
-                  _AmenityRow(label: 'Desk lamp with brightness control'),
-                  SizedBox(height: 10),
-                  _AmenityRow(label: 'Ergonomic adjustable task chair'),
-                  SizedBox(height: 10),
-                  _AmenityRow(label: 'Noise-cancelling partition shield'),
+                  const _AmenityRow(
+                      label: 'Desk lamp with warm brightness setting'),
+                  const SizedBox(height: 10),
+                  const _AmenityRow(
+                      label: 'Ergonomic lumbar-support mesh chair'),
+                  const SizedBox(height: 10),
+                  const _AmenityRow(
+                      label: 'Acoustic noise-dampening partition shield'),
+                  if (seat.hasMonitor) ...[
+                    const SizedBox(height: 10),
+                    const _AmenityRow(
+                        label: 'Dual 4K monitors with USB-C hub'),
+                  ],
+                  if (seat.standingDesk) ...[
+                    const SizedBox(height: 10),
+                    const _AmenityRow(
+                        label: 'Height-adjustable standing desk'),
+                  ],
+                  if (seat.hasPowerOutlet) ...[
+                    const SizedBox(height: 10),
+                    const _AmenityRow(
+                        label: '65W AC power + fast USB-C charging'),
+                  ],
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const StaggeredEntrance(
+            index: 5,
+            child: Callout(
+              tone: CalloutTone.info,
+              icon: Icons.auto_awesome_rounded,
+              title: 'Freshly serviced in 5 min',
+              message:
+                  'A cleaning pass runs before your slot — the desk is '
+                  'sanitised and reset for you.',
             ),
           ),
         ],
       ),
       bottomBar: BottomActionBar(
         child: _canBook
-            ? PrimaryButton(
-                label: _slot == null
-                    ? 'Choose a time slot'
-                    : 'Reserve Seat ${seat.label}',
-                onPressed: _slot == null ? null : _reserve,
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_slot != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Selected ${_slot!.label}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.label(
+                                12,
+                                w: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  PrimaryButton(
+                    label: _slot == null
+                        ? 'Choose a time slot'
+                        : 'Reserve Seat ${seat.label}',
+                    onPressed: _slot == null ? null : _reserve,
+                  ),
+                ],
               )
             : PrimaryButton(
                 label: 'Join waiting list',
@@ -273,17 +342,129 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
       ),
     );
   }
+
+  String _categoryLabel(SeatCategory category) => switch (category) {
+        SeatCategory.quietZone => 'quiet',
+        SeatCategory.collaborative => 'collaborative',
+        SeatCategory.individualPod => 'focus pod',
+      };
+
+  /// Popularity badges per slot, matching the Stitch design.
+  String? _slotBadge(int index) => switch (index) {
+        1 => 'Most popular',
+        3 => 'Popular',
+        _ => null,
+      };
+
+  String _slotAvailability(int index) => switch (index) {
+        0 => '6 of 20 desks left',
+        1 => '2 of 20 desks left',
+        2 => '11 of 20 desks left',
+        3 => '16 of 20 desks left',
+        _ => '19 of 20 desks left',
+      };
 }
 
-class _SlotChip extends StatelessWidget {
-  const _SlotChip({
+/// The three-zone strip from the Stitch design; the seat's own zone is
+/// highlighted while the others stay muted.
+class _ZoneStrip extends StatelessWidget {
+  const _ZoneStrip({required this.seat});
+
+  final Seat seat;
+
+  @override
+  Widget build(BuildContext context) {
+    final zones = [
+      (
+        Icons.volume_off_rounded,
+        'Quiet Wing',
+        seat.category == SeatCategory.quietZone,
+      ),
+      (
+        Icons.power_rounded,
+        'Power Wing',
+        seat.hasPowerOutlet,
+      ),
+      (
+        Icons.monitor_rounded,
+        'Panel Hub',
+        seat.hasMonitor,
+      ),
+    ];
+
+    return Row(
+      children: [
+        for (var i = 0; i < zones.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: _ZoneCard(
+              icon: zones[i].$1,
+              label: zones[i].$2,
+              active: zones[i].$3,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ZoneCard extends StatelessWidget {
+  const _ZoneCard({
+    required this.icon,
     required this.label,
+    required this.active,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = active ? AppColors.primary : AppColors.textFaint;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: active ? AppColors.primarySoft : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(
+          color: active ? AppColors.primary.withValues(alpha: 0.45) : AppColors.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 19, color: tint),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: AppText.label(
+              11,
+              w: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? AppColors.primary : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A full-width time-slot row with a popularity badge and availability
+/// note, matching the Stitch slot list.
+class _SlotRow extends StatelessWidget {
+  const _SlotRow({
+    required this.label,
+    required this.badge,
+    required this.availability,
     required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
   final String label;
+  final String? badge;
+  final String availability;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -291,58 +472,97 @@ class _SlotChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: Material(
-        color: selected ? AppColors.primarySoft : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.full),
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(AppRadii.full),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadii.full),
-              border: Border.all(
-                color: selected ? AppColors.primary : AppColors.border,
-              ),
+      opacity: enabled ? 1 : 0.45,
+      child: PressScale(
+        onTap: enabled ? onTap : () {},
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primarySoft : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : AppColors.border,
+              width: selected ? 1.4 : 1,
             ),
-            child: Text(
-              label,
-              style: AppText.label(
-                12.5,
-                w: FontWeight.w600,
-                color: selected ? AppColors.primary : AppColors.textPrimary,
+            boxShadow:
+                selected ? AppShadows.glow(AppColors.primary) : null,
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? AppColors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: selected ? AppColors.primary : AppColors.borderStrong,
+                    width: 1.6,
+                  ),
+                ),
+                child: selected
+                    ? Icon(Icons.check_rounded,
+                        size: 13, color: AppColors.textInverse)
+                    : null,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: AppText.label(
+                              13.5,
+                              w: FontWeight.w700,
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (badge != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldSoft,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.full),
+                            ),
+                            child: Text(
+                              badge!.toUpperCase(),
+                              style: AppText.overline(
+                                9,
+                                ls: 0.8,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      availability,
+                      style: AppText.body(
+                        11.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _FeatureChip extends StatelessWidget {
-  const _FeatureChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.full),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: AppColors.primary),
-          const SizedBox(width: 7),
-          Text(label, style: AppText.label(12.5, w: FontWeight.w600)),
-        ],
       ),
     );
   }
@@ -357,7 +577,7 @@ class _AmenityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.check_circle_rounded, size: 17,
+        Icon(Icons.check_circle_rounded, size: 17,
             color: AppColors.success),
         const SizedBox(width: 11),
         Expanded(
