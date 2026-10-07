@@ -133,30 +133,30 @@ class _GlassNavBar extends StatelessWidget {
           height: 66,
           decoration: BoxDecoration(
             color: dark
-                ? Colors.white.withValues(alpha: 0.06)
+                ? const Color(0xFF17202C).withValues(alpha: 0.92)
                 : (AppColors.isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.88)),
+                    ? const Color(0xFF17202C).withValues(alpha: 0.92)
+                    : const Color(0xFFFAF8F5).withValues(alpha: 0.95)),
             borderRadius: BorderRadius.circular(AppRadii.full),
             border: Border.all(
               color: dark
-                  ? Colors.white.withValues(alpha: 0.10)
+                  ? Colors.white.withValues(alpha: 0.12)
                   : (AppColors.isDark
-                      ? Colors.white.withValues(alpha: 0.10)
-                      : Colors.white.withValues(alpha: 0.65)),
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : const Color(0xFFE2DDD3)),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0C1526)
-                    .withValues(alpha: dark || AppColors.isDark ? 0.45 : 0.10),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
+                color: const Color(0xFF1B1A17)
+                    .withValues(alpha: dark || AppColors.isDark ? 0.40 : 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
               BoxShadow(
                 color: AppColors.primary.withValues(
-                    alpha: dark || AppColors.isDark ? 0.10 : 0.06),
-                blurRadius: 36,
-                offset: const Offset(0, 4),
+                    alpha: dark || AppColors.isDark ? 0.12 : 0.04),
+                blurRadius: 30,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
