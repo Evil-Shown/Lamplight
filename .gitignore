@@ -16,6 +16,7 @@ migrate_working_dir/
 *.iws
 .idea/
 *.run.xml
+production/
 
 # VS Code
 .vscode/

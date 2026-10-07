@@ -19,6 +19,13 @@ class _LibraryAppState extends State<LibraryApp> {
   final AppState _state = AppState();
 
   @override
+  void initState() {
+    super.initState();
+    // Firebase session restoration on cold start.
+    _state.restoreSession();
+  }
+
+  @override
   void dispose() {
     _state.dispose();
     super.dispose();
