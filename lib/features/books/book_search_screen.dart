@@ -368,6 +368,7 @@ class _CatalogCard extends StatelessWidget {
                           onPressed: onOpen,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             side: BorderSide(
                                 color:
                                     AppColors.primary.withValues(alpha: 0.45)),
@@ -395,6 +396,7 @@ class _CatalogCard extends StatelessWidget {
                             foregroundColor: canReserve
                                 ? AppColors.textInverse
                                 : AppColors.textSecondary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             elevation: 0,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(

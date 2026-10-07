@@ -97,7 +97,8 @@ class SurfaceCard extends StatelessWidget {
         : (elevated ? AppShadows.raised : null);
 
     // Material (not Container) so ListTile children still paint their own
-    // background and ink splashes.
+    // background and ink splashes. M3 tonal surface: no hairline border
+    // unless the caller asks for one.
     final content = Material(
       color: gradient == null ? (color ?? AppColors.surface) : Colors.transparent,
       borderRadius: BorderRadius.circular(radius),
@@ -108,7 +109,9 @@ class SurfaceCard extends StatelessWidget {
           gradient: gradient,
           color: gradient == null ? Colors.transparent : null,
           borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: borderColor ?? AppColors.border),
+          border: borderColor == null
+              ? null
+              : Border.all(color: borderColor!),
           boxShadow: shadow,
         ),
         child: child,
@@ -589,7 +592,7 @@ class EmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: AppColors.primarySoft,
               ),
-              child: Icon(icon, size: 36, color: AppColors.primary),
+              child: Icon(icon, size: 36, color: AppColors.primaryDark),
             ),
             const SizedBox(height: 20),
             Text(title, style: AppText.title(17, w: FontWeight.w700)),
@@ -663,21 +666,38 @@ class FilterChipRow extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14),
               alignment: Alignment.center,
+              // M3 filter chip: selected = secondaryContainer with a
+              // leading check, unselected = surface with an outline.
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.surface,
+                color: isSelected
+                    ? AppColors.cyanSoft
+                    : AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadii.full),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
+                  color: isSelected
+                      ? Colors.transparent
+                      : AppColors.borderStrong,
+                  width: isSelected ? 0 : 1,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (isSelected && icon == null) ...[
+                    Icon(
+                      Icons.check_rounded,
+                      size: 15,
+                      color: AppColors.scheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: 5),
+                  ],
                   if (icon != null) ...[
                     Icon(
                       icon,
                       size: 15,
-                      color: isSelected ? AppColors.textInverse : AppColors.textSecondary,
+                      color: isSelected
+                          ? AppColors.scheme.onSecondaryContainer
+                          : AppColors.textSecondary,
                     ),
                     const SizedBox(width: 6),
                   ],
@@ -686,7 +706,9 @@ class FilterChipRow extends StatelessWidget {
                     style: AppText.label(
                       13,
                       w: FontWeight.w600,
-                      color: isSelected ? AppColors.textInverse : AppColors.textSecondary,
+                      color: isSelected
+                          ? AppColors.scheme.onSecondaryContainer
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -721,9 +743,12 @@ class SegmentedTabs extends StatelessWidget {
       padding: padding,
       child: Container(
         padding: const EdgeInsets.all(4),
+        // M3 segmented button: outlined track, selected segment in the
+        // secondary container.
         decoration: BoxDecoration(
-          color: AppColors.surfaceSunken,
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadii.full),
+          border: Border.all(color: AppColors.borderStrong),
         ),
         child: Row(
           children: [
@@ -737,9 +762,10 @@ class SegmentedTabs extends StatelessWidget {
                     height: 38,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: option == selected ? AppColors.surface : Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadii.xs),
-                      boxShadow: option == selected ? AppShadows.card : null,
+                      color: option == selected
+                          ? AppColors.cyanSoft
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadii.full),
                     ),
                     child: Text(
                       option,
@@ -747,7 +773,7 @@ class SegmentedTabs extends StatelessWidget {
                         13.5,
                         w: FontWeight.w600,
                         color: option == selected
-                            ? AppColors.textPrimary
+                            ? AppColors.scheme.onSecondaryContainer
                             : AppColors.textSecondary,
                       ),
                     ),
@@ -804,57 +830,84 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (tone) {
-      ButtonTone.primary => (AppColors.primary, AppColors.textInverse),
-      ButtonTone.secondary => (AppColors.surface, AppColors.primary),
-      ButtonTone.danger => (AppColors.surface, AppColors.error),
-      ButtonTone.neutral => (AppColors.surfaceMuted, AppColors.textPrimary),
-    };
-
+    // M3 button roles: primary = filled, secondary = outlined,
+    // danger = outlined error, neutral = filled tonal.
     return SizedBox(
       height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            side: switch (tone) {
-              ButtonTone.secondary =>
-                BorderSide(color: AppColors.primary, width: 1.4),
-              ButtonTone.danger =>
-                BorderSide(color: AppColors.error, width: 1.4),
-              _ => BorderSide.none,
-            },
-          ),
-          textStyle: AppText.title(15, w: FontWeight.w600, color: fg),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 19),
-              const SizedBox(width: 9),
-            ],
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppText.title(15, w: FontWeight.w600, color: fg),
-              ),
+      child: switch (tone) {
+        ButtonTone.primary => ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textInverse,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: const StadiumBorder(),
             ),
-            if (trailingIcon != null) ...[
-              const SizedBox(width: 6),
-              Icon(trailingIcon, size: 18),
-            ],
-          ],
+            child: _buttonChild(),
+          ),
+        ButtonTone.secondary => OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              backgroundColor: Colors.transparent,
+              side: BorderSide(color: AppColors.borderStrong, width: 1.2),
+              shape: const StadiumBorder(),
+            ),
+            child: _buttonChild(),
+          ),
+        ButtonTone.danger => OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              backgroundColor: Colors.transparent,
+              side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+              shape: const StadiumBorder(),
+            ),
+            child: _buttonChild(),
+          ),
+        ButtonTone.neutral => ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primarySoft,
+              foregroundColor: AppColors.primaryDark,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: const StadiumBorder(),
+            ),
+            child: _buttonChild(),
+          ),
+      },
+    );
+  }
+
+  Widget _buttonChild() {
+    final fg = switch (tone) {
+      ButtonTone.primary => AppColors.textInverse,
+      ButtonTone.secondary => AppColors.primary,
+      ButtonTone.danger => AppColors.error,
+      ButtonTone.neutral => AppColors.primaryDark,
+    };
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 19),
+          const SizedBox(width: 9),
+        ],
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.title(15, w: FontWeight.w600, color: fg),
+          ),
         ),
-      ),
+        if (trailingIcon != null) ...[
+          const SizedBox(width: 6),
+          Icon(trailingIcon, size: 18),
+        ],
+      ],
     );
   }
 }

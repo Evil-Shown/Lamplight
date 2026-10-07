@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/state/app_state.dart';
-import 'core/theme/app_theme.dart';
 import 'features/account/account_screen.dart';
 import 'features/books/book_search_screen.dart';
 import 'features/home/home_screen.dart';
@@ -21,7 +20,7 @@ class AppTab {
   static const profile = 4;
 }
 
-/// The role-aware shell with a floating glass navigation bar.
+/// The role-aware shell with a standard Material 3 navigation bar.
 ///
 /// The prototype ships two destination sets: `Home · Seats · Books ·
 /// Bookings · Profile` for students and `Home · Seats · Catalog ·
@@ -95,163 +94,17 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: IndexedStack(index: safeIndex, children: screens),
-      bottomNavigationBar: _GlassNavBar(
-        destinations: destinations,
+      bottomNavigationBar: NavigationBar(
         selectedIndex: safeIndex,
-        onSelected: switchTo,
-        // The Home tab is a dark hero surface, so the bar flips to
-        // dark glass to sit on it (mirrors the Stitch design).
-        dark: safeIndex == AppTab.home,
-      ),
-    );
-  }
-}
-
-/// A floating, frosted pill navigation bar. Detached from the screen edges
-/// with a soft ambient shadow, a translucent surface, and a sliding
-/// indicator glow behind the active destination.
-class _GlassNavBar extends StatelessWidget {
-  const _GlassNavBar({
-    required this.destinations,
-    required this.selectedIndex,
-    required this.onSelected,
-    this.dark = false,
-  });
-
-  final List<_Destination> destinations;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-  final bool dark;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-        child: Container(
-          height: 66,
-          decoration: BoxDecoration(
-            color: dark
-                ? const Color(0xFF17202C).withValues(alpha: 0.92)
-                : (AppColors.isDark
-                    ? const Color(0xFF17202C).withValues(alpha: 0.92)
-                    : const Color(0xFFFAF8F5).withValues(alpha: 0.95)),
-            borderRadius: BorderRadius.circular(AppRadii.full),
-            border: Border.all(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : (AppColors.isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : const Color(0xFFE2DDD3)),
+        onDestinationSelected: switchTo,
+        destinations: [
+          for (final destination in destinations)
+            NavigationDestination(
+              icon: Icon(destination.icon),
+              selectedIcon: Icon(destination.selectedIcon),
+              label: destination.label,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1B1A17)
-                    .withValues(alpha: dark || AppColors.isDark ? 0.40 : 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: AppColors.primary.withValues(
-                    alpha: dark || AppColors.isDark ? 0.12 : 0.04),
-                blurRadius: 30,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i++)
-                Expanded(
-                  child: _GlassNavDestination(
-                    destination: destinations[i],
-                    selected: i == selectedIndex,
-                    dark: dark,
-                    onTap: () => onSelected(i),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassNavDestination extends StatelessWidget {
-  const _GlassNavDestination({
-    required this.destination,
-    required this.selected,
-    required this.onTap,
-    this.dark = false,
-  });
-
-  final _Destination destination;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool dark;
-
-  @override
-  Widget build(BuildContext context) {
-    final idle = dark ? Colors.white.withValues(alpha: 0.55) : AppColors.textFaint;
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: destination.label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: selected ? 1 : 0),
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-          builder: (context, t, child) => Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (t > 0)
-                    Container(
-                      width: 46,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadii.full),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primaryBright.withValues(alpha: 0.28 * t),
-                            AppColors.accent.withValues(alpha: 0.18 * t),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: AppColors.primaryBright
-                              .withValues(alpha: 0.35 * t),
-                        ),
-                      ),
-                    ),
-                  Icon(
-                    selected ? destination.selectedIcon : destination.icon,
-                    size: 21 + 1.5 * t,
-                    color: Color.lerp(idle, AppColors.primaryBright, t),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                destination.label,
-                style: AppText.label(
-                  10.5,
-                  w: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: Color.lerp(idle, AppColors.primaryBright, t),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
