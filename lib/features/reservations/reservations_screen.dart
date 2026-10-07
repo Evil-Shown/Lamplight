@@ -159,7 +159,7 @@ class _BookHoldCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
+              Icon(Icons.chevron_right_rounded,
                   size: 20, color: AppColors.textFaint),
             ],
           ),
@@ -168,7 +168,7 @@ class _BookHoldCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.inventory_2_outlined,
+              Icon(Icons.inventory_2_outlined,
                   size: 15, color: AppColors.textFaint),
               const SizedBox(width: 6),
               Expanded(
@@ -248,7 +248,7 @@ class _SeatBookingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const StatusPill(
+              StatusPill(
                 label: 'Active',
                 color: AppColors.success,
                 compact: true,

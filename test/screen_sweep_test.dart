@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:library_app/core/state/app_state.dart';
 import 'package:library_app/core/theme/app_theme.dart';
-import 'package:library_app/models/models.dart';
 import 'package:library_app/features/account/account_screen.dart';
 import 'package:library_app/features/home/home_screen.dart';
 import 'package:library_app/features/books/book_detail_screen.dart';
@@ -53,6 +52,9 @@ Future<void> pumpScreen(WidgetTester tester, Widget screen) async {
   FlutterError.onError = (details) {
     final text = details.toString();
     if (text.contains('overflowed')) overflows.add(text);
+    // Forward every error so the framework surfaces the real failure
+    // instead of swallowing it and tripping the teardown assertion.
+    previous?.call(details);
   };
   addTearDown(() => FlutterError.onError = previous);
 

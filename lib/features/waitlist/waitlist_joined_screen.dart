@@ -32,11 +32,11 @@ class WaitlistJoinedScreen extends StatelessWidget {
                   child: Container(
                     width: 78,
                     height: 78,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.primary,
                     ),
-                    child: const Icon(Icons.notifications_active_rounded,
+                    child: Icon(Icons.notifications_active_rounded,
                         size: 38, color: AppColors.textInverse),
                   ),
                 ),

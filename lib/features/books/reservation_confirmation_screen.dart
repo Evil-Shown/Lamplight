@@ -37,7 +37,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.24),
                   ),
-                  child: const Icon(Icons.check_rounded,
+                  child: Icon(Icons.check_rounded,
                       size: 34, color: AppColors.textInverse),
                 ),
                 const SizedBox(height: 15),

@@ -135,7 +135,7 @@ class _ViewfinderFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     const length = 34.0;
     const thickness = 3.5;
-    const color = AppColors.primary;
+    final color = AppColors.primary;
     const radius = BorderRadius.all(Radius.circular(10));
 
     return SizedBox(
@@ -150,7 +150,7 @@ class _ViewfinderFrame extends StatelessWidget {
             child: Container(
               width: length,
               height: length,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(color: color, width: thickness),
                   left: BorderSide(color: color, width: thickness),
@@ -166,7 +166,7 @@ class _ViewfinderFrame extends StatelessWidget {
             child: Container(
               width: length,
               height: length,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(color: color, width: thickness),
                   right: BorderSide(color: color, width: thickness),
@@ -182,7 +182,7 @@ class _ViewfinderFrame extends StatelessWidget {
             child: Container(
               width: length,
               height: length,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: color, width: thickness),
                   left: BorderSide(color: color, width: thickness),
@@ -198,7 +198,7 @@ class _ViewfinderFrame extends StatelessWidget {
             child: Container(
               width: length,
               height: length,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: color, width: thickness),
                   right: BorderSide(color: color, width: thickness),

@@ -52,11 +52,11 @@ class QrTicketScreen extends StatelessWidget {
                       version: QrVersions.auto,
                       size: 190,
                       backgroundColor: Colors.white,
-                      eyeStyle: const QrEyeStyle(
+                      eyeStyle: QrEyeStyle(
                         eyeShape: QrEyeShape.square,
                         color: AppColors.textPrimary,
                       ),
-                      dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleStyle: QrDataModuleStyle(
                         dataModuleShape: QrDataModuleShape.square,
                         color: AppColors.textPrimary,
                       ),

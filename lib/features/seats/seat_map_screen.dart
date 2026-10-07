@@ -61,6 +61,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
+    final canPop = _canPop;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -69,86 +70,116 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         automaticallyImplyLeading: false,
-        leading: _canPop
+        leading: canPop
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
                 onPressed: () => Navigator.of(context).maybePop(),
               )
             : const SizedBox(width: 48),
-        title: Text('Seat Map', style: AppText.title(17, w: FontWeight.w600)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('CAMPUS COMMONS',
+                style: AppText.overline(9.5, ls: 1.4)),
+            const SizedBox(height: 1),
+            Text('Seat Reservation',
+                style: AppText.title(17, w: FontWeight.w700)),
+          ],
+        ),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-            child: _FloorPicker(
-              value: _filters.floor,
-              onChanged: (value) =>
-                  setState(() => _filters = _filters.copyWith(floor: value)),
-            ),
-          ),
-          FilterChipRow(
-            options: const ['Quiet Area', 'Power Outlet'],
-            selected: '',
-            isSelectedOf: (option) => option == 'Quiet Area'
-                ? _filters.categories.contains(SeatCategory.quietZone)
-                : _filters.powerOutlet,
-            onSelected: (option) => setState(() {
-              if (option == 'Quiet Area') {
-                final next = Set<SeatCategory>.from(_filters.categories);
-                if (!next.remove(SeatCategory.quietZone)) {
-                  next.add(SeatCategory.quietZone);
-                }
-                _filters = _filters.copyWith(categories: next);
-              } else {
-                _filters = _filters.copyWith(powerOutlet: !_filters.powerOutlet);
-              }
-            }),
-            iconBuilder: (option) => option == 'Quiet Area'
-                ? Icons.volume_off_rounded
-                : Icons.power_rounded,
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${visible.where((s) => s.status == SeatStatus.available).length} '
-                    'of ${visible.length} seats available',
-                    style: AppText.body(12.5, color: AppColors.textSecondary),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: _openFilters,
-                  icon: const Icon(Icons.tune_rounded, size: 17),
-                  label: const Text('Filters'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 34),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: AppText.label(13, w: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SegmentedTabs(
-            options: const ['Map', 'List'],
-            selected: _view,
-            onSelected: (value) => setState(() => _view = value),
-          ),
-          const SizedBox(height: 6),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  StaggeredEntrance(
+                    child: Text(
+                      'Find and reserve your ideal study spot',
+                      style:
+                          AppText.title(19, w: FontWeight.w700, ls: -0.4),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: _ZonePicker(
+                      value: _filters.floor,
+                      seatCount: visible.length,
+                      onChanged: (value) => setState(
+                          () => _filters = _filters.copyWith(floor: value)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilterChipRow(
+                    options: const ['Quiet Area', 'Power Outlets', 'Dual Monitors'],
+                    selected: '',
+                    isSelectedOf: (option) => switch (option) {
+                      'Quiet Area' =>
+                        _filters.categories.contains(SeatCategory.quietZone),
+                      'Power Outlets' => _filters.powerOutlet,
+                      _ => _filters.monitor,
+                    },
+                    onSelected: (option) => setState(() {
+                      switch (option) {
+                        case 'Quiet Area':
+                          final next =
+                              Set<SeatCategory>.from(_filters.categories);
+                          if (!next.remove(SeatCategory.quietZone)) {
+                            next.add(SeatCategory.quietZone);
+                          }
+                          _filters = _filters.copyWith(categories: next);
+                        case 'Power Outlets':
+                          _filters = _filters.copyWith(
+                              powerOutlet: !_filters.powerOutlet);
+                        default:
+                          _filters =
+                              _filters.copyWith(monitor: !_filters.monitor);
+                      }
+                    }),
+                    iconBuilder: (option) => switch (option) {
+                      'Quiet Area' => Icons.volume_off_rounded,
+                      'Power Outlets' => Icons.power_rounded,
+                      _ => Icons.monitor_rounded,
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${visible.where((s) => s.status == SeatStatus.available).length} '
+                          'of ${visible.length} seats available',
+                          style: AppText.body(
+                              12.5, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _openFilters,
+                        icon: const Icon(Icons.tune_rounded, size: 17),
+                        label: const Text('Filters'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(0, 34),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: AppText.label(13, w: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedTabs(
+                    options: const ['Map', 'List'],
+                    selected: _view,
+                    onSelected: (value) => setState(() => _view = value),
+                  ),
+                  const SizedBox(height: 16),
                   if (_recommended == null)
                     const SurfaceCard(
                       child: Text(
@@ -187,7 +218,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const _Legend(),
+                    _Legend(visible: visible),
                   ],
                 ],
               ),
@@ -198,9 +229,33 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
       bottomNavigationBar: _selected == null
           ? null
           : BottomActionBar(
-              child: PrimaryButton(
-                label: 'Select Seat ${_selected!.label}',
-                onPressed: () => _openDetail(_selected!),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Seat ${_selected!.label}',
+                          style: AppText.title(14.5, w: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Selected · today',
+                          style: AppText.body(
+                              11.5, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  PrimaryButton(
+                    label: 'Continue',
+                    trailingIcon: Icons.arrow_forward_rounded,
+                    onPressed: () => _openDetail(_selected!),
+                  ),
+                ],
               ),
             ),
     );
@@ -213,10 +268,17 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   }
 }
 
-class _FloorPicker extends StatelessWidget {
-  const _FloorPicker({required this.value, required this.onChanged});
+/// The zone selection card — floor plus live desk count, styled as the
+/// Stitch design's "ZONE SELECTION" surface.
+class _ZonePicker extends StatelessWidget {
+  const _ZonePicker({
+    required this.value,
+    required this.seatCount,
+    required this.onChanged,
+  });
 
   final String value;
+  final int seatCount;
   final ValueChanged<String> onChanged;
 
   @override
@@ -225,23 +287,40 @@ class _FloorPicker extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.sm),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
-          const Icon(Icons.apartment_rounded, size: 18,
-              color: AppColors.textSecondary),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text('Floor',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadii.xs),
+            ),
+            child: Icon(Icons.apartment_rounded,
+                size: 19, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ZONE SELECTION',
+                    style: AppText.overline(9.5, ls: 1.3)),
+                const SizedBox(height: 2),
+                Text('$value · $seatCount desks',
+                    style: AppText.title(13.5, w: FontWeight.w600)),
+              ],
+            ),
           ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isDense: true,
-              icon: const Icon(Icons.expand_more_rounded,
+              icon: Icon(Icons.expand_more_rounded,
                   size: 20, color: AppColors.textFaint),
               borderRadius: BorderRadius.circular(AppRadii.sm),
               style: AppText.body(14),
@@ -317,11 +396,16 @@ class _SeatGridCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.south_rounded, size: 15,
+              Icon(Icons.stairs_rounded, size: 15,
                   color: AppColors.textFaint),
               const SizedBox(width: 6),
-              Text('ENTRANCE',
-                  style: AppText.overline(10, color: AppColors.textFaint)),
+              Flexible(
+                child: Text('ENTRANCE · STAIRWELL A',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.overline(9.5, ls: 1.2,
+                        color: AppColors.textFaint)),
+              ),
             ],
           ),
         ],
@@ -419,14 +503,25 @@ class _SeatBadge extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend();
+  const _Legend({required this.visible});
+
+  final List<Seat> visible;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (AppColors.seatAvailable, 'Available'),
-      (AppColors.seatLimited, 'Limited'),
-      (AppColors.seatOccupied, 'Full'),
+    final items = [
+      (
+        AppColors.seatAvailable,
+        'Available (${visible.where((s) => s.status == SeatStatus.available).length})'
+      ),
+      (
+        AppColors.seatLimited,
+        'Limited (${visible.where((s) => s.status == SeatStatus.limited).length})'
+      ),
+      (
+        AppColors.seatOccupied,
+        'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
+      ),
       (AppColors.seatSelected, 'Selected'),
     ];
 
@@ -532,26 +627,46 @@ class _RecommendedCard extends StatelessWidget {
       tint: AppColors.primary,
       child: Row(
         children: [
-          const IconBadge(
-              icon: Icons.auto_awesome_rounded, size: 40, color: AppColors.success),
+          IconBadge(
+              icon: Icons.auto_awesome_rounded,
+              size: 40,
+              color: AppColors.success),
           const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SectionLabel('Recommended for you'),
+                const SectionLabel('Recommended for most students'),
                 const SizedBox(height: 5),
                 Text('Seat ${seat.label}',
                     style: AppText.title(15.5, w: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text(
                   why,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppText.body(12.5, color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-          const StatusPill(label: 'Recommended', color: AppColors.success, compact: true),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(AppRadii.full),
+              boxShadow: AppShadows.glow(AppColors.primary),
+            ),
+            child: Text(
+              'Select',
+              style: AppText.label(
+                12.5,
+                w: FontWeight.w700,
+                color: AppColors.textInverse,
+              ),
+            ),
+          ),
         ],
       ),
     );

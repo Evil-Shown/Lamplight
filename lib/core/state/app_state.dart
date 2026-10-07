@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
   final Map<String, SeatStatus> _seatStatus = {};
 
   NotificationPreferences _preferences = const NotificationPreferences();
+  ThemeMode _themeMode = ThemeMode.light;
 
   UserProfile? get profile => _profile;
   bool get isSignedIn => _profile != null;
@@ -31,6 +32,7 @@ class AppState extends ChangeNotifier {
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
   List<QueueEntry> get queue => List.unmodifiable(_queue);
   NotificationPreferences get preferences => _preferences;
+  ThemeMode get themeMode => _themeMode;
 
   List<Book> get books => MockData.books;
   List<Seat> get seats => [
@@ -233,6 +235,12 @@ class AppState extends ChangeNotifier {
 
   void updatePreferences(NotificationPreferences prefs) {
     _preferences = prefs;
+    notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
+    _themeMode = mode;
     notifyListeners();
   }
 }

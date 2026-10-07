@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 
@@ -22,7 +21,7 @@ class ActiveSessionScreen extends StatefulWidget {
 }
 
 class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
-  late DateTime _checkedInAt = widget.booking.checkedInAt ?? DateTime.now();
+  late final DateTime _checkedInAt = widget.booking.checkedInAt ?? DateTime.now();
   int _extendedMinutes = 0;
 
   @override
@@ -50,7 +49,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.22),
                   ),
-                  child: const Icon(Icons.verified_rounded,
+                  child: Icon(Icons.verified_rounded,
                       size: 32, color: AppColors.textInverse),
                 ),
                 const SizedBox(height: 14),
@@ -93,13 +92,13 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
             child: SurfaceCard(
               child: Row(
                 children: [
-                  const StatusPill(
+                  StatusPill(
                     label: 'Active Session',
                     color: AppColors.success,
                     pulse: true,
                   ),
                   const Spacer(),
-                  const Icon(Icons.timer_outlined,
+                  Icon(Icons.timer_outlined,
                       size: 15, color: AppColors.textFaint),
                   const SizedBox(width: 5),
                   Flexible(
@@ -182,7 +181,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                         visualDensity: VisualDensity.compact,
                         constraints: const BoxConstraints(),
                         padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.copy_rounded,
+                        icon: Icon(Icons.copy_rounded,
                             size: 15, color: AppColors.primary),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -200,7 +199,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          StaggeredEntrance(
+          const StaggeredEntrance(
             index: 2,
             child: Row(
               children: [
@@ -211,7 +210,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     label: 'BGN 1000-C',
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: _EntitlementTile(
                     icon: Icons.wifi_rounded,
@@ -219,7 +218,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     label: 'Priority Band',
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: _EntitlementTile(
                     icon: Icons.volume_down_rounded,

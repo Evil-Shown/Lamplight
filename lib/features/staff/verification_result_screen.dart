@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../qr/active_session_screen.dart';
-import '../../models/models.dart';
 
 /// P-15 Verification Result.
 ///
@@ -17,7 +15,7 @@ class VerificationResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final student = MockData.verificationStudent;
+    const student = MockData.verificationStudent;
     final booking = MockData.buildBookings().first;
 
     return AppScaffold(
@@ -132,7 +130,7 @@ class VerificationResultScreen extends StatelessWidget {
                                 13.5, color: AppColors.textSecondary),
                           ),
                         ),
-                        const StatusPill(
+                        StatusPill(
                           label: 'Verified',
                           color: AppColors.success,
                           compact: true,

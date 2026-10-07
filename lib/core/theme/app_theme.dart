@@ -5,57 +5,94 @@ import 'package:google_fonts/google_fonts.dart';
 /// Campus-blue palette. A cool off-white page, white cards, one confident
 /// blue, and semantic status colours that stay quiet enough to read as
 /// information rather than decoration.
+///
+/// Every colour resolves through getters so the whole app can flip to a
+/// matching dark palette at runtime. Call sites keep the same
+/// `AppColors.x` syntax — the only trade-off is that colours can no longer
+/// appear inside `const` expressions.
 class AppColors {
   AppColors._();
 
+  /// Whether the dark palette is active. Synced by the app root from
+  /// [AppState.themeMode] before the frame is built.
+  static bool isDark = false;
+
   // Surfaces
-  static const background = Color(0xFFF4F6FC);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFF0F3F8);
-  static const surfaceSunken = Color(0xFFEBEFF8);
+  static Color get background =>
+      isDark ? const Color(0xFF0B1120) : const Color(0xFFF4F6FC);
+  static Color get surface =>
+      isDark ? const Color(0xFF141D31) : const Color(0xFFFFFFFF);
+  static Color get surfaceMuted =>
+      isDark ? const Color(0xFF1B2540) : const Color(0xFFF0F3F8);
+  static Color get surfaceSunken =>
+      isDark ? const Color(0xFF0F1726) : const Color(0xFFEBEFF8);
 
   // Brand
-  static const primary = Color(0xFF1A56DB);
-  static const primaryDark = Color(0xFF10328C);
-  static const primarySoft = Color(0xFFE8EFFD);
-  static const primaryBright = Color(0xFF3B7BF6);
-  static const primaryLift = Color(0xFF6E9EFF);
+  static Color get primary =>
+      isDark ? const Color(0xFF4C82E8) : const Color(0xFF1A56DB);
+  static Color get primaryDark =>
+      isDark ? const Color(0xFFA9C6FF) : const Color(0xFF10328C);
+  static Color get primarySoft =>
+      isDark ? const Color(0xFF1A2A4E) : const Color(0xFFE8EFFD);
+  static Color get primaryBright =>
+      isDark ? const Color(0xFF6E9EFF) : const Color(0xFF3B7BF6);
+  static Color get primaryLift =>
+      isDark ? const Color(0xFF8FB4FF) : const Color(0xFF6E9EFF);
 
   /// Secondary accent used for gradients and highlights.
-  static const accent = Color(0xFF6D5BF5);
-  static const accentSoft = Color(0xFFEFECFE);
-  static const cyan = Color(0xFF12B5CE);
-  static const cyanSoft = Color(0xFFE2F7FB);
-  static const gold = Color(0xFFD9A441);
-  static const goldSoft = Color(0xFFFBF2DF);
+  static Color get accent =>
+      isDark ? const Color(0xFF8B7BF7) : const Color(0xFF6D5BF5);
+  static Color get accentSoft =>
+      isDark ? const Color(0xFF26224C) : const Color(0xFFEFECFE);
+  static Color get cyan =>
+      isDark ? const Color(0xFF2CC5DC) : const Color(0xFF12B5CE);
+  static Color get cyanSoft =>
+      isDark ? const Color(0xFF12333B) : const Color(0xFFE2F7FB);
+  static Color get gold =>
+      isDark ? const Color(0xFFE5B95E) : const Color(0xFFD9A441);
+  static Color get goldSoft =>
+      isDark ? const Color(0xFF332A16) : const Color(0xFFFBF2DF);
 
   // Text
-  static const textPrimary = Color(0xFF0C1526);
-  static const textSecondary = Color(0xFF56657F);
-  static const textFaint = Color(0xFF94A3B8);
-  static const textInverse = Color(0xFFFFFFFF);
+  static Color get textPrimary =>
+      isDark ? const Color(0xFFEDF2FB) : const Color(0xFF0C1526);
+  static Color get textSecondary =>
+      isDark ? const Color(0xFF9BAAC4) : const Color(0xFF56657F);
+  static Color get textFaint =>
+      isDark ? const Color(0xFF5E6C88) : const Color(0xFF94A3B8);
+  static Color get textInverse => const Color(0xFFFFFFFF);
 
   // Lines
-  static const border = Color(0xFFE6EAF4);
-  static const borderStrong = Color(0xFFCBD5E1);
+  static Color get border =>
+      isDark ? const Color(0xFF24304A) : const Color(0xFFE6EAF4);
+  static Color get borderStrong =>
+      isDark ? const Color(0xFF354465) : const Color(0xFFCBD5E1);
 
   // Status
-  static const success = Color(0xFF16A34A);
-  static const successSoft = Color(0xFFE8F8EE);
-  static const warning = Color(0xFFE8890C);
-  static const warningSoft = Color(0xFFFEF3E2);
-  static const error = Color(0xFFDC2626);
-  static const errorSoft = Color(0xFFFDECEC);
-  static const info = primary;
-  static const infoSoft = primarySoft;
-  static const neutral = Color(0xFF64748B);
-  static const neutralSoft = Color(0xFFEFF2F6);
+  static Color get success =>
+      isDark ? const Color(0xFF34C97B) : const Color(0xFF16A34A);
+  static Color get successSoft =>
+      isDark ? const Color(0xFF122B1D) : const Color(0xFFE8F8EE);
+  static Color get warning =>
+      isDark ? const Color(0xFFF0A03C) : const Color(0xFFE8890C);
+  static Color get warningSoft =>
+      isDark ? const Color(0xFF322310) : const Color(0xFFFEF3E2);
+  static Color get error =>
+      isDark ? const Color(0xFFF27171) : const Color(0xFFDC2626);
+  static Color get errorSoft =>
+      isDark ? const Color(0xFF341B1D) : const Color(0xFFFDECEC);
+  static Color get info => primary;
+  static Color get infoSoft => primarySoft;
+  static Color get neutral =>
+      isDark ? const Color(0xFF8291AB) : const Color(0xFF64748B);
+  static Color get neutralSoft =>
+      isDark ? const Color(0xFF1C2538) : const Color(0xFFEFF2F6);
 
   // Seat map
-  static const seatAvailable = success;
-  static const seatLimited = warning;
-  static const seatOccupied = error;
-  static const seatSelected = primary;
+  static Color get seatAvailable => success;
+  static Color get seatLimited => warning;
+  static Color get seatOccupied => error;
+  static Color get seatSelected => primary;
 
   /// ARGB values, so they line up with `Book.coverColor`.
   static const List<int> coverPalette = [
@@ -285,14 +322,19 @@ class AppText {
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light() {
-    const scheme = ColorScheme(
-      brightness: Brightness.light,
+  static ThemeData light() => _build(Brightness.light);
+
+  static ThemeData dark() => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final scheme = ColorScheme(
+      brightness: brightness,
       primary: AppColors.primary,
       onPrimary: AppColors.textInverse,
       primaryContainer: AppColors.primarySoft,
       onPrimaryContainer: AppColors.primaryDark,
-      secondary: AppColors.primary,
+      secondary: AppColors.accent,
       onSecondary: AppColors.textInverse,
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
@@ -302,7 +344,9 @@ class AppTheme {
     );
 
     final textTheme = GoogleFonts.interTextTheme(
-      ThemeData.light().textTheme,
+      brightness == Brightness.light
+          ? ThemeData.light().textTheme
+          : ThemeData.dark().textTheme,
     ).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
@@ -310,7 +354,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
       splashFactory: InkSparkle.splashFactory,
@@ -322,8 +366,10 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         titleTextStyle: AppText.title(17, w: FontWeight.w600),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        iconTheme: const IconThemeData(size: 22),
+        systemOverlayStyle: dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -332,7 +378,7 @@ class AppTheme {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -345,23 +391,23 @@ class AppTheme {
             AppText.body(13, w: FontWeight.w600, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
         prefixIconColor: AppColors.textFaint,
         suffixIconColor: AppColors.textFaint,
@@ -385,7 +431,7 @@ class AppTheme {
           foregroundColor: AppColors.primary,
           minimumSize: const Size.fromHeight(52),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          side: const BorderSide(color: AppColors.primary, width: 1.4),
+          side: BorderSide(color: AppColors.primary, width: 1.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.sm),
           ),
@@ -426,13 +472,13 @@ class AppTheme {
               ? AppColors.primary
               : Colors.transparent,
         ),
-        checkColor: const WidgetStatePropertyAll(AppColors.textInverse),
-        side: const BorderSide(color: AppColors.borderStrong, width: 1.6),
+        checkColor: WidgetStatePropertyAll(AppColors.textInverse),
+        side: BorderSide(color: AppColors.borderStrong, width: 1.6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5),
         ),
       ),
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: AppColors.border,
         thickness: 1,
         space: 1,
@@ -445,13 +491,14 @@ class AppTheme {
         ),
         contentTextStyle: AppText.body(13.5, color: AppColors.textInverse),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
         dragHandleColor: AppColors.borderStrong,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -462,7 +509,7 @@ class AppTheme {
         ),
       ),
       progressIndicatorTheme:
-          const ProgressIndicatorThemeData(color: AppColors.primary),
+          ProgressIndicatorThemeData(color: AppColors.primary),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,

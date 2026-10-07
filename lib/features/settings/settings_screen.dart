@@ -61,10 +61,44 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
-            child: SectionLabel('Other settings'),
+            child: SectionLabel('Appearance'),
           ),
           StaggeredEntrance(
             index: 1,
+            child: SurfaceCard(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const IconBadge(icon: Icons.dark_mode_outlined, size: 40),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Theme',
+                            style: AppText.title(14.5, w: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Light, dark, or follow the system',
+                          style: AppText.body(
+                              12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _ThemePicker(mode: state.themeMode),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10),
+            child: SectionLabel('Other settings'),
+          ),
+          StaggeredEntrance(
+            index: 2,
             child: SurfaceCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -123,9 +157,91 @@ class _ToggleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       value: value,
-      onChanged: onChanged,
+      onChanged: (v) {
+        Haptics.selection();
+        onChanged(v);
+      },
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       title: Text(label, style: AppText.body(14.5)),
+    );
+  }
+}
+
+/// Compact Light / Dark / System chooser for the app theme.
+class _ThemePicker extends StatelessWidget {
+  const _ThemePicker({required this.mode});
+
+  final ThemeMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSunken,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final entry in <(ThemeMode, IconData, String)>[
+            (ThemeMode.light, Icons.light_mode_rounded, 'Light'),
+            (ThemeMode.dark, Icons.dark_mode_rounded, 'Dark'),
+          ])
+            _ThemePick(
+              icon: entry.$2,
+              tooltip: entry.$3,
+              selected: mode == entry.$1,
+              onTap: () {
+                Haptics.selection();
+                state.setThemeMode(entry.$1);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemePick extends StatelessWidget {
+  const _ThemePick({
+    required this.icon,
+    required this.tooltip,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: PressScale(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          width: 36,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.full),
+            boxShadow: selected ? AppShadows.glow(AppColors.primary) : null,
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: selected ? AppColors.textInverse : AppColors.textFaint,
+          ),
+        ),
+      ),
     );
   }
 }

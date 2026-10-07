@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
@@ -20,12 +21,12 @@ class AppTab {
   static const profile = 4;
 }
 
-/// The role-aware bottom navigation.
+/// The role-aware shell with a floating glass navigation bar.
 ///
-/// The prototype ships two bars: `Home · Seats · Books · Bookings ·
-/// Profile` for students and `Home · Seats · Catalog · Bookings · Staff`
-/// for library staff, so the destination list is built from the signed-in
-/// role rather than being fixed.
+/// The prototype ships two destination sets: `Home · Seats · Books ·
+/// Bookings · Profile` for students and `Home · Seats · Catalog ·
+/// Bookings · Staff` for library staff, so the tab list is built from the
+/// signed-in role rather than being fixed.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -42,6 +43,8 @@ class _AppShellState extends State<AppShell> {
 
   void switchTo(int index) {
     if (index < 0 || index >= _destinations.length) return;
+    if (index == _index) return;
+    HapticFeedback.selectionClick();
     setState(() => _index = index);
   }
 
@@ -92,21 +95,162 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       body: IndexedStack(index: safeIndex, children: screens),
-      bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: NavigationBar(
-          selectedIndex: safeIndex,
-          onDestinationSelected: switchTo,
-          destinations: [
-            for (final d in destinations)
-              NavigationDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(d.selectedIcon),
-                label: d.label,
+      bottomNavigationBar: _GlassNavBar(
+        destinations: destinations,
+        selectedIndex: safeIndex,
+        onSelected: switchTo,
+        // The Home tab is a dark hero surface, so the bar flips to
+        // dark glass to sit on it (mirrors the Stitch design).
+        dark: safeIndex == AppTab.home,
+      ),
+    );
+  }
+}
+
+/// A floating, frosted pill navigation bar. Detached from the screen edges
+/// with a soft ambient shadow, a translucent surface, and a sliding
+/// indicator glow behind the active destination.
+class _GlassNavBar extends StatelessWidget {
+  const _GlassNavBar({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+    this.dark = false,
+  });
+
+  final List<_Destination> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+        child: Container(
+          height: 66,
+          decoration: BoxDecoration(
+            color: dark
+                ? Colors.white.withValues(alpha: 0.06)
+                : (AppColors.isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.white.withValues(alpha: 0.88)),
+            borderRadius: BorderRadius.circular(AppRadii.full),
+            border: Border.all(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : (AppColors.isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.white.withValues(alpha: 0.65)),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0C1526)
+                    .withValues(alpha: dark || AppColors.isDark ? 0.45 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
               ),
-          ],
+              BoxShadow(
+                color: AppColors.primary.withValues(
+                    alpha: dark || AppColors.isDark ? 0.10 : 0.06),
+                blurRadius: 36,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < destinations.length; i++)
+                Expanded(
+                  child: _GlassNavDestination(
+                    destination: destinations[i],
+                    selected: i == selectedIndex,
+                    dark: dark,
+                    onTap: () => onSelected(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassNavDestination extends StatelessWidget {
+  const _GlassNavDestination({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+    this.dark = false,
+  });
+
+  final _Destination destination;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final idle = dark ? Colors.white.withValues(alpha: 0.55) : AppColors.textFaint;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: selected ? 1 : 0),
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          builder: (context, t, child) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (t > 0)
+                    Container(
+                      width: 46,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadii.full),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryBright.withValues(alpha: 0.28 * t),
+                            AppColors.accent.withValues(alpha: 0.18 * t),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: AppColors.primaryBright
+                              .withValues(alpha: 0.35 * t),
+                        ),
+                      ),
+                    ),
+                  Icon(
+                    selected ? destination.selectedIcon : destination.icon,
+                    size: 21 + 1.5 * t,
+                    color: Color.lerp(idle, AppColors.primaryBright, t),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                destination.label,
+                style: AppText.label(
+                  10.5,
+                  w: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: Color.lerp(idle, AppColors.primaryBright, t),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

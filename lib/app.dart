@@ -28,13 +28,23 @@ class _LibraryAppState extends State<LibraryApp> {
   Widget build(BuildContext context) {
     return AppScope(
       state: _state,
-      child: MaterialApp(
-        title: AppStrings.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        builder: (context, child) =>
-            AppFrame(child: child ?? const SizedBox.shrink()),
-        home: const _AppEntry(),
+      child: AnimatedBuilder(
+        animation: _state,
+        builder: (context, _) {
+          // Keep the global palette in sync before any screen builds so
+          // both the ThemeData and the hardcoded colour getters agree.
+          AppColors.isDark = _state.themeMode == ThemeMode.dark;
+          return MaterialApp(
+            title: AppStrings.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: _state.themeMode,
+            builder: (context, child) =>
+                AppFrame(child: child ?? const SizedBox.shrink()),
+            home: const _AppEntry(),
+          );
+        },
       ),
     );
   }
