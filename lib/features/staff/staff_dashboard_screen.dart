@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -48,7 +47,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    final stats = MockData.dashboardStats;
+    const stats = MockData.dashboardStats;
     final queue = _filtered(state.queue);
 
     return Scaffold(
@@ -102,7 +101,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   ),
                   style: IconButton.styleFrom(
                     backgroundColor: AppColors.surface,
-                    side: const BorderSide(color: AppColors.border),
+                    side: BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                     ),
@@ -327,33 +326,35 @@ class _RowAction extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
-    this.tone = AppColors.primary,
+    this.tone,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  final Color tone;
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTone = tone ?? AppColors.primary;
     return PressScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: tone.withValues(alpha: 0.08),
+          color: effectiveTone.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(AppRadii.xs),
-          border: Border.all(color: tone.withValues(alpha: 0.28)),
+          border: Border.all(color: effectiveTone.withValues(alpha: 0.28)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: tone),
+            Icon(icon, size: 15, color: effectiveTone),
             const SizedBox(width: 6),
             Text(label,
-                style: AppText.label(12.5, w: FontWeight.w600, color: tone)),
+                style: AppText.label(
+                    12.5, w: FontWeight.w600, color: effectiveTone)),
           ],
         ),
       ),

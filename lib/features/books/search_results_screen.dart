@@ -26,6 +26,16 @@ class SearchResultsScreen extends StatefulWidget {
 
 class _SearchResultsScreenState extends State<SearchResultsScreen> {
   late String _query = widget.query;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Brief skeleton phase so results feel fetched rather than instant.
+    Future.delayed(const Duration(milliseconds: 650), () {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
 
   List<Book> _matches(List<Book> books) {
     final q = _query.trim().toLowerCase();
@@ -66,7 +76,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.search_rounded,
+                        Icon(Icons.search_rounded,
                             size: 17, color: AppColors.textFaint),
                         const SizedBox(width: 9),
                         Expanded(
@@ -79,7 +89,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         ),
                         InkWell(
                           onTap: () => setState(() => _query = ''),
-                          child: const Icon(Icons.close_rounded,
+                          child: Icon(Icons.close_rounded,
                               size: 16, color: AppColors.textFaint),
                         ),
                       ],
@@ -93,14 +103,27 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                '${books.length} ${books.length == 1 ? 'book' : 'books'} found',
-                style: AppText.body(13, color: AppColors.textSecondary),
-              ),
+              child: _loading
+                  ? const Skeleton(width: 110, height: 12, radius: AppRadii.full)
+                  : Text(
+                      '${books.length} ${books.length == 1 ? 'book' : 'books'} found',
+                      style:
+                          AppText.body(13, color: AppColors.textSecondary),
+                    ),
             ),
           ),
           Expanded(
-            child: books.isEmpty
+            child: _loading
+                ? ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                    itemCount: 4,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) => StaggeredEntrance(
+                      index: i,
+                      child: const SkeletonCard(height: 58),
+                    ),
+                  )
+                : books.isEmpty
                 ? const EmptyState(
                     icon: Icons.search_off_rounded,
                     title: 'No matches',
@@ -151,6 +174,7 @@ class _ResultRow extends StatelessWidget {
             isbn: book.isbn,
             width: 52,
             height: 74,
+            heroTag: 'book-${book.id}',
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -194,8 +218,8 @@ class _ResultRow extends StatelessWidget {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(left: 4, top: 2),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 2),
             child: Text(
               'VIEW DETAILS',
               style: TextStyle(

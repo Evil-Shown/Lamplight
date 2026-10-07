@@ -45,6 +45,7 @@ class BookDetailScreen extends StatelessWidget {
                   width: 96,
                   height: 136,
                   radius: AppRadii.sm,
+                  heroTag: 'book-${book.id}',
                 ),
                 const SizedBox(width: 16),
                 Expanded(
