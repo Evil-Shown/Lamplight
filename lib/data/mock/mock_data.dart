@@ -26,7 +26,7 @@ class MockData {
   // ------------------------------------------------------------------ books
 
   static final List<Book> books = [
-    Book(
+    const Book(
       id: 'b1',
       title: 'Clean Code',
       author: 'Robert C. Martin',
@@ -41,7 +41,7 @@ class MockData {
           'software. Clean the code, design the principles, and practices '
           'that will help us write clean code with real-world systems.',
     ),
-    Book(
+    const Book(
       id: 'b2',
       title: 'The Pragmatic Programmer',
       author: 'David Thomas, Andrew Hunt',
@@ -55,7 +55,7 @@ class MockData {
           'The Pragmatic Programmer is a book about software development and '
           'is intended to be an easy read, not a reference manual.',
     ),
-    Book(
+    const Book(
       id: 'b3',
       title: 'Code Complete',
       author: 'Steve McConnell',
@@ -69,7 +69,7 @@ class MockData {
           'A thorough, well-organized guide to constructing maintainable '
           'software. Reading Code Complete will make you a better programmer.',
     ),
-    Book(
+    const Book(
       id: 'b4',
       title: 'Atomic Habits',
       author: 'James Clear',
@@ -84,7 +84,7 @@ class MockData {
           'little by little, designing good habits, and mastering the art of '
           'habit building.',
     ),
-    Book(
+    const Book(
       id: 'b5',
       title: 'Human-Computer Interaction',
       author: 'Alan Dix, Janet Beale',
@@ -99,7 +99,7 @@ class MockData {
           'interactive systems, from the ergonomics of a single screen to '
           'the social context of large-scale systems.',
     ),
-    Book(
+    const Book(
       id: 'b6',
       title: 'Introduction to Algorithms',
       author: 'Thomas H. Cormen',
@@ -114,7 +114,7 @@ class MockData {
           'algorithms, covering everything from data structures to the '
           'complexity analysis of NP-complete problems.',
     ),
-    Book(
+    const Book(
       id: 'b7',
       title: 'The Design of Everyday Things',
       author: 'Don Norman',

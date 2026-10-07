@@ -50,7 +50,9 @@ class AppScaffold extends StatelessWidget {
             : null,
         title: Text(title, style: AppText.title(17, w: FontWeight.w600)),
         actions: actions,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: AppColors.isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
       ),
       body: body,
       bottomNavigationBar: bottomBar,
@@ -128,19 +130,20 @@ class GlassTile extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.tint = AppColors.primary,
+    this.tint,
     this.padding = const EdgeInsets.all(14),
     this.radius = AppRadii.lg,
   });
 
   final Widget child;
   final VoidCallback? onTap;
-  final Color tint;
+  final Color? tint;
   final EdgeInsetsGeometry padding;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTint = tint ?? AppColors.primary;
     final content = Material(
       color: Colors.transparent,
       child: Ink(
@@ -149,12 +152,14 @@ class GlassTile extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color.alphaBlend(tint.withValues(alpha: 0.10), AppColors.surface),
-              Color.alphaBlend(tint.withValues(alpha: 0.04), AppColors.surface),
+              Color.alphaBlend(
+                  effectiveTint.withValues(alpha: 0.10), AppColors.surface),
+              Color.alphaBlend(
+                  effectiveTint.withValues(alpha: 0.04), AppColors.surface),
             ],
           ),
           borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: tint.withValues(alpha: 0.16)),
+          border: Border.all(color: effectiveTint.withValues(alpha: 0.16)),
         ),
         child: Padding(padding: padding, child: child),
       ),
@@ -330,7 +335,7 @@ class SectionHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                const Icon(Icons.chevron_right_rounded,
+                Icon(Icons.chevron_right_rounded,
                     size: 18, color: AppColors.primary),
               ],
             ),
@@ -345,7 +350,7 @@ class StatusPill extends StatelessWidget {
   const StatusPill({
     super.key,
     required this.label,
-    this.color = AppColors.primary,
+    this.color,
     this.background,
     this.icon,
     this.compact = false,
@@ -353,7 +358,7 @@ class StatusPill extends StatelessWidget {
   });
 
   final String label;
-  final Color color;
+  final Color? color;
   final Color? background;
   final IconData? icon;
   final bool compact;
@@ -361,23 +366,24 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.primary;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 8 : 10,
         vertical: compact ? 3.5 : 5,
       ),
       decoration: BoxDecoration(
-        color: background ?? color.withValues(alpha: 0.10),
+        color: background ?? effectiveColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AppRadii.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (pulse) ...[
-            _PulseDot(color: color),
+            _PulseDot(color: effectiveColor),
             const SizedBox(width: 6),
           ] else if (icon != null) ...[
-            Icon(icon, size: compact ? 12 : 13, color: color),
+            Icon(icon, size: compact ? 12 : 13, color: effectiveColor),
             const SizedBox(width: 4),
           ],
           // Flexible so the pill can shrink inside tight rows rather than
@@ -390,7 +396,7 @@ class StatusPill extends StatelessWidget {
               style: AppText.label(
                 compact ? 11 : 12,
                 w: FontWeight.w600,
-                color: color,
+                color: effectiveColor,
               ),
             ),
           ),
@@ -579,7 +585,7 @@ class EmptyState extends StatelessWidget {
             Container(
               width: 84,
               height: 84,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.primarySoft,
               ),
@@ -764,7 +770,7 @@ class BottomActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -818,8 +824,10 @@ class PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.sm),
             side: switch (tone) {
-              ButtonTone.secondary => const BorderSide(color: AppColors.primary, width: 1.4),
-              ButtonTone.danger => const BorderSide(color: AppColors.error, width: 1.4),
+              ButtonTone.secondary =>
+                BorderSide(color: AppColors.primary, width: 1.4),
+              ButtonTone.danger =>
+                BorderSide(color: AppColors.error, width: 1.4),
               _ => BorderSide.none,
             },
           ),
@@ -906,7 +914,7 @@ class SettingRow extends StatelessWidget {
               ),
             if (showChevron) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded,
+              Icon(Icons.chevron_right_rounded,
                   size: 20, color: AppColors.textFaint),
             ],
           ],
@@ -921,31 +929,34 @@ class IconBadge extends StatelessWidget {
   const IconBadge({
     super.key,
     required this.icon,
-    this.color = AppColors.primary,
+    this.color,
     this.background,
     this.size = 40,
   });
 
   final IconData icon;
-  final Color color;
+  final Color? color;
   final Color? background;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.primary;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: background ?? color.withValues(alpha: 0.10),
+        color: background ?? effectiveColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
-      child: Icon(icon, size: size * 0.46, color: color),
+      child: Icon(icon, size: size * 0.46, color: effectiveColor),
     );
   }
 }
 
 /// Book cover from OpenLibrary, falling back to a generated spine plate.
+///
+/// Pass [heroTag] on list/detail pairs so the cover flies between routes.
 class BookCover extends StatelessWidget {
   const BookCover({
     super.key,
@@ -955,6 +966,7 @@ class BookCover extends StatelessWidget {
     this.width = 56,
     this.height = 78,
     this.radius = AppRadii.xs,
+    this.heroTag,
   });
 
   final String title;
@@ -963,6 +975,7 @@ class BookCover extends StatelessWidget {
   final double width;
   final double height;
   final double radius;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -970,7 +983,7 @@ class BookCover extends StatelessWidget {
 
     Widget plate() => _CoverPlate(title: title, base: base, radius: radius);
 
-    return Container(
+    Widget cover = Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
@@ -997,6 +1010,11 @@ class BookCover extends StatelessWidget {
               ),
       ),
     );
+
+    if (heroTag != null) {
+      cover = Hero(tag: heroTag!, child: cover);
+    }
+    return cover;
   }
 }
 
@@ -1058,13 +1076,14 @@ class _CoverPlate extends StatelessWidget {
 
 /// The green tick in a soft circle used at the top of every success screen.
 class SuccessCheck extends StatelessWidget {
-  const SuccessCheck({super.key, this.size = 76, this.color = AppColors.success});
+  const SuccessCheck({super.key, this.size = 76, this.color});
 
   final double size;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.success;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.6, end: 1),
       duration: const Duration(milliseconds: 520),
@@ -1076,9 +1095,9 @@ class SuccessCheck extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withValues(alpha: 0.14),
+          color: effectiveColor.withValues(alpha: 0.14),
         ),
-        child: Icon(Icons.check_rounded, size: size * 0.52, color: color),
+        child: Icon(Icons.check_rounded, size: size * 0.52, color: effectiveColor),
       ),
     );
   }
@@ -1176,7 +1195,10 @@ class _PressScaleState extends State<PressScale> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
+      onTapDown: (_) {
+        Haptics.tap();
+        setState(() => _pressed = true);
+      },
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onTap,
@@ -1195,18 +1217,19 @@ class MeterBar extends StatelessWidget {
   const MeterBar({
     super.key,
     required this.value,
-    this.color = AppColors.success,
+    this.color,
     this.height = 6,
     this.background,
   });
 
   final double value;
-  final Color color;
+  final Color? color;
   final double height;
   final Color? background;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.success;
     return LayoutBuilder(
       builder: (context, constraints) => Container(
         height: height,
@@ -1225,12 +1248,138 @@ class MeterBar extends StatelessWidget {
               height: height,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color.withValues(alpha: 0.7), color],
+                  colors: [
+                    effectiveColor.withValues(alpha: 0.7),
+                    effectiveColor
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadii.full),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Centralised haptic vocabulary so interactions feel consistent.
+class Haptics {
+  Haptics._();
+
+  /// Light tick for taps and card presses.
+  static void tap() => HapticFeedback.lightImpact();
+
+  /// Subtle click for segmented controls and tab switches.
+  static void selection() => HapticFeedback.selectionClick();
+
+  /// Firmer double-tick for confirmations and completed flows.
+  static void success() => HapticFeedback.mediumImpact();
+
+  /// Warning buzz for destructive or error states.
+  static void danger() => HapticFeedback.vibrate();
+}
+
+/// A shimmering placeholder block used while content loads.
+class Skeleton extends StatefulWidget {
+  const Skeleton({
+    super.key,
+    this.width,
+    this.height = 14,
+    this.radius = AppRadii.xs,
+    this.color,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+  final Color? color;
+
+  @override
+  State<Skeleton> createState() => _SkeletonState();
+}
+
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base = widget.color ??
+        (AppColors.isDark
+            ? Colors.white.withValues(alpha: 0.07)
+            : Colors.black.withValues(alpha: 0.06));
+    final highlight = AppColors.isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.black.withValues(alpha: 0.03);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.radius),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) => Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-1.6 + 3.2 * _controller.value, 0),
+              end: Alignment(-0.6 + 3.2 * _controller.value, 0),
+              colors: [base, highlight, base],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A card-shaped skeleton placeholder matching [SurfaceCard] proportions.
+class SkeletonCard extends StatelessWidget {
+  const SkeletonCard({super.key, this.height = 84, this.padding});
+
+  final double height;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      padding: padding ?? const EdgeInsets.all(16),
+      child: SizedBox(
+        height: height,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Skeleton(width: 44, height: 44, radius: AppRadii.sm),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Skeleton(
+                          width: double.infinity,
+                          height: 12,
+                          radius: AppRadii.full),
+                      SizedBox(height: 8),
+                      Skeleton(width: 140, height: 10, radius: AppRadii.full),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Spacer(),
+            Skeleton(width: double.infinity, height: 10, radius: AppRadii.full),
+          ],
         ),
       ),
     );
@@ -1245,7 +1394,7 @@ class StatTile extends StatelessWidget {
     required this.value,
     this.suffix = '',
     this.caption,
-    this.color = AppColors.primary,
+    this.color,
     this.icon,
   });
 
@@ -1253,21 +1402,22 @@ class StatTile extends StatelessWidget {
   final int value;
   final String suffix;
   final String? caption;
-  final Color color;
+  final Color? color;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.primary;
     return SurfaceCard(
       padding: const EdgeInsets.all(14),
-      tint: color.withValues(alpha: 0.30),
+      tint: effectiveColor.withValues(alpha: 0.30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 14, color: color),
+                Icon(icon, size: 14, color: effectiveColor),
                 const SizedBox(width: 5),
               ],
               Expanded(child: SectionLabel(label)),
@@ -1283,7 +1433,7 @@ class StatTile extends StatelessWidget {
                 style: AppText.display(
                   25,
                   w: FontWeight.w800,
-                  color: color,
+                  color: effectiveColor,
                   ls: -0.6,
                 ),
               ),
