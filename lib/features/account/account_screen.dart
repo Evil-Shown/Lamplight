@@ -127,18 +127,22 @@ class _IdentityCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: AppGradients.brand,
-        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         boxShadow: AppShadows.primary,
       ),
       child: Row(
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: 56,
+            height: 56,
             alignment: Alignment.center,
             decoration: BoxDecoration(
+              shape: BoxShape.circle,
               color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.28),
+                width: 1.5,
+              ),
             ),
             child: Text(
               profile.firstName.substring(0, 1).toUpperCase(),
