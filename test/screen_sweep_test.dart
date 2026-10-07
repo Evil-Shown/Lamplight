@@ -102,7 +102,17 @@ void main() {
     'account': const AccountScreen(),
     'staffDashboard': const StaffDashboardScreen(),
     'staffScanner': const StaffScannerScreen(),
-    'verification': const VerificationResultScreen(),
+    'verification': const VerificationResultScreen(
+      code: 'LIB-2026-4851',
+      result: {
+        'kind': 'seat',
+        'status': 'active',
+        'seatId': 's1',
+        'ownerName': 'Damitha Samarakoon',
+        'ownerId': 'IT2023-CS-084',
+        'docPath': 'users/uid/bookings/LIB-2026-4851',
+      },
+    ),
   };
 
   screens.forEach((name, screen) {
