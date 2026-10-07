@@ -283,55 +283,57 @@ class _ZonePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.card,
-      ),
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(AppRadii.xs),
-            ),
-            child: Icon(Icons.apartment_rounded,
-                size: 19, color: AppColors.primary),
+          IconBadge(
+            icon: Icons.layers_outlined,
+            color: AppColors.primary,
+            background: AppColors.primarySoft,
+            size: 40,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ZONE SELECTION',
+                Text('CURRENT FLOOR',
                     style: AppText.overline(9.5, ls: 1.3)),
                 const SizedBox(height: 2),
-                Text('$value · $seatCount desks',
-                    style: AppText.title(13.5, w: FontWeight.w600)),
+                Text(
+                  '$value · $seatCount desks',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.title(14, w: FontWeight.w700),
+                ),
               ],
             ),
           ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isDense: true,
-              icon: Icon(Icons.expand_more_rounded,
-                  size: 20, color: AppColors.textFaint),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-              style: AppText.body(14),
-              items: const [
-                DropdownMenuItem(value: 'Floor 1', child: Text('Floor 1')),
-                DropdownMenuItem(value: 'Floor 2', child: Text('Floor 2')),
-                DropdownMenuItem(value: 'Floor 3', child: Text('Floor 3')),
-              ],
-              onChanged: (v) {
-                if (v != null) onChanged(v);
-              },
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(AppRadii.full),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isDense: true,
+                icon: Icon(Icons.keyboard_arrow_down_rounded,
+                    size: 18, color: AppColors.primary),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                style: AppText.label(13, w: FontWeight.w600, color: AppColors.textPrimary),
+                items: const [
+                  DropdownMenuItem(value: 'Floor 1', child: Text('Floor 1')),
+                  DropdownMenuItem(value: 'Floor 2', child: Text('Floor 2')),
+                  DropdownMenuItem(value: 'Floor 3', child: Text('Floor 3')),
+                ],
+                onChanged: (v) {
+                  if (v != null) onChanged(v);
+                },
+              ),
             ),
           ),
         ],
@@ -622,50 +624,93 @@ class _RecommendedCard extends StatelessWidget {
     final why = reasons.isEmpty ? seat.zoneLabel : reasons.join(' · ');
     return SurfaceCard(
       onTap: onTap,
-      gradient: AppGradients.auroraSoft,
-      borderColor: AppColors.primary.withValues(alpha: 0.28),
       tint: AppColors.primary,
-      child: Row(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconBadge(
-              icon: Icons.auto_awesome_rounded,
-              size: 40,
-              color: AppColors.success),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SectionLabel('Recommended for most students'),
-                const SizedBox(height: 5),
-                Text('Seat ${seat.label}',
-                    style: AppText.title(15.5, w: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(
-                  why,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.body(12.5, color: AppColors.textSecondary),
+          Row(
+            children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(AppRadii.full),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 13, color: AppColors.primary),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          'TOP PICK',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.overline(9,
+                              ls: 0.8, color: AppColors.primary),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadii.full),
-              boxShadow: AppShadows.glow(AppColors.primary),
-            ),
-            child: Text(
-              'Select',
-              style: AppText.label(
-                12.5,
-                w: FontWeight.w700,
-                color: AppColors.textInverse,
               ),
-            ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.successSoft,
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                ),
+                child: Text(
+                  'Available',
+                  style: AppText.label(11,
+                      w: FontWeight.w600, color: AppColors.success),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Seat ${seat.label}',
+                      style: AppText.title(18, w: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      why,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(13, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: onTap,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textInverse,
+                  shape: const StadiumBorder(),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  minimumSize: const Size(0, 38),
+                ),
+                child: Text(
+                  'Select Spot',
+                  style: AppText.label(12.5,
+                      w: FontWeight.w700, color: AppColors.textInverse),
+                ),
+              ),
+            ],
           ),
         ],
       ),
