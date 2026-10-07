@@ -19,10 +19,10 @@ import '../reservations/reservations_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // Fixed dark canvas — Home stays dark in both theme modes.
-  static const _canvas = Color(0xFF0A0F1E);
-  static const _card = Color(0xFF151D33);
-  static const _cardBorder = Color(0xFF232D48);
+  // Editorial Scholarly dark canvas & warm obsidian cards
+  static const _canvas = Color(0xFF0F141C);
+  static const _card = Color(0xFF17202C);
+  static const _cardBorder = Color(0xFF243142);
 
   @override
   Widget build(BuildContext context) {
@@ -578,7 +578,7 @@ class _QuickActions extends StatelessWidget {
                   icon: Icons.search_rounded,
                   label: 'Search books',
                   caption: 'Find titles and shelf locations',
-                  tint: const Color(0xFF8FB4FF),
+                  tint: const Color(0xFF6B92E5),
                   onTap: () => AppShell.switchTab(context, AppTab.books),
                 ),
               ),
@@ -589,7 +589,7 @@ class _QuickActions extends StatelessWidget {
                   icon: Icons.event_seat_rounded,
                   label: 'Reserve a seat',
                   caption: 'Smart floor recommendations',
-                  tint: const Color(0xFFB5A8FF),
+                  tint: const Color(0xFFE07A5F),
                   onTap: () => AppShell.switchTab(context, AppTab.seats),
                 ),
               ),
@@ -604,7 +604,7 @@ class _QuickActions extends StatelessWidget {
                   icon: Icons.confirmation_number_outlined,
                   label: 'My bookings',
                   caption: 'Manage library reservations',
-                  tint: const Color(0xFF6FD8E8),
+                  tint: const Color(0xFFDE9B35),
                   onTap: () => AppShell.switchTab(context, AppTab.bookings),
                 ),
               ),

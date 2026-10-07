@@ -17,93 +17,93 @@ class AppColors {
   /// [AppState.themeMode] before the frame is built.
   static bool isDark = false;
 
-  // Surfaces
+  // Surfaces - Warm Academic Editorial (Stone/Cream paper undertone in light, Deep Midnight Ink in dark)
   static Color get background =>
-      isDark ? const Color(0xFF0B1120) : const Color(0xFFF4F6FC);
+      isDark ? const Color(0xFF0F141C) : const Color(0xFFF9F8F5);
   static Color get surface =>
-      isDark ? const Color(0xFF141D31) : const Color(0xFFFFFFFF);
+      isDark ? const Color(0xFF161D27) : const Color(0xFFFFFFFF);
   static Color get surfaceMuted =>
-      isDark ? const Color(0xFF1B2540) : const Color(0xFFF0F3F8);
+      isDark ? const Color(0xFF1E2734) : const Color(0xFFF2EFE9);
   static Color get surfaceSunken =>
-      isDark ? const Color(0xFF0F1726) : const Color(0xFFEBEFF8);
+      isDark ? const Color(0xFF131822) : const Color(0xFFEBE6DC);
 
-  // Brand
+  // Brand - Deep Scholarly Indigo / Oxford Navy
   static Color get primary =>
-      isDark ? const Color(0xFF4C82E8) : const Color(0xFF1A56DB);
+      isDark ? const Color(0xFF6B92E5) : const Color(0xFF1D3557);
   static Color get primaryDark =>
-      isDark ? const Color(0xFFA9C6FF) : const Color(0xFF10328C);
+      isDark ? const Color(0xFFB0CBFF) : const Color(0xFF10223B);
   static Color get primarySoft =>
-      isDark ? const Color(0xFF1A2A4E) : const Color(0xFFE8EFFD);
+      isDark ? const Color(0xFF192538) : const Color(0xFFEBF1FA);
   static Color get primaryBright =>
-      isDark ? const Color(0xFF6E9EFF) : const Color(0xFF3B7BF6);
+      isDark ? const Color(0xFF7CA3F8) : const Color(0xFF284B78);
   static Color get primaryLift =>
-      isDark ? const Color(0xFF8FB4FF) : const Color(0xFF6E9EFF);
+      isDark ? const Color(0xFF9DBDFF) : const Color(0xFF457B9D);
 
-  /// Secondary accent used for gradients and highlights.
+  // Accents - Warm Terracotta, Antique Gold, Soft Sage
   static Color get accent =>
-      isDark ? const Color(0xFF8B7BF7) : const Color(0xFF6D5BF5);
+      isDark ? const Color(0xFFE07A5F) : const Color(0xFFC85A32);
   static Color get accentSoft =>
-      isDark ? const Color(0xFF26224C) : const Color(0xFFEFECFE);
+      isDark ? const Color(0xFF35201A) : const Color(0xFFFBF0EB);
   static Color get cyan =>
-      isDark ? const Color(0xFF2CC5DC) : const Color(0xFF12B5CE);
+      isDark ? const Color(0xFF5BA4A4) : const Color(0xFF3D7D7D);
   static Color get cyanSoft =>
-      isDark ? const Color(0xFF12333B) : const Color(0xFFE2F7FB);
+      isDark ? const Color(0xFF152A2A) : const Color(0xFFE6F2F2);
   static Color get gold =>
-      isDark ? const Color(0xFFE5B95E) : const Color(0xFFD9A441);
+      isDark ? const Color(0xFFDE9B35) : const Color(0xFFB87D18);
   static Color get goldSoft =>
-      isDark ? const Color(0xFF332A16) : const Color(0xFFFBF2DF);
+      isDark ? const Color(0xFF33250E) : const Color(0xFFFDF5E6);
 
-  // Text
+  // Text - Charcoal & Editorial Ink
   static Color get textPrimary =>
-      isDark ? const Color(0xFFEDF2FB) : const Color(0xFF0C1526);
+      isDark ? const Color(0xFFF0F3F8) : const Color(0xFF181E24);
   static Color get textSecondary =>
-      isDark ? const Color(0xFF9BAAC4) : const Color(0xFF56657F);
+      isDark ? const Color(0xFF9EABB9) : const Color(0xFF5A6675);
   static Color get textFaint =>
-      isDark ? const Color(0xFF5E6C88) : const Color(0xFF94A3B8);
+      isDark ? const Color(0xFF677587) : const Color(0xFF8F9BA8);
   static Color get textInverse => const Color(0xFFFFFFFF);
 
-  // Lines
+  // Lines - Soft warm hairline borders
   static Color get border =>
-      isDark ? const Color(0xFF24304A) : const Color(0xFFE6EAF4);
+      isDark ? const Color(0xFF263242) : const Color(0xFFE8E3DA);
   static Color get borderStrong =>
-      isDark ? const Color(0xFF354465) : const Color(0xFFCBD5E1);
+      isDark ? const Color(0xFF3B4A5D) : const Color(0xFFD4CDC0);
 
-  // Status
+  // Status - Refined Natural Sage, Amber, Brick Red
   static Color get success =>
-      isDark ? const Color(0xFF34C97B) : const Color(0xFF16A34A);
+      isDark ? const Color(0xFF4EAE7B) : const Color(0xFF2D7A51);
   static Color get successSoft =>
-      isDark ? const Color(0xFF122B1D) : const Color(0xFFE8F8EE);
+      isDark ? const Color(0xFF142D20) : const Color(0xFFEBF6F0);
   static Color get warning =>
-      isDark ? const Color(0xFFF0A03C) : const Color(0xFFE8890C);
+      isDark ? const Color(0xFFE59834) : const Color(0xFFC07314);
   static Color get warningSoft =>
-      isDark ? const Color(0xFF322310) : const Color(0xFFFEF3E2);
+      isDark ? const Color(0xFF33220C) : const Color(0xFFFEF6E8);
   static Color get error =>
-      isDark ? const Color(0xFFF27171) : const Color(0xFFDC2626);
+      isDark ? const Color(0xFFE85D5D) : const Color(0xFFC53030);
   static Color get errorSoft =>
-      isDark ? const Color(0xFF341B1D) : const Color(0xFFFDECEC);
+      isDark ? const Color(0xFF361818) : const Color(0xFFFDEEEC);
   static Color get info => primary;
   static Color get infoSoft => primarySoft;
   static Color get neutral =>
-      isDark ? const Color(0xFF8291AB) : const Color(0xFF64748B);
+      isDark ? const Color(0xFF8695A6) : const Color(0xFF677584);
   static Color get neutralSoft =>
-      isDark ? const Color(0xFF1C2538) : const Color(0xFFEFF2F6);
+      isDark ? const Color(0xFF1F2936) : const Color(0xFFF0EDE6);
 
   // Seat map
   static Color get seatAvailable => success;
   static Color get seatLimited => warning;
   static Color get seatOccupied => error;
-  static Color get seatSelected => primary;
+  static Color get seatSelected => accent;
 
   /// ARGB values, so they line up with `Book.coverColor`.
   static const List<int> coverPalette = [
-    0xFF1E40AF,
-    0xFF0E7490,
-    0xFF9D174D,
-    0xFFB45309,
-    0xFF5B21B6,
-    0xFF155E75,
-    0xFF9A3412,
-    0xFF3F6212,
+    0xFF1D3557,
+    0xFF2A5B5B,
+    0xFF8D3B2A,
+    0xFFB06F17,
+    0xFF4A3E72,
+    0xFF1F4E5B,
+    0xFF7C3626,
+    0xFF3B5E34,
   ];
 }
 
@@ -123,22 +123,22 @@ class AppShadows {
 
   static List<BoxShadow> get card => [
         BoxShadow(
-          color: const Color(0xFF0F1A2E).withValues(alpha: 0.05),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
+          color: const Color(0xFF1B1A17).withValues(alpha: 0.04),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
         ),
       ];
 
   static List<BoxShadow> get raised => [
         BoxShadow(
-          color: const Color(0xFF0C1526).withValues(alpha: 0.07),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
+          color: const Color(0xFF1B1A17).withValues(alpha: 0.06),
+          blurRadius: 16,
+          offset: const Offset(0, 5),
         ),
         BoxShadow(
-          color: const Color(0xFF0C1526).withValues(alpha: 0.05),
-          blurRadius: 36,
-          offset: const Offset(0, 14),
+          color: const Color(0xFF1B1A17).withValues(alpha: 0.04),
+          blurRadius: 32,
+          offset: const Offset(0, 12),
         ),
       ];
 
@@ -146,36 +146,36 @@ class AppShadows {
   /// the card's own hue. This is what makes surfaces read as layered.
   static List<BoxShadow> layered(Color tint) => [
         BoxShadow(
-          color: tint.withValues(alpha: 0.16),
-          blurRadius: 22,
-          offset: const Offset(0, 10),
+          color: tint.withValues(alpha: 0.14),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
         BoxShadow(
-          color: const Color(0xFF0C1526).withValues(alpha: 0.05),
-          blurRadius: 40,
-          offset: const Offset(0, 18),
+          color: const Color(0xFF1B1A17).withValues(alpha: 0.04),
+          blurRadius: 36,
+          offset: const Offset(0, 16),
         ),
       ];
 
   /// Soft ambient bloom, for primary actions and selected states.
   static List<BoxShadow> glow(Color tint) => [
         BoxShadow(
-          color: tint.withValues(alpha: 0.30),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
+          color: tint.withValues(alpha: 0.25),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
         ),
         BoxShadow(
-          color: tint.withValues(alpha: 0.18),
-          blurRadius: 36,
-          offset: const Offset(0, 14),
+          color: tint.withValues(alpha: 0.15),
+          blurRadius: 32,
+          offset: const Offset(0, 12),
         ),
       ];
 
   static List<BoxShadow> get primary => [
         BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.24),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
+          color: AppColors.primary.withValues(alpha: 0.22),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
         ),
       ];
 }
@@ -186,39 +186,39 @@ class AppGradients {
   static const brand = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2C6BE0), Color(0xFF1A56DB), Color(0xFF123C9E)],
+    colors: [Color(0xFF23426A), Color(0xFF1D3557), Color(0xFF132238)],
   );
 
   static const hero = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xD9101826), Color(0xF5090F1B)],
+    colors: [Color(0xF0182230), Color(0xFA0F1620)],
   );
 
-  /// The signature brand sweep, used on hero cards and primary actions.
+  /// The signature scholarly sweep: deep navy through warm terracotta and gold
   static const aurora = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF3B7BF6), Color(0xFF1A56DB), Color(0xFF6D5BF5)],
+    colors: [Color(0xFF1D3557), Color(0xFF284B78), Color(0xFFC85A32)],
   );
 
   static const auroraSoft = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE8EFFD), Color(0xFFF4F1FE)],
+    colors: [Color(0xFFEBF1FA), Color(0xFFFBF0EB)],
   );
 
   static const mint = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF34D399), Color(0xFF10B981)],
+    colors: [Color(0xFF4EAE7B), Color(0xFF2D7A51)],
   );
 
-  /// Deep panel used behind stats and the staff surfaces.
+  /// Deep panel used behind stats and staff surfaces.
   static const panel = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF16234A), Color(0xFF0C1526)],
+    colors: [Color(0xFF1E2A3A), Color(0xFF111722)],
   );
 
   static Gradient tint(Color color) => LinearGradient(
@@ -241,8 +241,8 @@ class AppGradients {
   }
 }
 
-/// One type voice. The prototype uses a single sans-serif family throughout —
-/// weight and size carry the hierarchy, not a second typeface.
+/// Editorial Academic typography: Serif display & titles (Newsreader) paired with
+/// ultra-crisp humanist sans (Inter) for functional text and UI controls.
 class AppText {
   AppText._();
 
@@ -253,12 +253,12 @@ class AppText {
     Color? color,
     double? height,
   }) =>
-      GoogleFonts.inter(
+      GoogleFonts.newsreader(
         fontSize: size,
         fontWeight: w,
         letterSpacing: ls,
         color: color ?? AppColors.textPrimary,
-        height: height,
+        height: height ?? 1.15,
       );
 
   static TextStyle title(
@@ -268,12 +268,12 @@ class AppText {
     Color? color,
     double? height,
   }) =>
-      GoogleFonts.inter(
+      GoogleFonts.newsreader(
         fontSize: size,
         fontWeight: w,
         letterSpacing: ls,
         color: color ?? AppColors.textPrimary,
-        height: height,
+        height: height ?? 1.25,
       );
 
   static TextStyle body(
@@ -304,11 +304,11 @@ class AppText {
         color: color ?? AppColors.textSecondary,
       );
 
-  /// The small uppercase grey section headers used above every list.
+  /// The small uppercase section headers used above lists.
   static TextStyle overline(
     double size, {
-    FontWeight w = FontWeight.w600,
-    double ls = 1.1,
+    FontWeight w = FontWeight.w700,
+    double ls = 1.2,
     Color? color,
   }) =>
       GoogleFonts.inter(
