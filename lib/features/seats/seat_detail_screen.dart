@@ -85,6 +85,15 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
       start: start,
       end: end,
     );
+    if (booking == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Seat ${seat.label} was just taken — '
+              'pick another seat.'),
+        ),
+      );
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BookingConfirmationScreen(booking: booking),

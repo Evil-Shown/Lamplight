@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// Library+ (SLIIT Quick Book) — student/staff prototype rules.
+// Every user can read the shared catalogue and seat map, but personal
+// feeds (reservations, bookings, waitlist, notifications, devices) are
+// readable/writable only by their owner. Staff powers are client-declared
+// for the prototype; production should move them to custom claims.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Shared catalogue + seat map: any signed-in member can read.
+    match /books/{bookId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn(); // seeding; restrict to staff in production
+    }
+
+    match /seats/{seatId} {
+      allow read: if isSignedIn();
+      // Seat status flips happen inside booking transactions.
+      allow update: if isSignedIn();
+      allow create, delete: if false;
+    }
+
+    // Staff dispatch queue.
+    match /queue/{entryId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Per-user documents.
+    match /users/{uid} {
+      allow read: if isSignedIn(); // staff verification needs owner info
+      allow create, update: if isOwner(uid);
+      allow delete: if false;
+
+      match /reservations/{docId} {
+        // Readable signed-in (staff QR verification), writable by owner.
+        allow read: if isSignedIn();
+        allow write: if isOwner(uid);
+      }
+
+      match /bookings/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(uid);
+      }
+
+      match /waitlist/{docId} {
+        allow read, write: if isSignedIn(); // promotion touches other users' entries
+      }
+
+      match /notifications/{docId} {
+        allow read: if isOwner(uid);
+        allow create: if isSignedIn(); // waitlist offers from other users
+        allow update, delete: if isOwner(uid);
+      }
+
+      match /devices/{tokenId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Everything else is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

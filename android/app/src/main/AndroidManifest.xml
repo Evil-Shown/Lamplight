@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Camera: staff QR verification scanner -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Device notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="library_app"
         android:name="${applicationName}"

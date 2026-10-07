@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "35347068856",
+    "project_id": "sliit-quick-book",
+    "storage_bucket": "sliit-quick-book.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:35347068856:android:525fac062c0466aa4c014d",
+        "android_client_info": {
+          "package_name": "com.example.library_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6e8kelPjpGUZSSCJABO8wSifqux8ru7Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

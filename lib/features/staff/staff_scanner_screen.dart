@@ -1,14 +1,19 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
+import '../../data/firebase/firestore_service.dart';
 import 'verification_result_screen.dart';
 
 /// P-14 Staff QR Scanner.
 ///
-/// The scan surface with a viewfinder and sweep, plus the manual code
-/// entry escape hatch. Camera capture is still stubbed — the prototype
-/// notes that too.
+/// Live camera capture with the branded viewfinder on top, plus the
+/// manual-code escape hatch. Every scanned or typed code is verified
+/// against Firestore before the result screen is shown.
 class StaffScannerScreen extends StatefulWidget {
   const StaffScannerScreen({super.key});
 
@@ -24,18 +29,36 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
   )..repeat(reverse: true);
 
   final _manualController = TextEditingController();
+  MobileScannerController? _camera;
+  bool _handling = false;
+  bool get _cameraSupported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
   @override
   void dispose() {
     _sweep.dispose();
     _manualController.dispose();
+    _camera?.dispose();
     super.dispose();
   }
 
-  void _scan() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const VerificationResultScreen()),
-    );
+  Future<void> _handleCode(String code) async {
+    if (_handling || code.trim().isEmpty) return;
+    _handling = true;
+    FocusScope.of(context).unfocus();
+    final result = await FirestoreService.instance.verifyCode(code);
+    if (!mounted) return;
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => VerificationResultScreen(
+              code: code.trim(),
+              result: result,
+            ),
+          ),
+        )
+        .then((_) {
+      if (mounted) setState(() => _handling = false);
+    });
   }
 
   @override
@@ -55,16 +78,31 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
             child: AspectRatio(
               aspectRatio: 1,
               child: Container(
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: AppColors.textPrimary,
                   borderRadius: BorderRadius.circular(AppRadii.lg),
                 ),
                 child: Stack(
+                  fit: StackFit.expand,
                   alignment: Alignment.center,
                   children: [
-                    Icon(Icons.qr_code_2_rounded,
-                        size: 168,
-                        color: Colors.white.withValues(alpha: 0.07)),
+                    if (_cameraSupported)
+                      MobileScanner(
+                        controller: _camera ??= MobileScannerController(),
+                        errorBuilder: (context, error) => const _CameraFallback(),
+                        onDetect: (capture) {
+                          final code = capture.barcodes
+                              .map((b) => b.rawValue)
+                              .firstWhere(
+                                (v) => v != null && v.trim().isNotEmpty,
+                                orElse: () => null,
+                              );
+                          if (code != null) _handleCode(code);
+                        },
+                      )
+                    else
+                      const _CameraFallback(),
                     const _ViewfinderFrame(),
                     AnimatedBuilder(
                       animation: _sweep,
@@ -104,6 +142,7 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
           TextField(
             controller: _manualController,
             keyboardType: TextInputType.text,
+            onSubmitted: _handleCode,
             decoration: const InputDecoration(
               hintText: 'Enter reservation code instead',
               prefixIcon: Icon(Icons.keyboard_rounded, size: 20),
@@ -111,15 +150,43 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
           ),
           const SizedBox(height: 20),
           PrimaryButton(
-            label: 'Scan Reservation QR',
+            label: 'Verify Entered Code',
             icon: Icons.qr_code_scanner_rounded,
-            onPressed: _scan,
+            onPressed: () => _handleCode(_manualController.text),
           ),
           const SizedBox(height: 14),
           Text(
             'Camera access is used only for verification.',
             textAlign: TextAlign.center,
             style: AppText.body(11.5, color: AppColors.textFaint),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown when the camera is unavailable (desktop, simulator, permission
+/// denied) — the manual code path always works.
+class _CameraFallback extends StatelessWidget {
+  const _CameraFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.qr_code_2_rounded,
+              size: 148, color: Colors.white.withValues(alpha: 0.07)),
+          const SizedBox(height: 12),
+          Text(
+            'Camera unavailable — use the manual code below',
+            textAlign: TextAlign.center,
+            style: AppText.body(
+              12.5,
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
           ),
         ],
       ),

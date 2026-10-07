@@ -53,12 +53,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _busy = true);
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
-    AppScope.read(context).signIn(
-      identifier: _identifierController.text.trim(),
-      role: role,
-    );
+    try {
+      await AppScope.read(context).signIn(
+            identifier: _identifierController.text.trim(),
+            role: role,
+          );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-in failed — try again')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
