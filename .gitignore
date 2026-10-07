@@ -15,6 +15,7 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
+*.run.xml
 
 # VS Code
 .vscode/
