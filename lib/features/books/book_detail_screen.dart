@@ -4,6 +4,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../waitlist/waitlist_screen.dart';
 import 'reservation_confirmation_screen.dart';
 
 /// book-details-v3 "Book Details".
@@ -161,15 +162,13 @@ class BookDetailScreen extends StatelessWidget {
                 label: 'JOIN WAITLIST',
                 icon: Icons.hourglass_bottom_rounded,
                 tone: ButtonTone.secondary,
+                // Books use the same waitlist screen as seats, just
+                // parameterised (D-08) — no snackbar shortcut.
                 onPressed: () {
-                  AppScope.read(context).joinWaitlist(
-                    title: book.title,
-                    subtitle: 'By ${book.author}',
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('You joined the waitlist for '
-                            '${book.title}')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => WaitlistScreen(book: book),
+                    ),
                   );
                 },
               ),

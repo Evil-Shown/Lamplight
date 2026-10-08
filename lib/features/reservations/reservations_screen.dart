@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../app_shell.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -10,10 +11,12 @@ import '../books/reservation_detail_screen.dart';
 import '../qr/qr_ticket_screen.dart';
 import '../waitlist/waitlist_joined_screen.dart';
 
-/// P-10 My Reservations, folding in the container-2 list variant.
+/// P-10 My Reservations.
 ///
-/// Three tabs over one screen: book holds, seat bookings, and waitlist
-/// entries — all read live from [AppState] so a reservation made anywhere
+/// Two resource tabs — Books | Seats — each with a status filter chip row
+/// (Active · Waiting · History). Waitlist entries live under their own
+/// resource's Waiting filter rather than being a third peer tab (D-05).
+/// Everything reads live from [AppState] so a reservation made anywhere
 /// in the app shows up here immediately.
 class ReservationsScreen extends StatefulWidget {
   const ReservationsScreen({super.key});
@@ -24,10 +27,49 @@ class ReservationsScreen extends StatefulWidget {
 
 class _ReservationsScreenState extends State<ReservationsScreen> {
   String _tab = 'Books';
+  String _filter = 'Active';
+
+  static const _filters = ['Active', 'Waiting', 'History'];
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final isBooks = _tab == 'Books';
+
+    // Resolve the current tab + filter into a concrete list (D-05).
+    final Widget content;    if (isBooks) {
+      content = switch (_filter) {
+        'Waiting' => _WaitlistEntries(
+            entries: state.waitlist
+                .where((e) => e.type == WaitlistType.book)
+                .toList(),
+          ),
+        'History' => _BookHolds(
+            reservations: state.reservationHistory,
+            history: true,
+          ),
+        _ => _BookHolds(reservations: state.activeReservations),
+      };
+    } else {
+      content = switch (_filter) {
+        'Waiting' => _WaitlistEntries(
+            entries: state.waitlist
+                .where((e) => e.type == WaitlistType.seat)
+                .toList(),
+          ),
+        'History' => _SeatBookings(
+            bookings: state.bookings
+                .where((b) => b.status != ReservationStatus.active)
+                .toList(),
+            history: true,
+          ),
+        _ => _SeatBookings(
+            bookings: state.bookings
+                .where((b) => b.status == ReservationStatus.active)
+                .toList(),
+          ),
+      };
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,6 +77,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         bottom: false,
         child: Column(
           children: [
+            // App-level cached-data banner (D-14).
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
               child: Align(
@@ -56,18 +100,28 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             ),
             const SizedBox(height: 18),
             SegmentedTabs(
-              options: const ['Books', 'Seats', 'Waiting'],
+              options: const ['Books', 'Seats'],
               selected: _tab,
-              onSelected: (value) => setState(() => _tab = value),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: switch (_tab) {
-                'Books' => _BookHolds(reservations: state.activeReservations),
-                'Seats' => _SeatBookings(bookings: state.bookings),
-                _ => _WaitlistEntries(entries: state.waitlist),
+              onSelected: (value) {
+                Haptics.selection();
+                setState(() {
+                  _tab = value;
+                  _filter = 'Active';
+                });
               },
             ),
+            const SizedBox(height: 12),
+            FilterChipRow(
+              options: _filters,
+              selected: _filter,
+              onSelected: (value) {
+                Haptics.selection();
+                setState(() => _filter = value);
+              },
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            const SizedBox(height: 16),
+            Expanded(child: content),
           ],
         ),
       ),
@@ -76,20 +130,24 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 }
 
 class _BookHolds extends StatelessWidget {
-  const _BookHolds({required this.reservations});
+  const _BookHolds({required this.reservations, this.history = false});
 
   final List<BookReservation> reservations;
+  final bool history;
 
   @override
   Widget build(BuildContext context) {
     if (reservations.isEmpty) {
       return EmptyState(
         icon: Icons.bookmark_border_rounded,
-        title: 'No active holds',
-        message:
-            'Search the catalog and reserve a book to see it listed here.',
-        actionLabel: 'Browse books',
-        onAction: () => Navigator.of(context).pop(),
+        title: history ? 'No cancelled holds' : 'No active holds',
+        message: history
+            ? 'Cancelled book reservations will be listed here.'
+            : 'Search the catalog and reserve a book to see it listed here.',
+        actionLabel: history ? null : 'Browse books',
+        onAction: history
+            ? null
+            : () => AppShell.switchTab(context, AppTab.books),
       );
     }
 
@@ -148,12 +206,16 @@ class _BookHoldCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 9),
                     StatusPill(
-                      label: reservation.status == ReservationStatus.ready
-                          ? 'Ready for pickup'
-                          : 'Active',
-                      color: reservation.status == ReservationStatus.ready
-                          ? AppColors.success
-                          : AppColors.primary,
+                      label: switch (reservation.status) {
+                        ReservationStatus.cancelled => 'Cancelled',
+                        ReservationStatus.ready => 'Ready for pickup',
+                        _ => 'Active',
+                      },
+                      color: switch (reservation.status) {
+                        ReservationStatus.cancelled => AppColors.error,
+                        ReservationStatus.ready => AppColors.success,
+                        _ => AppColors.primary,
+                      },
                       compact: true,
                     ),
                   ],
@@ -188,17 +250,24 @@ class _BookHoldCard extends StatelessWidget {
 }
 
 class _SeatBookings extends StatelessWidget {
-  const _SeatBookings({required this.bookings});
+  const _SeatBookings({required this.bookings, this.history = false});
 
   final List<SeatBooking> bookings;
+  final bool history;
 
   @override
   Widget build(BuildContext context) {
     if (bookings.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.event_seat_outlined,
-        title: 'No active seat bookings',
-        message: 'Reserve a reading-room seat and it will appear here.',
+        title: history ? 'No past bookings' : 'No active seat bookings',
+        message: history
+            ? 'Completed and cancelled bookings will be listed here.'
+            : 'Reserve a reading-room seat and it will appear here.',
+        actionLabel: history ? null : 'Reserve a seat',
+        onAction: history
+            ? null
+            : () => AppShell.switchTab(context, AppTab.seats),
       );
     }
 
@@ -206,16 +275,19 @@ class _SeatBookings extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       itemCount: bookings.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, i) =>
-          StaggeredEntrance(index: i, child: _SeatBookingCard(booking: bookings[i])),
+      itemBuilder: (context, i) => StaggeredEntrance(
+        index: i,
+        child: _SeatBookingCard(booking: bookings[i], history: history),
+      ),
     );
   }
 }
 
 class _SeatBookingCard extends StatelessWidget {
-  const _SeatBookingCard({required this.booking});
+  const _SeatBookingCard({required this.booking, this.history = false});
 
   final SeatBooking booking;
+  final bool history;
 
   @override
   Widget build(BuildContext context) {
@@ -249,69 +321,71 @@ class _SeatBookingCard extends StatelessWidget {
                 ),
               ),
               StatusPill(
-                label: 'Active',
-                color: AppColors.success,
+                label: history ? 'Completed' : 'Active',
+                color: history ? AppColors.neutral : AppColors.success,
                 compact: true,
-                pulse: true,
+                pulse: !history,
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: PrimaryButton(
-                  label: 'View QR',
-                  icon: Icons.qr_code_rounded,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => QrTicketScreen(booking: booking),
+          if (!history) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: PrimaryButton(
+                    label: 'Show QR',
+                    icon: Icons.qr_code_rounded,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => QrTicketScreen(booking: booking),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: PrimaryButton(
-                  label: 'Cancel',
-                  tone: ButtonTone.secondary,
-                  onPressed: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('Cancel this seat?'),
-                        content: Text(
-                          'Seat ${booking.seat.label} will be released and '
-                          'offered to the next person waiting.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(false),
-                            child: const Text('Keep booking'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: PrimaryButton(
+                    label: 'Cancel',
+                    tone: ButtonTone.secondary,
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Cancel this seat?'),
+                          content: Text(
+                            'Seat ${booking.seat.label} will be released and '
+                            'offered to the next person waiting.',
                           ),
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(true),
-                            child: const Text('Cancel booking'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed != true || !context.mounted) return;
-                    AppScope.read(context).cancelSeatBooking(booking.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Seat ${booking.seat.label} booking cancelled',
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(false),
+                              child: const Text('Keep booking'),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(true),
+                              child: const Text('Cancel booking'),
+                            ),
+                          ],
                         ),
-                      ),
-                    );
-                  },
+                      );
+                      if (confirmed != true || !context.mounted) return;
+                      AppScope.read(context).cancelSeatBooking(booking.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Seat ${booking.seat.label} booking cancelled',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -328,7 +402,7 @@ class _WaitlistEntries extends StatelessWidget {
     if (entries.isEmpty) {
       return const EmptyState(
         icon: Icons.hourglass_empty_rounded,
-        title: 'Not waiting on anything',
+        title: 'Nothing in the queue',
         message:
             'Join a waitlist for a full book or seat and track your place here.',
       );

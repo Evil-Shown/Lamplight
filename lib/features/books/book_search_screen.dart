@@ -11,9 +11,9 @@ import 'search_results_screen.dart';
 
 /// book-search-v2 "Library Catalog".
 ///
-/// The Stitch redesign: catalog header with a live-status pill, the search
-/// field, search-type tabs, live result cards with reserve actions, and a
-/// dark barcode-scanner banner.
+/// The Stitch redesign: catalog header with a live-freshness indicator,
+/// the search field, search-type tabs, filter chips, live result cards
+/// with reserve actions, and an honest "search by ISBN" tip callout.
 class BookSearchScreen extends StatefulWidget {
   const BookSearchScreen({super.key});
 
@@ -25,8 +25,10 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   final _controller = TextEditingController();
   String _searchType = 'Title';
   bool _showAll = false;
+  final Set<String> _availabilityFilters = {};
 
   static const _searchTypes = ['Title', 'Author', 'ISBN', 'Category'];
+  static const _availabilityOptions = ['Available now', 'On loan'];
 
   @override
   void dispose() {
@@ -36,17 +38,31 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
 
   List<Book> _matches(List<Book> books) {
     final q = _controller.text.trim().toLowerCase();
-    if (q.isEmpty) return books;
-    return books.where((b) {
-      return switch (_searchType) {
-        'Author' => b.author.toLowerCase().contains(q),
-        'ISBN' => b.isbn.replaceAll('-', '').contains(q.replaceAll('-', '')),
-        'Category' => b.subject.toLowerCase().contains(q),
-        _ => b.title.toLowerCase().contains(q) ||
-            b.author.toLowerCase().contains(q) ||
-            b.subject.toLowerCase().contains(q),
-      };
+    var results = books.where((b) {
+      final matchesQuery = q.isEmpty ||
+          switch (_searchType) {
+            'Author' => b.author.toLowerCase().contains(q),
+            'ISBN' =>
+              b.isbn.replaceAll('-', '').contains(q.replaceAll('-', '')),
+            'Category' => b.subject.toLowerCase().contains(q),
+            _ =>
+              b.title.toLowerCase().contains(q) ||
+                  b.author.toLowerCase().contains(q) ||
+                  b.subject.toLowerCase().contains(q),
+          };
+      if (!matchesQuery) return false;
+      // Availability chips (D-15) — empty set means no filter.
+      if (_availabilityFilters.isNotEmpty) {
+        final matchesAvailability = (_availabilityFilters.contains(
+                    'Available now') &&
+                b.availability == BookAvailability.available) ||
+            (_availabilityFilters.contains('On loan') &&
+                b.availability == BookAvailability.onLoan);
+        if (!matchesAvailability) return false;
+      }
+      return true;
     }).toList();
+    return results;
   }
 
   void _openDetail(Book book) {
@@ -68,7 +84,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
     );
   }
 
-  void _scanBarcode() {
+  void _openResults() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SearchResultsScreen(
@@ -83,7 +99,8 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final books = _matches(AppScope.of(context).books);
+    final state = AppScope.of(context);
+    final books = _matches(state.books);
     final shown = _showAll || _controller.text.trim().isNotEmpty
         ? books
         : books.take(4).toList();
@@ -115,36 +132,10 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.successSoft,
-                    borderRadius: BorderRadius.circular(AppRadii.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.success,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'LIVE CATALOG',
-                        style: AppText.overline(
-                          9.5,
-                          ls: 1.0,
-                          color: AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Driven by the real last-synced timestamp (D-06).
+                // Flexible so the freshness label ellipsizes instead of
+                // pushing the header row past its bounds.
+                Flexible(child: LiveFreshness(lastSyncedAt: state.lastSyncedAt)),
               ],
             ),
             const SizedBox(height: 18),
@@ -168,7 +159,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               child: TextField(
                 controller: _controller,
                 textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _scanBarcode(),
+                onSubmitted: (_) => _openResults(),
                 decoration: InputDecoration(
                   hintText: AppStrings.searchBooksHint,
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
@@ -196,6 +187,25 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                   Haptics.selection();
                   setState(() => _searchType = value);
                 },
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Same filter-chip language as the seat map (D-15).
+            StaggeredEntrance(
+              index: 3,
+              child: FilterChipRow(
+                options: _availabilityOptions,
+                selected: '',
+                isSelectedOf: _availabilityFilters.contains,
+                onSelected: (option) {
+                  Haptics.selection();
+                  setState(() {
+                    if (!_availabilityFilters.remove(option)) {
+                      _availabilityFilters.add(option);
+                    }
+                  });
+                },
+                padding: EdgeInsets.zero,
               ),
             ),
             const SizedBox(height: 22),
@@ -265,14 +275,22 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     label: 'View all ${books.length} results',
                     icon: Icons.arrow_forward_rounded,
                     tone: ButtonTone.secondary,
-                    onPressed: () => _scanBarcode(),
+                    onPressed: _openResults,
                   ),
                 ),
             ],
             const SizedBox(height: 18),
-            StaggeredEntrance(
+            // Static, honest tip — the decorative barcode banner is gone
+            // this cycle since scanning ISBNs isn't wired up (D-09).
+            const StaggeredEntrance(
               index: 10,
-              child: _BarcodeBanner(onTap: _scanBarcode),
+              child: Callout(
+                tone: CalloutTone.info,
+                icon: Icons.lightbulb_outline_rounded,
+                message:
+                    'Tip: search by ISBN — paste the number from the back '
+                    'cover to find an exact edition.',
+              ),
             ),
           ],
         ),
@@ -420,70 +438,6 @@ class _CatalogCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The dark "Barcode Scanner" banner from the Stitch design.
-class _BarcodeBanner extends StatelessWidget {
-  const _BarcodeBanner({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return PressScale(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        decoration: BoxDecoration(
-          gradient: AppGradients.panel,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          boxShadow: AppShadows.glow(AppColors.primary),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadii.xs),
-                border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.16)),
-              ),
-              child: Icon(Icons.qr_code_scanner_rounded,
-                  size: 19, color: AppColors.textInverse),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Barcode Scanner',
-                    style: AppText.title(
-                      14,
-                      w: FontWeight.w700,
-                      color: AppColors.textInverse,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Scan a physical copy to find it on the shelf',
-                    style: AppText.body(
-                      11.5,
-                      color: Colors.white.withValues(alpha: 0.62),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: Colors.white),
-          ],
-        ),
       ),
     );
   }

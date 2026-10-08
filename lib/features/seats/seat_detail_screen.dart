@@ -133,7 +133,8 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Seat ${seat.label}',
-                    style: AppText.display(30, w: FontWeight.w800, ls: -0.9,
+                    style: AppText.display(AppText.displayMd, w: FontWeight.w800,
+                        ls: -1.0,
                         color: AppColors.textInverse),
                   ),
                   const SizedBox(height: 4),
@@ -179,7 +180,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
           const SizedBox(height: 22),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 4),
-            child: SectionLabel('Renting time'),
+            child: SectionLabel('Session date'),
           ),
           const SizedBox(height: 10),
           StaggeredEntrance(

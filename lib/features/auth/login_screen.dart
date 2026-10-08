@@ -26,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _passwordFocus = FocusNode();
 
+  UserRole _role = UserRole.student;
   bool _obscure = true;
   bool _remember = true;
   bool _busy = false;
@@ -38,13 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// [requireIdentifier] is only set for the email/password path — the
-  /// smartcard and SSO buttons have no identifier to check.
-  Future<void> _signIn(
-    UserRole role, {
-    bool requireIdentifier = false,
-  }) async {
-    if (requireIdentifier && _identifierController.text.trim().isEmpty) {
+  Future<void> _signIn() async {
+    if (_identifierController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Enter your university email to continue')),
@@ -56,12 +52,13 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await AppScope.read(context).signIn(
             identifier: _identifierController.text.trim(),
-            role: role,
+            role: _role,
           );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign-in failed — try again')),
+          const SnackBar(
+              content: Text('Email or password is incorrect — try again')),
         );
       }
     } finally {
@@ -71,6 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roleHelper = _role == UserRole.staff
+        ? 'Staff access is verified against your librarian account.'
+        : 'Access seats, books, and your QR pass.';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -116,9 +117,38 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // "Sign in as" — the role is chosen here, inside the
+                  // form, with an honest note about how staff access is
+                  // verified (D-01).
+                  Semantics(
+                    label: 'Sign in as',
+                    child: SegmentedTabs(
+                      options: const ['Student', 'Staff'],
+                      selected: _role == UserRole.staff
+                          ? 'Staff'
+                          : 'Student',
+                      onSelected: (value) {
+                        Haptics.selection();
+                        setState(() => _role = value == 'Staff'
+                            ? UserRole.staff
+                            : UserRole.student);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    roleHelper,
+                    textAlign: TextAlign.center,
+                    style: AppText.body(
+                      12.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: _identifierController,
                     keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
                     textInputAction: TextInputAction.next,
                     onSubmitted: (_) => _passwordFocus.requestFocus(),
                     decoration: const InputDecoration(
@@ -132,9 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     focusNode: _passwordFocus,
                     obscureText: _obscure,
+                    autofillHints: const [AutofillHints.password],
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) =>
-                        _signIn(UserRole.student, requireIdentifier: true),
+                    onSubmitted: (_) => _signIn(),
                     decoration: InputDecoration(
                       labelText: 'Password / PIN',
                       prefixIcon:
@@ -151,76 +181,66 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(0, 34),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Forgot password?',
-                        style: AppText.label(
-                          12.5,
-                          w: FontWeight.w600,
-                          color: AppColors.primary,
+                  Row(
+                    children: [
+                      SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: Checkbox(
+                          value: _remember,
+                          onChanged: (value) =>
+                              setState(() => _remember = value ?? false),
                         ),
                       ),
-                    ),
-                  ),
-                  CheckboxListTile(
-                    value: _remember,
-                    onChanged: (value) =>
-                        setState(() => _remember = value ?? false),
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    dense: true,
-                    title: Text(
-                      'Keep signed in on campus Wi-Fi & scan room',
-                      style: AppText.body(
-                        13,
-                        color: AppColors.textSecondary,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Remember me',
+                          style: AppText.body(
+                            13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Contact the library desk to reset your password'),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(0, 34),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'Forgot?',
+                          style: AppText.label(
+                            12.5,
+                            w: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   PrimaryButton(
-                    label: _busy ? 'Signing in…' : 'Sign in to Portal',
-                    onPressed: _busy
-                        ? null
-                        : () => _signIn(UserRole.student,
-                            requireIdentifier: true),
+                    label: _busy ? 'Signing in…' : 'Sign in',
+                    onPressed: _busy ? null : _signIn,
                   ),
                   const SizedBox(height: 12),
-                  PrimaryButton(
-                    label: 'Sign in with Student Smartcard / Face ID',
-                    icon: Icons.contactless_rounded,
-                    tone: ButtonTone.secondary,
-                    onPressed: _busy ? null : () => _signIn(UserRole.student),
-                  ),
-                  const SizedBox(height: 22),
-                  const _DividerLabel('OR INSTITUTIONAL SSO'),
-                  const SizedBox(height: 16),
-                  PrimaryButton(
-                    label: 'University Single Sign-On',
-                    icon: Icons.shield_outlined,
-                    tone: ButtonTone.neutral,
-                    onPressed: _busy ? null : () => _signIn(UserRole.student),
-                  ),
-                  const SizedBox(height: 18),
-                  Center(
-                    child: TextButton(
-                      onPressed: _busy ? null : () => _signIn(UserRole.staff),
-                      child: Text(
-                        'Library staff sign-in',
-                        style: AppText.label(
-                          13,
-                          w: FontWeight.w600,
-                          color: AppColors.textFaint,
-                        ),
-                      ),
+                  // Honest auto-provision note — there is no register
+                  // screen by design, so say so (D-12).
+                  Text(
+                    'First time? Your account is created automatically.',
+                    textAlign: TextAlign.center,
+                    style: AppText.body(
+                      12.5,
+                      color: AppColors.textFaint,
                     ),
                   ),
                 ],
@@ -229,29 +249,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _DividerLabel extends StatelessWidget {
-  const _DividerLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            text,
-            style: AppText.overline(10.5, color: AppColors.textFaint),
-          ),
-        ),
-        const Expanded(child: Divider()),
-      ],
     );
   }
 }

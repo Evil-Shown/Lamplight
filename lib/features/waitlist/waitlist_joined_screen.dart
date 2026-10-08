@@ -15,6 +15,7 @@ class WaitlistJoinedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isBook = entry.type == WaitlistType.book;
     return AppScaffold(
       title: 'Waiting List',
       body: ListView(
@@ -43,7 +44,8 @@ class WaitlistJoinedScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   'Joined Waiting List',
-                  style: AppText.display(22, w: FontWeight.w700, ls: -0.4),
+                  style: AppText.display(AppText.displayMd, w: FontWeight.w700,
+                      ls: -1.0),
                 ),
                 const SizedBox(height: 7),
                 Text(
@@ -61,14 +63,19 @@ class WaitlistJoinedScreen extends StatelessWidget {
               child: Column(
                 children: [
                   InfoRow(
-                    label: 'Seat Preference',
+                    label: isBook ? 'Preference' : 'Seat Preference',
                     value: entry.seatPreference ?? entry.subtitle,
                   ),
                   const Divider(height: 1),
-                  InfoRow(
-                      label: 'Floor',
-                      value: entry.subtitle.split('·').first.trim()),
-                  const Divider(height: 1),
+                  if (!isBook) ...[
+                    InfoRow(
+                        label: 'Floor',
+                        value: entry.subtitle.split('·').first.trim()),
+                    const Divider(height: 1),
+                  ] else ...[
+                    InfoRow(label: 'Title', value: entry.title),
+                    const Divider(height: 1),
+                  ],
                   InfoRow(
                     label: 'Queue Position',
                     value: '#${entry.position}',
@@ -87,12 +94,12 @@ class WaitlistJoinedScreen extends StatelessWidget {
           const Callout(
             icon: Icons.info_outline_rounded,
             message:
-                'We will notify you as soon as a matching seat becomes '
-                'available. Keep your notifications enabled.',
+                'We will notify you as soon as it is your turn. Keep your '
+                'notifications enabled.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(
-            label: 'Back to Seat Map',
+            label: isBook ? 'View My Reservations' : 'Back to Seat Map',
             onPressed: () =>
                 Navigator.of(context).popUntil((route) => route.isFirst),
           ),

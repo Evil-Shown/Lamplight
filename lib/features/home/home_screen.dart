@@ -38,6 +38,8 @@ class HomeScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 28),
             children: [
+              // App-level cached-data banner (D-14).
+              ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
               const _HomeHeader(),
               const SizedBox(height: 20),
               if (booking != null)
@@ -71,11 +73,11 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 26),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: StaggeredEntrance(
                   index: 3,
-                  child: _NoiseLevelCard(),
+                  child: _DensityCard(lastSyncedAt: state.lastSyncedAt),
                 ),
               ),
             ],
@@ -271,7 +273,7 @@ class _TodaySession extends StatelessWidget {
               Text(
                 'Seat ${booking.seat.label}',
                 style: AppText.display(
-                  32,
+                  AppText.displayMd,
                   w: FontWeight.w800,
                   ls: -1.0,
                   color: AppColors.textInverse,
@@ -680,64 +682,93 @@ class _ReadyForCollection extends StatelessWidget {
   }
 }
 
-/// The quiet-zone noise level card.
-class _NoiseLevelCard extends StatelessWidget {
-  const _NoiseLevelCard();
+/// The live-density card. Floor-level only — the seats model has no
+/// per-slot occupancy, so the label always says which floor this is and
+/// never implies desk-level precision (D-11).
+class _DensityCard extends StatelessWidget {
+  const _DensityCard({required this.lastSyncedAt});
+
+  final DateTime? lastSyncedAt;
 
   @override
   Widget build(BuildContext context) {
+    final seats = AppScope.of(context)
+        .seats
+        .where((seat) => seat.floor == 2)
+        .toList();
+    final total = seats.length;
+    final occupied = seats.where((s) => s.status == SeatStatus.occupied).length;
+    final ratio = total == 0 ? 0.0 : occupied / total;
+
+    final (tone, toneLabel) = switch (ratio) {
+      < 0.5 => (AppColors.success, 'Quiet'),
+      < 0.8 => (AppColors.warning, 'Filling up'),
+      _ => (AppColors.error, 'Busy'),
+    };
+
     return SurfaceCard(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconBadge(
-            icon: Icons.graphic_eq_rounded,
-            color: AppColors.cyan,
-            background: AppColors.cyanSoft,
-            size: 42,
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Silent Room & Study Wing',
-                  style: AppText.title(
-                    14,
-                    w: FontWeight.w700,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'FLOOR 2 · LIVE DENSITY',
+                  style: AppText.overline(10, ls: 1.6,
+                      color: AppColors.textFaint),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '32 dB · Quiet study zone right now',
-                  style: AppText.body(
-                    12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                MeterBar(value: 0.32, color: AppColors.success),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.successSoft,
-              borderRadius: BorderRadius.circular(AppRadii.full),
-            ),
-            child: Text(
-              'Live',
-              style: AppText.label(
-                11.5,
-                w: FontWeight.w700,
-                color: AppColors.success,
               ),
-            ),
+              IconBadge(
+                icon: Icons.groups_rounded,
+                color: tone,
+                background: Color.alphaBlend(
+                    tone.withValues(alpha: 0.12), AppColors.surface),
+                size: 30,
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              CountUp(
+                value: (ratio * 100).round(),
+                suffix: '%',
+                style: AppText.display(
+                  28,
+                  w: FontWeight.w800,
+                  ls: -0.8,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Color.alphaBlend(
+                      tone.withValues(alpha: 0.12), AppColors.surface),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                ),
+                child: Text(
+                  toneLabel,
+                  style: AppText.label(
+                    11.5,
+                    w: FontWeight.w700,
+                    color: tone,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          MeterBar(value: ratio, color: tone, height: 8),
+          const SizedBox(height: 8),
+          LiveFreshness(lastSyncedAt: lastSyncedAt),
         ],
       ),
     );

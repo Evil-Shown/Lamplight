@@ -26,6 +26,8 @@ class AccountScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
           children: [
+            // App-level cached-data banner (D-14).
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             StaggeredEntrance(
               child: Text('Profile',
                   style: AppText.display(24, w: FontWeight.w700, ls: -0.5)),
@@ -46,15 +48,19 @@ class AccountScreen extends StatelessWidget {
               index: 2,
               child: SurfaceCard(
                 padding: EdgeInsets.zero,
+                // The visibility toggle is cosmetic this cycle — the
+                // backend has no enforcement, so it is disabled with an
+                // honest "coming soon" note rather than a fake switch.
                 child: SwitchListTile(
                   value: profile.reservationsVisibleToStaffOnly,
-                  onChanged: (_) {},
+                  onChanged: null,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   title: Text('Staff-only visibility',
                       style: AppText.body(14.5)),
                   subtitle: Text(
-                    'Only library staff can see your active reservations.',
+                    'Only library staff can see your active reservations. '
+                    'Coming soon.',
                     style: AppText.body(12.5, color: AppColors.textSecondary),
                   ),
                 ),
