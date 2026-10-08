@@ -365,13 +365,19 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
         _ => null,
       };
 
-  String _slotAvailability(int index) => switch (index) {
-        0 => '6 of 20 desks left',
-        1 => '2 of 20 desks left',
-        2 => '11 of 20 desks left',
-        3 => '16 of 20 desks left',
-        _ => '19 of 20 desks left',
-      };
+  /// Live floor occupancy from Firestore — the same honest number every
+  /// slot shows, since desks are shared across the day's slots.
+  String _slotAvailability(int index) {
+    final floorSeats = AppScope.of(context)
+        .seats
+        .where((s) => s.floor == seat.floor)
+        .toList();
+    final total = floorSeats.length;
+    if (total == 0) return 'Availability unavailable';
+    final free =
+        floorSeats.where((s) => s.status == SeatStatus.available).length;
+    return '$free of $total desks left';
+  }
 }
 
 /// The three-zone strip from the Stitch design; the seat's own zone is

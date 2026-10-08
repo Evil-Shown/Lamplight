@@ -42,6 +42,8 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
       if (seat.nearWindow) score += 2;
       if (seat.hasMonitor) score += 1;
       if (seat.standingDesk) score += 1;
+      // Prefer the floor the student is already browsing.
+      if (seat.floor == _currentFloorNumber) score += 2;
       if (score > bestScore) {
         best = seat;
         bestScore = score;
@@ -50,6 +52,23 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     if (best == null) return null;
     return (seat: best, reasons: best.matchReasons);
   }
+
+  int get _currentFloorNumber =>
+      int.tryParse(_filters.floor.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
+
+  String _relativeFreshness(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inSeconds < 45) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    return '${diff.inHours} h ago';
+  }
+
+  /// Seats held by an active booking of the signed-in user.
+  Set<String> get _myBookingSeatIds => AppScope.of(context)
+      .bookings
+      .where((b) => b.status == ReservationStatus.active)
+      .map((b) => b.seat.id)
+      .toSet();
 
   bool get _canPop => ModalRoute.of(context)?.canPop ?? false;
 
@@ -62,6 +81,8 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   Widget build(BuildContext context) {
     final visible = _visible;
     final canPop = _canPop;
+    final state = AppScope.of(context);
+    final mySeatIds = _myBookingSeatIds;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -102,6 +123,39 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                       'Find and reserve your ideal study spot',
                       style:
                           AppText.title(19, w: FontWeight.w700, ls: -0.4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: state.lastSyncedAt == null
+                                ? AppColors.textFaint
+                                : AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            state.lastSyncedAt == null
+                                ? 'Offline — showing cached seat map'
+                                : 'Live · updated '
+                                    '${_relativeFreshness(state.lastSyncedAt!)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.body(
+                              11.5,
+                              color: AppColors.textFaint,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -209,17 +263,18 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                       onSelect: (seat) => setState(() => _selected = seat),
                       onOpen: _openDetail,
                     )
-                  else ...[
-                    StaggeredEntrance(
-                      child: _SeatGridCard(
-                        seats: visible,
-                        selected: _selected,
-                        onSelect: (seat) => setState(() => _selected = seat),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _Legend(visible: visible),
-                  ],
+                   else ...[
+                     StaggeredEntrance(
+                       child: _SeatGridCard(
+                         seats: visible,
+                         selected: _selected,
+                         mySeatIds: mySeatIds,
+                         onSelect: (seat) => setState(() => _selected = seat),
+                       ),
+                     ),
+                     const SizedBox(height: 16),
+                     _Legend(visible: visible, mySeatIds: mySeatIds),
+                   ],
                 ],
               ),
             ),
@@ -347,11 +402,13 @@ class _SeatGridCard extends StatelessWidget {
   const _SeatGridCard({
     required this.seats,
     required this.selected,
+    required this.mySeatIds,
     required this.onSelect,
   });
 
   final List<Seat> seats;
   final Seat? selected;
+  final Set<String> mySeatIds;
   final ValueChanged<Seat> onSelect;
 
   @override
@@ -384,7 +441,10 @@ class _SeatGridCard extends StatelessWidget {
                         ? const SizedBox.shrink()
                         : _SeatBadge(
                             seat: grid[row * 4 + col]!,
-                            isSelected: selected?.id == grid[row * 4 + col]!.id,
+                            isSelected:
+                                selected?.id == grid[row * 4 + col]!.id,
+                            isMine:
+                                mySeatIds.contains(grid[row * 4 + col]!.id),
                             onTap: onSelect,
                           ),
                   ),
@@ -420,25 +480,35 @@ class _SeatBadge extends StatelessWidget {
   const _SeatBadge({
     required this.seat,
     required this.isSelected,
+    required this.isMine,
     required this.onTap,
   });
 
   final Seat seat;
   final bool isSelected;
+  final bool isMine;
   final ValueChanged<Seat> onTap;
+
+  /// A seat held by the signed-in user wins over the shared status.
+  bool get _renderMine => isMine && !isSelected;
 
   Color get _color => isSelected
       ? AppColors.seatSelected
-      : switch (seat.status) {
-          SeatStatus.available => AppColors.seatAvailable,
-          SeatStatus.limited => AppColors.seatLimited,
-          SeatStatus.occupied => AppColors.seatOccupied,
-        };
+      : _renderMine
+          ? AppColors.seatSelected.withValues(alpha: 0.88)
+          : switch (seat.status) {
+              SeatStatus.available => AppColors.seatAvailable,
+              SeatStatus.limited => AppColors.seatLimited,
+              SeatStatus.occupied => AppColors.seatOccupied,
+            };
 
   @override
   Widget build(BuildContext context) {
+    final statusLabel = _renderMine
+        ? 'reserved by you'
+        : _statusLabel(seat.status);
     return Semantics(
-      label: 'Seat ${seat.label}, ${_statusLabel(seat.status)}',
+      label: 'Seat ${seat.label}, $statusLabel',
       button: true,
       child: GestureDetector(
         onTap: () => onTap(seat),
@@ -456,7 +526,7 @@ class _SeatBadge extends StatelessWidget {
                 _color,
               ],
             ),
-            boxShadow: isSelected
+            boxShadow: isSelected || _renderMine
                 ? AppShadows.glow(_color)
                 : [
                     BoxShadow(
@@ -477,7 +547,22 @@ class _SeatBadge extends StatelessWidget {
                   color: AppColors.textInverse,
                 ),
               ),
-              if (seat.hasPowerOutlet && seat.status != SeatStatus.occupied)
+              if (_renderMine)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    child: Icon(Icons.check_rounded,
+                        size: 9, color: AppColors.seatSelected),
+                  ),
+                )
+              else if (seat.hasPowerOutlet &&
+                  seat.status != SeatStatus.occupied)
                 Positioned(
                   right: 7,
                   bottom: 9,
@@ -505,9 +590,10 @@ class _SeatBadge extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.visible});
+  const _Legend({required this.visible, required this.mySeatIds});
 
   final List<Seat> visible;
+  final Set<String> mySeatIds;
 
   @override
   Widget build(BuildContext context) {
@@ -525,6 +611,11 @@ class _Legend extends StatelessWidget {
         'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
       ),
       (AppColors.seatSelected, 'Selected'),
+      if (mySeatIds.isNotEmpty)
+        (
+          AppColors.seatSelected.withValues(alpha: 0.88),
+          'Yours${mySeatIds.length > 1 ? ' ×${mySeatIds.length}' : ''}'
+        ),
     ];
 
     return Wrap(

@@ -31,6 +31,9 @@ class AppState extends ChangeNotifier {
 
   bool _syncing = false;
   final Set<String> _pendingLocalWrites = {};
+  DateTime? _lastSyncedAt;
+
+  void _markSynced() => _lastSyncedAt = DateTime.now();
 
   NotificationPreferences _preferences = const NotificationPreferences();
   ThemeMode _themeMode = ThemeMode.light;
@@ -71,6 +74,15 @@ class AppState extends ChangeNotifier {
   }
 
   int get unreadNotifications => _notifications.length;
+
+  /// Newest Firestore snapshot arrival across the live streams — used by
+  /// the seat map's freshness indicator.
+  DateTime? get lastSyncedAt => _lastSyncedAt;
+
+  /// True when the signed-in user holds an active booking for the seat.
+  bool isSeatReservedByMe(String seatId) => _bookings.any(
+        (b) => b.seat.id == seatId && b.status == ReservationStatus.active,
+      );
 
   // ------------------------------------------------------------------- auth
 
@@ -124,11 +136,13 @@ class AppState extends ChangeNotifier {
 
     _subscriptions.add(_service.booksStream().listen((books) {
       _books = books.isEmpty ? MockData.books : books;
+      _markSynced();
       push();
     }));
 
     _subscriptions.add(_service.seatsStream().listen((seats) {
       _seats = seats.isEmpty ? MockData.seats : seats;
+      _markSynced();
       push();
     }));
 
