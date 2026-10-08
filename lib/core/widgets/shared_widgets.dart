@@ -1513,3 +1513,198 @@ class StatTile extends StatelessWidget {
     );
   }
 }
+
+/// A live/stale/offline freshness indicator driven by a real timestamp.
+///
+/// `< 45s` → "Live · just now" with a pulsing green dot, `< 5 min` →
+/// "Live · N min ago", older → "Stale · N min ago" with an amber dot,
+/// and a null timestamp reads as "Offline — showing cached data".
+class LiveFreshness extends StatelessWidget {
+  const LiveFreshness({
+    super.key,
+    required this.lastSyncedAt,
+    this.size = 11.5,
+  });
+
+  final DateTime? lastSyncedAt;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, label, pulsing) = _resolve();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        pulsing ? _PulseDot(color: color) : _StaticDot(color: color),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.body(size, color: AppColors.textFaint),
+          ),
+        ),
+      ],
+    );
+  }
+
+  (Color, String, bool) _resolve() {
+    if (lastSyncedAt == null) {
+      return (AppColors.warning, 'Offline — showing cached data', false);
+    }
+    final diff = DateTime.now().difference(lastSyncedAt!);
+    if (diff.inSeconds < 45) return (AppColors.success, 'Live · just now', true);
+    if (diff.inMinutes < 5) {
+      return (AppColors.success, 'Live · ${diff.inMinutes} min ago', true);
+    }
+    return (AppColors.warning, 'Stale · ${diff.inMinutes} min ago', false);
+  }
+}
+
+class _StaticDot extends StatelessWidget {
+  const _StaticDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}
+
+/// App-level strip shown under the chrome on root tabs when the live
+/// streams have gone quiet: never synced, or the last sync is older than
+/// five minutes. Slides in and out so it never jolts the layout.
+class ConnectivityBanner extends StatelessWidget {
+  const ConnectivityBanner({super.key, required this.lastSyncedAt});
+
+  final DateTime? lastSyncedAt;
+
+  /// Null sync = cold cache; anything older than five minutes is treated
+  /// as a connection problem, matching [LiveFreshness]'s stale threshold.
+  bool get _shouldShow {
+    if (lastSyncedAt == null) return true;
+    return DateTime.now().difference(lastSyncedAt!).inMinutes >= 5;
+  }
+
+  String get _message {
+    if (lastSyncedAt == null) return 'Offline — showing cached data';
+    final minutes = DateTime.now().difference(lastSyncedAt!).inMinutes;
+    return 'Connection issue — data is $minutes min old';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final show = _shouldShow;
+    return Semantics(
+      liveRegion: true,
+      child: AnimatedSlide(
+        offset: show ? Offset.zero : const Offset(0, -1),
+        duration: AppMotion.base,
+        curve: AppMotion.enter,
+        child: AnimatedOpacity(
+          opacity: show ? 1 : 0,
+          duration: AppMotion.base,
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.warningContainer,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off_rounded,
+                    size: 15, color: AppColors.onWarningContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _message,
+                    style: AppText.label(
+                      12,
+                      w: FontWeight.w600,
+                      color: AppColors.onWarningContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The error sibling of [EmptyState]: red-toned icon circle, a fixed
+/// friendly headline, and a Retry action. Never shows raw exception text.
+class ErrorState extends StatelessWidget {
+  const ErrorState({
+    super.key,
+    this.message = 'We could not reach the library service just now.',
+    this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.errorContainer,
+              ),
+              child: Icon(Icons.error_outline_rounded,
+                  size: 36, color: AppColors.error),
+            ),
+            const SizedBox(height: 20),
+            Text('Something went wrong',
+                style: AppText.title(17, w: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppText.body(
+                  13.5, color: AppColors.textSecondary, height: 1.5),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 22),
+              OutlinedButton(
+                onPressed: onRetry,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 46),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                ),
+                child: Text(
+                  'Retry',
+                  style: AppText.label(
+                    13,
+                    w: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

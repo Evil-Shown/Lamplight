@@ -30,21 +30,30 @@ class BookingConfirmationScreen extends StatelessWidget {
             gradient: AppGradients.mint,
             child: Column(
               children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.24),
+                // SuccessCheck: scales in over the hero duration.
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.6, end: 1),
+                  duration: AppMotion.hero,
+                  curve: AppMotion.emphasis,
+                  builder: (context, value, child) =>
+                      Transform.scale(scale: value, child: child),
+                  child: Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.24),
+                    ),
+                    child: Icon(Icons.check_rounded,
+                        size: 46, color: AppColors.textInverse),
                   ),
-                  child: Icon(Icons.check_rounded,
-                      size: 34, color: AppColors.textInverse),
                 ),
                 const SizedBox(height: 15),
                 Text(
                   'Booking Confirmed!',
                   textAlign: TextAlign.center,
-                  style: AppText.display(22, w: FontWeight.w800, ls: -0.4,
+                  style: AppText.display(AppText.displayLg, w: FontWeight.w800,
+                      ls: -1.2,
                       color: AppColors.textInverse),
                 ),
                 const SizedBox(height: 6),
@@ -52,7 +61,7 @@ class BookingConfirmationScreen extends StatelessWidget {
                   'Your seat has been reserved successfully.',
                   textAlign: TextAlign.center,
                   style: AppText.body(
-                    13,
+                    14,
                     color: AppColors.textInverse.withValues(alpha: 0.86),
                     height: 1.5,
                   ),

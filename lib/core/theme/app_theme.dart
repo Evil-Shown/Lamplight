@@ -33,7 +33,7 @@ class AppColors {
     tertiary: Color(0xFF9A4A26),
     onTertiary: Color(0xFFFFFFFF),
     tertiaryContainer: Color(0xFFFFDBCF),
-    onTertiaryContainer: Color(0xFF351005),
+    onTertiaryContainer: Color(0xFF3A1100),
     error: Color(0xFFBA1A1A),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
@@ -61,13 +61,13 @@ class AppColors {
     onPrimary: Color(0xFF062E6F),
     primaryContainer: Color(0xFF0842A0),
     onPrimaryContainer: Color(0xFFD3E3FD),
-    secondary: Color(0xFFBFC6DC),
+    secondary: Color(0xFFC2C7CF),
     onSecondary: Color(0xFF293142),
     secondaryContainer: Color(0xFF3F4759),
     onSecondaryContainer: Color(0xFFDBE2F9),
     tertiary: Color(0xFFFFB69E),
-    onTertiary: Color(0xFF551F0A),
-    tertiaryContainer: Color(0xFF783115),
+    onTertiary: Color(0xFF5A1F00),
+    tertiaryContainer: Color(0xFF7A3413),
     onTertiaryContainer: Color(0xFFFFDBCF),
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
@@ -136,42 +136,112 @@ class AppColors {
   static Color get border => scheme.outlineVariant;
   static Color get borderStrong => scheme.outline;
 
-  // Status — semantic tonal pairs blended over the surface so they sit
-  // harmonically inside the scheme in both brightnesses.
+  // Status — semantic tonal pairs, pinned rather than derived so pills,
+  // icons and text stay harmonised across surfaces in both brightnesses.
   static Color get success =>
-      isDark ? const Color(0xFF7ED99C) : const Color(0xFF17724A);
-  static Color get successSoft =>
-      Color.alphaBlend(success.withValues(alpha: 0.12), scheme.surface);
+      isDark ? const Color(0xFF6DD58C) : const Color(0xFF146C2E);
+
+  /// Explicit success container — never an alpha blend.
+  static Color get successContainer =>
+      isDark ? const Color(0xFF0A3818) : const Color(0xFFD7F2DE);
+  static Color get onSuccessContainer =>
+      isDark ? const Color(0xFFD7F2DE) : const Color(0xFF05210C);
+
+  /// Alias so legacy call sites resolve onto the pinned container.
+  static Color get successSoft => successContainer;
   static Color get warning =>
-      isDark ? const Color(0xFFFFB95C) : const Color(0xFF9A6300);
-  static Color get warningSoft =>
-      Color.alphaBlend(warning.withValues(alpha: 0.12), scheme.surface);
+      isDark ? const Color(0xFFFFB95C) : const Color(0xFF8F5000);
+
+  /// Explicit warning container — never an alpha blend.
+  static Color get warningContainer =>
+      isDark ? const Color(0xFF3F2A00) : const Color(0xFFFFE0B3);
+  static Color get onWarningContainer =>
+      isDark ? const Color(0xFFFFE0B3) : const Color(0xFF2E1A00);
+
+  /// Alias so legacy call sites resolve onto the pinned container.
+  static Color get warningSoft => warningContainer;
   static Color get error => scheme.error;
+
+  /// Explicit error container from the scheme (soft error fills).
+  static Color get errorContainer => scheme.errorContainer;
   static Color get errorSoft =>
       Color.alphaBlend(error.withValues(alpha: 0.10), scheme.surface);
   static Color get info => primary;
   static Color get infoSoft =>
       Color.alphaBlend(primary.withValues(alpha: 0.10), scheme.surface);
   static Color get neutral => scheme.onSurfaceVariant;
-  static Color get neutralSoft => scheme.surfaceContainerHigh;
-
-  // Seat map
+  static Color get neutralSoft => scheme.surfaceContainerHigh;  // Seat map
   static Color get seatAvailable => success;
   static Color get seatLimited => warning;
   static Color get seatOccupied => error;
   static Color get seatSelected => accent;
 
-  /// ARGB values, so they line up with `Book.coverColor`.
+  /// ARGB values, so they line up with `Book.coverColor`. Deterministic:
+  /// index = `book.id.hashCode.abs() % 10`.
   static const List<int> coverPalette = [
-    0xFF0B57D0,
-    0xFF2A5B5B,
-    0xFF8D3B2A,
-    0xFFB06F17,
-    0xFF4A3E72,
-    0xFF1F4E5B,
-    0xFF7C3626,
-    0xFF3B5E34,
+    0xFF1E40AF,
+    0xFF0E7490,
+    0xFFB45309,
+    0xFF9D174D,
+    0xFF5B21B6,
+    0xFF155E75,
+    0xFF166534,
+    0xFF7C2D12,
+    0xFF831843,
+    0xFF1E3A8A,
   ];
+}
+
+/// The spacing scale: 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 64.
+///
+/// Screen horizontal margin is 16, card padding 18 (20 for heroes), list
+/// gaps 12, section gaps 24, and scrollables keep a 96px bottom inset so
+/// content never hides under the navigation bar.
+class AppSpacing {
+  AppSpacing._();
+
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double base = 16;
+  static const double lg = 20;
+  static const double xl = 24;
+  static const double xxl = 32;
+  static const double xxxl = 40;
+  static const double xxxxl = 48;
+
+  /// Fixed layout values from the design spec.
+  static const double screenMargin = 16;
+  static const double cardPadding = 18;
+  static const double heroCardPadding = 20;
+  static const double listGap = 12;
+  static const double sectionGap = 24;
+
+  /// Bottom inset applied to every scrollable so the nav bar never
+  /// covers content.
+  static const double scrollBottomInset = 96;
+}
+
+/// The motion vocabulary: five durations and three curves. Motion is a
+/// whisper — 90–480ms, never springy beyond [AppMotion.instant] press
+/// feedback.
+class AppMotion {
+  AppMotion._();
+
+  static const instant = Duration(milliseconds: 90);
+  static const fast = Duration(milliseconds: 160);
+  static const base = Duration(milliseconds: 240);
+  static const slow = Duration(milliseconds: 320);
+  static const hero = Duration(milliseconds: 480);
+
+  /// Everything entering.
+  static const Curve enter = Curves.easeOutCubic;
+
+  /// Everything leaving.
+  static const Curve exit = Curves.easeInCubic;
+
+  /// Morphs and position changes.
+  static const Curve emphasis = Curves.easeInOutCubic;
 }
 
 /// The M3 corner scale: extra-small 8, small 12, medium 16, large 20,
@@ -345,6 +415,12 @@ class AppGradients {
 /// neutral, per modern iOS/Android best practices.
 class AppText {
   AppText._();
+
+  /// Named display steps from the type scale: 58 for single hero
+  /// numbers, 40 for confirmation headlines, 34 for seat-label heroes.
+  static const double displayXl = 58;
+  static const double displayLg = 40;
+  static const double displayMd = 34;
 
   static TextStyle display(
     double size, {
