@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/state/app_state.dart';
@@ -9,9 +11,10 @@ import 'seat_filter_sheet.dart';
 
 /// P-06 Seat Map.
 ///
-/// A 4x4 grid of circular seat badges over a white card, a floor picker,
-/// two filter chips that open the filter sheet, the status legend, and a
-/// recommendation card for the best free seat.
+/// A data-driven grid of circular seat badges laid out from each seat's
+/// `row`/`col` (never a hardcoded size), a floor picker, filter chips
+/// that open the filter sheet, a two-row legend separating availability
+/// from ownership, and a recommendation card for the best free seat.
 class SeatMapScreen extends StatefulWidget {
   const SeatMapScreen({super.key});
 
@@ -27,6 +30,17 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   List<Seat> get _visible {
     final seats = AppScope.of(context).seats;
     return seats.where(_filters.matches).toList();
+  }
+
+  /// Every seat in the current floor's inventory — the grid's shape is
+  /// derived from this, so filtering dims cells instead of collapsing
+  /// the layout (D-02).
+  List<Seat> get _floorSeats {
+    final floor = _currentFloorNumber;
+    return AppScope.of(context)
+        .seats
+        .where((seat) => seat.floor == floor)
+        .toList();
   }
 
   /// Highest-scoring free seat, with the reasons shown on the card.
@@ -55,13 +69,6 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
 
   int get _currentFloorNumber =>
       int.tryParse(_filters.floor.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
-
-  String _relativeFreshness(DateTime time) {
-    final diff = DateTime.now().difference(time);
-    if (diff.inSeconds < 45) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    return '${diff.inHours} h ago';
-  }
 
   /// Seats held by an active booking of the signed-in user.
   Set<String> get _myBookingSeatIds => AppScope.of(context)
@@ -112,6 +119,8 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
       ),
       body: Column(
         children: [
+          // App-level cached-data banner (D-14).
+          ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -128,35 +137,9 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                   const SizedBox(height: 8),
                   StaggeredEntrance(
                     index: 1,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: state.lastSyncedAt == null
-                                ? AppColors.textFaint
-                                : AppColors.success,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            state.lastSyncedAt == null
-                                ? 'Offline — showing cached seat map'
-                                : 'Live · updated '
-                                    '${_relativeFreshness(state.lastSyncedAt!)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.body(
-                              11.5,
-                              color: AppColors.textFaint,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Driven by the real last-synced timestamp (D-06).
+                    child: LiveFreshness(
+                        lastSyncedAt: state.lastSyncedAt),
                   ),
                   const SizedBox(height: 14),
                   StaggeredEntrance(
@@ -250,11 +233,15 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                     ),
                   const SizedBox(height: 16),
                   if (visible.isEmpty)
-                    const EmptyState(
+                    EmptyState(
                       icon: Icons.event_seat_outlined,
-                      title: 'No seats on this floor',
-                      message:
-                          'Try another floor, or clear the area and facility filters.',
+                      title: _floorSeats.isEmpty
+                          ? 'No seats on this floor'
+                          : 'No seats match these filters',
+                      message: _floorSeats.isEmpty
+                          ? 'Try another floor, or clear the area and facility filters.'
+                          : 'Every desk on this floor is hidden by the '
+                              'active filters. Clear them to see the full map.',
                     )
                   else if (_view == 'List')
                     _SeatList(
@@ -264,17 +251,18 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                       onOpen: _openDetail,
                     )
                    else ...[
-                     StaggeredEntrance(
-                       child: _SeatGridCard(
-                         seats: visible,
-                         selected: _selected,
-                         mySeatIds: mySeatIds,
-                         onSelect: (seat) => setState(() => _selected = seat),
-                       ),
-                     ),
-                     const SizedBox(height: 16),
-                     _Legend(visible: visible, mySeatIds: mySeatIds),
-                   ],
+                      StaggeredEntrance(
+                        child: _SeatGridCard(
+                          visible: visible,
+                          floorSeats: _floorSeats,
+                          selected: _selected,
+                          mySeatIds: mySeatIds,
+                          onSelect: (seat) => setState(() => _selected = seat),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _Legend(visible: visible, mySeatIds: mySeatIds),
+                    ],
                 ],
               ),
             ),
@@ -397,28 +385,56 @@ class _ZonePicker extends StatelessWidget {
   }
 }
 
-/// The 4x4 grid of circular seat badges.
+/// The seat grid, laid out from live data (D-02).
+///
+/// Dimensions come from `max(row) × max(col)` of the floor's inventory —
+/// never a hardcoded size. Seats hidden by filters render as dimmed
+/// placeholders so the map's shape stays stable, and floors wider than
+/// six columns scroll horizontally.
 class _SeatGridCard extends StatelessWidget {
   const _SeatGridCard({
-    required this.seats,
+    required this.visible,
+    required this.floorSeats,
     required this.selected,
     required this.mySeatIds,
     required this.onSelect,
   });
 
-  final List<Seat> seats;
+  final List<Seat> visible;
+  final List<Seat> floorSeats;
   final Seat? selected;
   final Set<String> mySeatIds;
   final ValueChanged<Seat> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    // Preserve the 4-column grid even when filters hide some seats.
-    final grid = List<Seat?>.filled(16, null);
-    for (final seat in seats) {
-      final index = seat.row * 4 + seat.col;
-      if (index >= 0 && index < 16) grid[index] = seat;
+    final visibleIds = visible.map((s) => s.id).toSet();
+    final rows =
+        floorSeats.map((s) => s.row).fold(0, math.max) + 1;
+    final cols =
+        floorSeats.map((s) => s.col).fold(0, math.max) + 1;
+
+    final grid = List<Seat?>.filled(rows * cols, null);
+    for (final seat in floorSeats) {
+      grid[seat.row * cols + seat.col] = seat;
     }
+
+    Widget buildGrid() => Column(
+          children: [
+            for (var row = 0; row < rows; row++) ...[
+              if (row > 0) const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var col = 0; col < cols; col++) ...[
+                    if (col > 0) const SizedBox(width: 12),
+                    _gridCell(grid[row * cols + col], visibleIds),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        );
 
     return SurfaceCard(
       elevated: true,
@@ -427,31 +443,13 @@ class _SeatGridCard extends StatelessWidget {
       tint: AppColors.primary.withValues(alpha: 0.20),
       child: Column(
         children: [
-          for (var row = 0; row < 4; row++) ...[
-            if (row > 0) const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var col = 0; col < 4; col++) ...[
-                  if (col > 0) const SizedBox(width: 12),
-                  SizedBox(
-                    width: 52,
-                    height: 52,
-                    child: grid[row * 4 + col] == null
-                        ? const SizedBox.shrink()
-                        : _SeatBadge(
-                            seat: grid[row * 4 + col]!,
-                            isSelected:
-                                selected?.id == grid[row * 4 + col]!.id,
-                            isMine:
-                                mySeatIds.contains(grid[row * 4 + col]!.id),
-                            onTap: onSelect,
-                          ),
-                  ),
-                ],
-              ],
-            ),
-          ],
+          // Wide floors pan; narrow ones centre as before.
+          cols > 6
+              ? SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: buildGrid(),
+                )
+              : buildGrid(),
           const SizedBox(height: 18),
           const Divider(height: 1),
           const SizedBox(height: 12),
@@ -474,6 +472,18 @@ class _SeatGridCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _gridCell(Seat? seat, Set<String> visibleIds) {
+    if (seat == null) return const SizedBox(width: 52, height: 52);
+    final isVisible = visibleIds.contains(seat.id);
+    return _SeatBadge(
+      seat: seat,
+      dimmed: !isVisible,
+      isSelected: selected?.id == seat.id,
+      isMine: mySeatIds.contains(seat.id),
+      onTap: isVisible ? () => onSelect(seat) : null,
+    );
+  }
 }
 
 class _SeatBadge extends StatelessWidget {
@@ -482,100 +492,119 @@ class _SeatBadge extends StatelessWidget {
     required this.isSelected,
     required this.isMine,
     required this.onTap,
+    this.dimmed = false,
   });
 
   final Seat seat;
   final bool isSelected;
   final bool isMine;
-  final ValueChanged<Seat> onTap;
+  final VoidCallback? onTap;
+
+  /// A seat hidden by the active filters: greyed out and non-tappable so
+  /// the grid keeps its shape (semantic state `seatFilteredOut`).
+  final bool dimmed;
 
   /// A seat held by the signed-in user wins over the shared status.
   bool get _renderMine => isMine && !isSelected;
 
-  Color get _color => isSelected
-      ? AppColors.seatSelected
-      : _renderMine
-          ? AppColors.seatSelected.withValues(alpha: 0.88)
-          : switch (seat.status) {
-              SeatStatus.available => AppColors.seatAvailable,
-              SeatStatus.limited => AppColors.seatLimited,
-              SeatStatus.occupied => AppColors.seatOccupied,
-            };
+  Color get _color => dimmed
+      ? AppColors.scheme.outlineVariant
+      : isSelected
+          ? AppColors.seatSelected
+          : _renderMine
+              ? AppColors.seatSelected.withValues(alpha: 0.88)
+              : switch (seat.status) {
+                  SeatStatus.available => AppColors.seatAvailable,
+                  SeatStatus.limited => AppColors.seatLimited,
+                  SeatStatus.occupied => AppColors.seatOccupied,
+                };
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = _renderMine
-        ? 'reserved by you'
-        : _statusLabel(seat.status);
+    final statusLabel = dimmed
+        ? 'hidden by filters'
+        : _renderMine
+            ? 'reserved by you'
+            : _statusLabel(seat.status);
     return Semantics(
       label: 'Seat ${seat.label}, $statusLabel',
-      button: true,
+      button: onTap != null,
+      selected: isSelected,
       child: GestureDetector(
-        onTap: () => onTap(seat),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.alphaBlend(
-                    Colors.white.withValues(alpha: 0.22), _color),
-                _color,
+        onTap: onTap,
+        child: Opacity(
+          opacity: dimmed ? 0.45 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: dimmed
+                  ? null
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.alphaBlend(
+                            Colors.white.withValues(alpha: 0.22), _color),
+                        _color,
+                      ],
+                    ),
+              color: dimmed ? _color : null,
+              boxShadow: isSelected || _renderMine
+                  ? AppShadows.glow(_color)
+                  : [
+                      BoxShadow(
+                        color: _color.withValues(alpha: 0.22),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  seat.label,
+                  style: AppText.title(
+                    13,
+                    w: FontWeight.w700,
+                    color: dimmed
+                        ? AppColors.scheme.onSurfaceVariant
+                        : AppColors.textInverse,
+                  ),
+                ),
+                if (_renderMine)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: Icon(Icons.check_rounded,
+                          size: 9, color: AppColors.seatSelected),
+                    ),
+                  )
+                else if (seat.hasPowerOutlet &&
+                    seat.status != SeatStatus.occupied &&
+                    !dimmed)
+                  Positioned(
+                    right: 7,
+                    bottom: 9,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
               ],
             ),
-            boxShadow: isSelected || _renderMine
-                ? AppShadows.glow(_color)
-                : [
-                    BoxShadow(
-                      color: _color.withValues(alpha: 0.22),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Text(
-                seat.label,
-                style: AppText.title(
-                  13,
-                  w: FontWeight.w700,
-                  color: AppColors.textInverse,
-                ),
-              ),
-              if (_renderMine)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                    child: Icon(Icons.check_rounded,
-                        size: 9, color: AppColors.seatSelected),
-                  ),
-                )
-              else if (seat.hasPowerOutlet &&
-                  seat.status != SeatStatus.occupied)
-                Positioned(
-                  right: 7,
-                  bottom: 9,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ),
       ),
@@ -589,6 +618,9 @@ class _SeatBadge extends StatelessWidget {
       };
 }
 
+/// The map legend, split into its two semantic rows (D-03): what the
+/// seats *are* (availability) versus whose they are (ownership). Never
+/// the two mixed on one line.
 class _Legend extends StatelessWidget {
   const _Legend({required this.visible, required this.mySeatIds});
 
@@ -597,33 +629,62 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      (
-        AppColors.seatAvailable,
-        'Available (${visible.where((s) => s.status == SeatStatus.available).length})'
-      ),
-      (
-        AppColors.seatLimited,
-        'Limited (${visible.where((s) => s.status == SeatStatus.limited).length})'
-      ),
-      (
-        AppColors.seatOccupied,
-        'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
-      ),
-      (AppColors.seatSelected, 'Selected'),
-      if (mySeatIds.isNotEmpty)
-        (
-          AppColors.seatSelected.withValues(alpha: 0.88),
-          'Yours${mySeatIds.length > 1 ? ' ×${mySeatIds.length}' : ''}'
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _LegendRow(
+          label: 'AVAILABILITY',
+          items: [
+            (
+              AppColors.seatAvailable,
+              'Available (${visible.where((s) => s.status == SeatStatus.available).length})'
+            ),
+            (
+              AppColors.seatLimited,
+              'Limited (${visible.where((s) => s.status == SeatStatus.limited).length})'
+            ),
+            (
+              AppColors.seatOccupied,
+              'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
+            ),
+          ],
         ),
-    ];
+        const SizedBox(height: 8),
+        _LegendRow(
+          label: 'OWNERSHIP',
+          items: [
+            (AppColors.seatSelected, 'Selected'),
+            if (mySeatIds.isNotEmpty)
+              (
+                AppColors.seatSelected.withValues(alpha: 0.88),
+                'Yours${mySeatIds.length > 1 ? ' ×${mySeatIds.length}' : ''}'
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
+class _LegendRow extends StatelessWidget {
+  const _LegendRow({required this.label, required this.items});
+
+  final String label;
+  final List<(Color, String)> items;
+
+  @override
+  Widget build(BuildContext context) {
     return Wrap(
       alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       spacing: 16,
       runSpacing: 8,
       children: [
-        for (final (color, label) in items)
+        Text(
+          label,
+          style: AppText.overline(9, ls: 1.1, color: AppColors.textFaint),
+        ),
+        for (final (color, text) in items)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -633,7 +694,8 @@ class _Legend extends StatelessWidget {
                 decoration: BoxDecoration(shape: BoxShape.circle, color: color),
               ),
               const SizedBox(width: 6),
-              Text(label, style: AppText.body(11.5, color: AppColors.textSecondary)),
+              Text(text,
+                  style: AppText.body(11.5, color: AppColors.textSecondary)),
             ],
           ),
       ],

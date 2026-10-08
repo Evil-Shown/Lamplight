@@ -51,6 +51,23 @@ class AppState extends ChangeNotifier {
   NotificationPreferences get preferences => _preferences;
   ThemeMode get themeMode => _themeMode;
 
+  /// Client-side read state (D-07) — the backend has no `read` field yet,
+  /// so unread = "not in the local read set". Once Firestore adopts the
+  /// flag this set simply becomes a cache of the server truth.
+  final Set<String> _readNotificationIds = {};
+
+  bool isNotificationRead(String id) => _readNotificationIds.contains(id);
+
+  void markNotificationRead(String id) {
+    if (!_readNotificationIds.add(id)) return;
+    notifyListeners();
+  }
+
+  void markAllNotificationsRead() {
+    _readNotificationIds.addAll(_notifications.map((n) => n.id));
+    notifyListeners();
+  }
+
   List<Book> get books => _books;
   List<Seat> get seats => [
         for (final seat in _seats)
@@ -73,7 +90,8 @@ class AppState extends ChangeNotifier {
     return _bookings.first;
   }
 
-  int get unreadNotifications => _notifications.length;
+  int get unreadNotifications =>
+      _notifications.where((n) => !_readNotificationIds.contains(n.id)).length;
 
   /// Newest Firestore snapshot arrival across the live streams — used by
   /// the seat map's freshness indicator.
@@ -117,6 +135,7 @@ class AppState extends ChangeNotifier {
     _notifications.clear();
     _seatStatus.clear();
     _seenNotificationIds.clear();
+    _readNotificationIds.clear();
     _profile = null;
     notifyListeners();
   }
@@ -351,11 +370,12 @@ class AppState extends ChangeNotifier {
   WaitlistEntry joinWaitlist({
     required String title,
     required String subtitle,
+    WaitlistType type = WaitlistType.seat,
     String? seatPreference,
   }) {
     final entry = WaitlistEntry(
       id: 'w${DateTime.now().millisecondsSinceEpoch}',
-      type: WaitlistType.seat,
+      type: type,
       title: title,
       subtitle: subtitle,
       position: _waitlist.length + 1,
