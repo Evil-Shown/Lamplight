@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -59,12 +59,47 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          // Reminders are not implemented in the backend this cycle
+          // (audit gap FR16) â€” shown disabled with an honest label
+          // instead of a spinner or a lie.
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10),
+            child: SectionLabel('Reminders (coming soon)'),
+          ),
+          StaggeredEntrance(
+            index: 1,
+            child: SurfaceCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  _ToggleRow(
+                    label: 'Before my session starts',
+                    value: prefs.reminderBeforeStart,
+                    onChanged: null,
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  _ToggleRow(
+                    label: 'Before pickup expires',
+                    value: prefs.reminderBeforeExpiry,
+                    onChanged: null,
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  _ToggleRow(
+                    label: 'Waitlist updates',
+                    value: prefs.waitlistUpdates,
+                    onChanged: null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
             child: SectionLabel('Appearance'),
           ),
           StaggeredEntrance(
-            index: 1,
+            index: 3,
             child: SurfaceCard(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -98,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
             child: SectionLabel('Other settings'),
           ),
           StaggeredEntrance(
-            index: 2,
+            index: 4,
             child: SurfaceCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -146,21 +181,26 @@ class _ToggleRow extends StatelessWidget {
   const _ToggleRow({
     required this.label,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
   });
 
   final String label;
   final bool value;
-  final ValueChanged<bool> onChanged;
+
+  /// Null disables the row â€” used for features the backend does not
+  /// support yet (reminders).
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
       value: value,
-      onChanged: (v) {
-        Haptics.selection();
-        onChanged(v);
-      },
+      onChanged: onChanged == null
+          ? null
+          : (v) {
+              Haptics.selection();
+              onChanged!(v);
+            },
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       title: Text(label, style: AppText.body(14.5)),
     );

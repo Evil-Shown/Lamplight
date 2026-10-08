@@ -263,6 +263,16 @@ class MockData {
           estimatedWaitMinutes: 45,
           seatPreference: 'Quiet Area + Power Outlet',
         ),
+        WaitlistEntry(
+          id: 'w2',
+          type: WaitlistType.book,
+          title: 'Design Patterns',
+          subtitle: 'By Erich Gamma',
+          position: 1,
+          joinedAt: DateTime.now().subtract(const Duration(hours: 3)),
+          estimatedWaitMinutes: 120,
+          seatPreference: 'Any edition',
+        ),
       ];
 
   static List<AppNotification> buildNotifications() {

@@ -57,6 +57,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           children: [
+            // App-level cached-data banner (D-14).
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             Row(
               children: [
                 Expanded(
@@ -180,8 +182,18 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Queue Dispatch · ${queue.length}',
-                      style: AppText.title(15.5, w: FontWeight.w700)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dispatch queue · ${queue.length}',
+                          style: AppText.title(15.5, w: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Updates in real time',
+                        style: AppText.body(11.5, color: AppColors.textFaint),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -197,7 +209,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               const EmptyState(
                 icon: Icons.inbox_rounded,
                 title: 'Queue is clear',
-                message: 'No students are waiting right now.',
+                message:
+                    'No students waiting. Queue updates in real time.',
               )
             else
               for (var i = 0; i < queue.length; i++) ...[
