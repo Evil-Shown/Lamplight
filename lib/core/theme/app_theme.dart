@@ -361,7 +361,8 @@ class AppGlass {
       ];
 }
 
-/// The dusk sky behind the app: amber at the top deepening to brown, with
+/// The sky behind the app: dusk amber deepening to brown in light mode, a
+/// midnight sky with stars in dark mode, with
 /// soft copper glows. A desert scene is painted over it (see glass.dart).
 class AppAurora {
   AppAurora._();
@@ -374,22 +375,22 @@ class AppAurora {
   ];
 
   static const List<Color> dark = [
-    Color(0x40E0904A),
-    Color(0x338A4A2B),
+    Color(0x335B6BD6),
+    Color(0x2E4A3B8C),
     Color(0x29B8703A),
-    Color(0x1F5A3322),
+    Color(0x1F2B3A6B),
   ];
 
   static List<Color> get colors => AppColors.isDark ? dark : light;
 
   /// Canvas colour the blobs float over.
   static Color get base => AppColors.isDark
-      ? const Color(0xFF241610)
+      ? const Color(0xFF1A1832)
       : const Color(0xFFE3A872);
 
   /// Top-to-bottom sky gradient stops.
   static List<Color> get sky => AppColors.isDark
-      ? const [Color(0xFF3A2216), Color(0xFF241610), Color(0xFF140C08)]
+      ? const [Color(0xFF0C1124), Color(0xFF1A1832), Color(0xFF2C1C28)]
       : const [Color(0xFFF0C99C), Color(0xFFE3A872), Color(0xFFC98350)];
 }
 
