@@ -4,15 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_constants.dart';
 import '../theme/app_theme.dart';
-import 'motion3d.dart';
 
-/// ─────────────────────────────────────────────────────────────────────
-///  Brand pieces: the animated splash and the campus mark. The Ledger
-///  vocabulary (ticket stubs, foil chips, ink panels) is gone — the
-///  prototype has no use for it.
-/// ─────────────────────────────────────────────────────────────────────
-
-/// The rounded "LP" app mark used on the splash, login, and staff header.
+/// Brand pieces: the Nordic splash and the campus mark.
 class CampusMark extends StatelessWidget {
   const CampusMark({super.key, this.size = 56, this.onDark = false});
 
@@ -28,12 +21,20 @@ class CampusMark extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.brand,
         borderRadius: BorderRadius.circular(size * 0.28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.28),
+            blurRadius: 20,
+            spreadRadius: -4,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Text(
         AppStrings.appName.substring(0, 1).toUpperCase(),
         style: AppText.display(
           size * 0.42,
-          w: FontWeight.w800,
+          w: FontWeight.w700,
           color: AppColors.textInverse,
           ls: -0.5,
         ),
@@ -42,9 +43,7 @@ class CampusMark extends StatelessWidget {
   }
 }
 
-/// The animated opening. A brand ring draws itself, the mark lands, and
-/// the wordmark fades up — the same choreography as before, retuned to
-/// the new blue palette and shortened a little.
+/// Opening: ring draws, mark lands, wordmark fades. Tap skips. Reduce-motion shortens it.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onDone});
 
@@ -58,27 +57,23 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2100),
-  )..addStatusListener(_onStatus);
+    duration: const Duration(milliseconds: 1800),
+  );
 
-  @override
-  void initState() {
-    super.initState();
-    _controller.forward();
-  }
+  bool _started = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Shorten the choreography when the platform asks for reduced motion.
-    _controller.duration =
-        MediaQuery.disableAnimationsOf(context)
-            ? const Duration(milliseconds: 400)
-            : const Duration(milliseconds: 2100);
-  }
-
-  void _onStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) widget.onDone();
+    if (_started) return;
+    _started = true;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    _controller.duration = reduced
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 1800);
+    _controller.forward().whenComplete(() {
+      if (mounted) widget.onDone();
+    });
   }
 
   @override
@@ -91,82 +86,66 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final ring = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.42, curve: Curves.easeOutCubic),
+      curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
     );
     final mark = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.18, 0.52, curve: Curves.easeOutBack),
+      curve: const Interval(0.16, 0.50, curve: Curves.easeOutCubic),
     );
     final word = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.42, 0.72, curve: Curves.easeOut),
+      curve: const Interval(0.40, 0.72, curve: Curves.easeOutCubic),
     );
-    final fade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.86, 1.0, curve: Curves.easeInCubic),
-    );
-
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       body: GestureDetector(
         onTap: () {
           _controller.stop();
           widget.onDone();
         },
         behavior: HitTestBehavior.opaque,
-        child: FadeTransition(
-          opacity: fade,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 132,
-                  height: 132,
-                  child: AnimatedBuilder(
-                    animation: ring,
-                    builder: (context, _) =>
-                        CustomPaint(painter: _BrandRingPainter(ring.value)),
-                  ),
-                ),
-                const SizedBox(height: 22),
-                ScaleTransition(
-                  scale: mark,
-                  child: const Float3D(
-                    distance: 4,
-                    wobble: 0.05,
-                    period: Duration(milliseconds: 2800),
-                    child: CampusMark(size: 62),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                FadeTransition(
-                  opacity: word,
-                  child: Column(
-                    children: [
-                      Text(
-                        AppStrings.appName,
-                        style: AppText.display(
-                          24,
-                          w: FontWeight.w800,
-                          ls: -0.6,
-                        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 148,
+                height: 148,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedBuilder(
+                      animation: ring,
+                      builder: (context, _) => CustomPaint(
+                        size: const Size(148, 148),
+                        painter: _BrandRingPainter(ring.value),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'UNIVERSITY LIBRARY & STUDY SEATS',
-                        style: AppText.label(
-                          11.5,
-                          w: FontWeight.w600,
-                          ls: 2.4,
-                          color: AppColors.textFaint,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    ScaleTransition(
+                      scale: mark,
+                      child: const CampusMark(size: 64),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              FadeTransition(
+                opacity: word,
+                child: Column(
+                  children: [
+                    Text(
+                      AppStrings.appName,
+                      style: AppText.title(28, w: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Campus library & study seats',
+                      style: AppText.body(14, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -181,17 +160,15 @@ class _BrandRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final centre = rect.center;
-    final radius = size.width / 2 - 5;
+    final centre = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 8;
 
-    // Soft halo behind the sweeping arc.
     canvas.drawCircle(
       centre,
       radius,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
+        ..strokeWidth = 6
         ..color = AppColors.primary.withValues(alpha: 0.10 * progress),
     );
 
@@ -205,7 +182,7 @@ class _BrandRingPainter extends CustomPainter {
           Rect.fromCircle(center: centre, radius: radius),
         )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.2
+        ..strokeWidth = 3
         ..strokeCap = StrokeCap.round,
     );
   }
@@ -215,7 +192,7 @@ class _BrandRingPainter extends CustomPainter {
       old.progress != progress;
 }
 
-/// The "STATE: VERIFIED" style pill used on the check-in screens.
+/// Compact status pill used on check-in screens.
 class StatePill extends StatelessWidget {
   const StatePill({
     super.key,
@@ -254,7 +231,11 @@ class StatePill extends StatelessWidget {
           Text(
             label,
             style: AppText.label(
-                11, w: FontWeight.w700, ls: 0.6, color: effectiveColor),
+              11,
+              w: FontWeight.w700,
+              ls: 0.6,
+              color: effectiveColor,
+            ),
           ),
         ],
       ),
