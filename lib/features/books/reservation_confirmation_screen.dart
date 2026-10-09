@@ -21,39 +21,38 @@ class ReservationConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: 'Reservation Complete',
+      title: 'Book reserved',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
         children: [
-          GradientHero(
+          // Outcome panel: flat success container — mint gradients retired.
+          Container(
             padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            gradient: AppGradients.mint,
+            decoration: BoxDecoration(
+              color: AppColors.successContainer,
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+            ),
             child: Column(
               children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.24),
-                  ),
-                  child: Icon(Icons.check_rounded,
-                      size: 34, color: AppColors.textInverse),
-                ),
+                const SuccessCheck(size: 84),
                 const SizedBox(height: 15),
                 Text(
-                  'Reservation Successful',
+                  'Book reserved',
                   textAlign: TextAlign.center,
-                  style: AppText.display(22, w: FontWeight.w800, ls: -0.4,
-                      color: AppColors.textInverse),
+                  style: AppText.display(
+                    22,
+                    w: FontWeight.w800,
+                    ls: -0.9,
+                    color: AppColors.onSuccessContainer,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Your book has been reserved.',
+                  '${book.title} is waiting for you.',
                   textAlign: TextAlign.center,
                   style: AppText.body(
-                    13,
-                    color: AppColors.textInverse.withValues(alpha: 0.86),
+                    14,
+                    color: AppColors.onSuccessContainer.withValues(alpha: 0.86),
                   ),
                 ),
               ],
@@ -62,8 +61,6 @@ class ReservationConfirmationScreen extends StatelessWidget {
           const SizedBox(height: 28),
           StaggeredEntrance(
             child: SurfaceCard(
-              tint: AppColors.success,
-              elevated: true,
               child: Row(
                 children: [
                   BookCover(
@@ -109,7 +106,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 12, bottom: 4),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('PICKUP',
+                      child: Text('PICK UP BY',
                           style: AppText.overline(
                             10.5,
                             color: AppColors.textFaint,
@@ -119,7 +116,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '${reservation.pickupLocation} – Counter 01',
+                      DateFormat('EEE d MMMM yyyy').format(reservation.pickupBy),
                       style: AppText.title(15, w: FontWeight.w600),
                     ),
                   ),
@@ -128,7 +125,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('EXPIRES',
+                      child: Text('COLLECT FROM',
                           style: AppText.overline(
                             10.5,
                             color: AppColors.textFaint,
@@ -140,7 +137,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        DateFormat('d MMMM yyyy').format(reservation.pickupBy),
+                        '${reservation.pickupLocation} – Counter 01',
                         style: AppText.title(15, w: FontWeight.w600),
                       ),
                     ),
@@ -151,12 +148,12 @@ class ReservationConfirmationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 26),
           PrimaryButton(
-            label: 'VIEW MY RESERVATIONS',
+            label: 'View my reservations',
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(height: 10),
           PrimaryButton(
-            label: 'BACK TO HOME',
+            label: 'Back to home',
             tone: ButtonTone.secondary,
             onPressed: () =>
                 Navigator.of(context).popUntil((route) => route.isFirst),

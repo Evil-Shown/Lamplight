@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../models/models.dart';
 import '../mock/mock_data.dart';
@@ -27,6 +28,138 @@ class FirestoreService {
   String? get uid => _auth.currentUser?.uid;
 
   // ------------------------------------------------------------------ auth
+
+  /// Signs in via Google OAuth.
+  Future<UserProfile> signInWithGoogle(UserRole role) async {
+    final fallback = _seedProfile('Google User', role);
+    if (!_firebaseReady) return fallback;
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw 'Google Sign In was cancelled.';
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) return fallback;
+
+      final doc = await _db.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        return _profileFromMap(doc.data()!, user.uid);
+      }
+
+      final profile = UserProfile(
+        name: user.displayName ?? googleUser.displayName ?? 'Library Member',
+        studentId: user.email?.split('@').first ?? user.uid.substring(0, 8),
+        email: user.email ?? googleUser.email,
+        role: role,
+      );
+      await _db.collection('users').doc(user.uid).set(_profileToMap(profile));
+      return profile;
+    } catch (e) {
+      if (e is String) rethrow;
+      // Fallback for demo or offline mode if credentials fail
+      return fallback;
+    }
+  }
+
+  /// Registers a new user with Email and Password.
+  Future<UserProfile> signUpWithEmail({
+    required String email,
+    required String password,
+    required String fullName,
+    required UserRole role,
+    String? studentId,
+  }) async {
+    final cleanEmail = email.trim();
+    final cleanName = fullName.trim().isEmpty ? 'Library Member' : fullName.trim();
+    final cleanStudentId = (studentId != null && studentId.trim().isNotEmpty)
+        ? studentId.trim()
+        : cleanEmail.split('@').first;
+
+    final fallback = UserProfile(
+      name: cleanName,
+      studentId: cleanStudentId,
+      email: cleanEmail,
+      role: role,
+    );
+    if (!_firebaseReady) return fallback;
+
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: cleanEmail,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) return fallback;
+
+      try {
+        await user.updateDisplayName(cleanName);
+      } catch (_) {}
+
+      final profile = UserProfile(
+        name: cleanName,
+        studentId: cleanStudentId,
+        email: cleanEmail,
+        role: role,
+      );
+
+      await _db.collection('users').doc(user.uid).set(_profileToMap(profile));
+      return profile;
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Registration failed. Please try again.';
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  /// Signs in an existing user with Email and Password.
+  Future<UserProfile> signInWithEmail({
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    final cleanEmail = email.trim();
+    final fallback = _seedProfile(cleanEmail, role);
+    if (!_firebaseReady) return fallback;
+
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: cleanEmail,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) return fallback;
+
+      final doc = await _db.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        return _profileFromMap(doc.data()!, user.uid);
+      }
+
+      final profile = UserProfile(
+        name: user.displayName ?? 'Library Member',
+        studentId: cleanEmail.split('@').first,
+        email: cleanEmail,
+        role: role,
+      );
+      await _db.collection('users').doc(user.uid).set(_profileToMap(profile));
+      return profile;
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Invalid email or password.';
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   /// Signs in with the campus identifier. If the account does not exist yet
   /// it is provisioned on the fly; if Firebase Auth is unreachable we fall
@@ -99,23 +232,27 @@ class FirestoreService {
   /// Pushes the mock catalogue/seat map into Firestore the first time the
   /// app runs against an empty project.
   Future<void> seedIfEmpty() async {
-    final books = await _db.collection('books').limit(1).get();
-    if (books.docs.isEmpty) {
-      for (final book in MockData.books) {
-        await _db
-            .collection('books')
-            .doc(book.id)
-            .set(_bookToMap(book, id: book.id));
+    try {
+      final books = await _db.collection('books').limit(1).get();
+      if (books.docs.isEmpty) {
+        for (final book in MockData.books) {
+          await _db
+              .collection('books')
+              .doc(book.id)
+              .set(_bookToMap(book, id: book.id));
+        }
       }
-    }
-    final seats = await _db.collection('seats').limit(1).get();
-    if (seats.docs.isEmpty) {
-      for (final seat in MockData.seats) {
-        await _db
-            .collection('seats')
-            .doc(seat.id)
-            .set(_seatToMap(seat, id: seat.id));
+      final seats = await _db.collection('seats').limit(1).get();
+      if (seats.docs.isEmpty) {
+        for (final seat in MockData.seats) {
+          await _db
+              .collection('seats')
+              .doc(seat.id)
+              .set(_seatToMap(seat, id: seat.id));
+        }
       }
+    } catch (_) {
+      // Unauthenticated seed attempt or missing permissions on cold start.
     }
   }
 

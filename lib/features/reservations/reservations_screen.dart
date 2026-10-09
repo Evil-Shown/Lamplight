@@ -450,7 +450,7 @@ class _WaitlistCard extends StatelessWidget {
                     if (entry.estimatedWaitMinutes != null) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Estimated wait ~${entry.estimatedWaitMinutes} min',
+                        'About ${entry.estimatedWaitMinutes} min (estimate)',
                         style: AppText.body(12, color: AppColors.textFaint),
                       ),
                     ],
@@ -471,7 +471,20 @@ class _WaitlistCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
-              onPressed: () => AppScope.read(context).leaveWaitlist(entry.id),
+              onPressed: () async {
+                // M01: leaving the queue confirms — the position is lost.
+                final confirmed = await showConfirmDialog(
+                  context,
+                  title: 'Leave the queue?',
+                  body:
+                      "You'll lose position #${entry.position} for ${entry.title}.",
+                  confirmLabel: 'Leave queue',
+                  cancelLabel: 'Stay in queue',
+                );
+                if (confirmed && context.mounted) {
+                  AppScope.read(context).leaveWaitlist(entry.id);
+                }
+              },
               child: Text(
                 'Leave queue',
                 style: AppText.label(13,

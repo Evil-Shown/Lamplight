@@ -112,7 +112,18 @@ class AccountScreen extends StatelessWidget {
                 label: 'Sign out',
                 icon: Icons.logout_rounded,
                 tone: ButtonTone.danger,
-                onPressed: () => state.signOut(),
+                onPressed: () async {
+                  // M01: destructive actions always confirm with the
+                  // consequence spelled out.
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'Sign out of Library+?',
+                    body: 'Your reservations stay saved.',
+                    confirmLabel: 'Sign out',
+                    cancelLabel: 'Stay signed in',
+                  );
+                  if (confirmed && context.mounted) state.signOut();
+                },
               ),
             ),
           ],
@@ -134,7 +145,6 @@ class _IdentityCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.brand,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: AppShadows.primary,
       ),
       child: Row(
         children: [

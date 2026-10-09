@@ -273,7 +273,9 @@ class _ThemePick extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadii.full),
-            boxShadow: selected ? AppShadows.glow(AppColors.primary) : null,
+            border: selected
+                ? Border.all(color: AppColors.primarySoft, width: 3)
+                : Border.all(color: AppColors.border),
           ),
           child: Icon(
             icon,
