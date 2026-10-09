@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 import '../models/book_model.dart';
+import '../models/reservation_model.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   const BookDetailsScreen({super.key, required this.book});
@@ -14,14 +15,184 @@ class BookDetailsScreen extends StatefulWidget {
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
   bool _bookmarked = false;
+  int? _availableCopies;
+  bool _isSubmittingReservation = false;
+  ReservationModel? _lastReservation;
+
+  int get _copiesAvailable => _availableCopies ?? widget.book.availableCopies;
+
+  @override
+  void initState() {
+    super.initState();
+    _availableCopies = widget.book.availableCopies;
+  }
+
+  Future<void> _openReservationSheet() async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
+      ),
+      builder: (sheetContext) {
+        var isSubmitting = false;
+
+        Future<void> submitReservation(StateSetter setSheetState) async {
+          if (isSubmitting) return;
+          setSheetState(() => isSubmitting = true);
+          await Future<void>.delayed(const Duration(milliseconds: 700));
+          if (!mounted) return;
+          Navigator.of(sheetContext).pop(true);
+        }
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final deadline = DateTime.now().add(const Duration(hours: 24));
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 8,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Confirm Book Reservation',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 14),
+                  _ReservationSummary(
+                    book: widget.book,
+                    copiesAvailable: _copiesAvailable,
+                    deadline: deadline,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () => Navigator.of(sheetContext).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () => submitReservation(setSheetState),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.textInverse,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadii.md),
+                            ),
+                          ),
+                          child: isSubmitting
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text('Confirm Reservation'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _finalizeReservation();
+    }
+  }
+
+  Future<void> _finalizeReservation() async {
+    if (!mounted || _copiesAvailable <= 0) return;
+
+    setState(() => _isSubmittingReservation = true);
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+
+    final now = DateTime.now();
+    final reservation = ReservationModel(
+      id: 'RSV-${now.millisecondsSinceEpoch}',
+      bookId: widget.book.id,
+      userId: 'mock-user',
+      bookTitle: widget.book.title,
+      pickupLocation: widget.book.shelfLocation,
+      reservedAt: now,
+      expiresAt: now.add(const Duration(hours: 24)),
+      status: 'confirmed',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _lastReservation = reservation;
+      _availableCopies = (_copiesAvailable - 1).clamp(0, widget.book.availableCopies);
+      _isSubmittingReservation = false;
+    });
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Reservation Confirmed'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Reservation ID: ${reservation.id}'),
+              const SizedBox(height: 8),
+              Text('Pickup location: ${reservation.pickupLocation}'),
+              const SizedBox(height: 8),
+              const Text(
+                'Please pick up your book within 24 hours. Bring your student ID when collecting the reservation.',
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('Return to Search'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
-    final canReserve = book.availableCopies > 0;
+    final canReserve = _copiesAvailable > 0;
     final availabilityColor = canReserve ? AppColors.success : AppColors.error;
     final availabilityLabel = canReserve
-        ? '+ Available (${book.availableCopies} copies)'
+        ? '+ Available ($_copiesAvailable copies)'
         : '• Unavailable';
 
     return Scaffold(
@@ -122,13 +293,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
               ),
             ),
             onPressed: canReserve
-                ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Reserve flow will be wired in the next commit.'),
-                      ),
-                    );
-                  }
+                ? _openReservationSheet
                 : null,
             child: Text(
               canReserve ? 'RESERVE BOOK' : 'UNAVAILABLE',
@@ -258,6 +423,65 @@ class _TagChip extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReservationSummary extends StatelessWidget {
+  const _ReservationSummary({
+    required this.book,
+    required this.copiesAvailable,
+    required this.deadline,
+  });
+
+  final BookModel book;
+  final int copiesAvailable;
+  final DateTime deadline;
+
+  @override
+  Widget build(BuildContext context) {
+    final deadlineText = 'Must pick up within 24 hours · ${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            book.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$copiesAvailable copies currently available',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            deadlineText,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pickup location: Shelf ${book.shelfLocation}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
           ),
         ],
       ),

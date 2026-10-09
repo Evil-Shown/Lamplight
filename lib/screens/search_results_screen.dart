@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 import '../models/book_model.dart';
+import 'book_details_screen.dart';
 import '../widgets/book_card.dart';
 
 class SearchResultsScreen extends StatefulWidget {
@@ -63,7 +64,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   void _openPlaceholder(BookModel book) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _BookActionPlaceholderScreen(book: book),
+        builder: (_) => BookDetailsScreen(book: book),
       ),
     );
   }
@@ -181,48 +182,6 @@ class _SearchSummaryBar extends StatelessWidget {
                 onPressed: onEdit,
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BookActionPlaceholderScreen extends StatelessWidget {
-  const _BookActionPlaceholderScreen({required this.book});
-
-  final BookModel book;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Details'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.book_outlined, size: 48, color: AppColors.primary),
-              const SizedBox(height: 16),
-              Text(
-                book.title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Placeholder navigation for the book details / reservation route.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
-            ],
-          ),
         ),
       ),
     );
