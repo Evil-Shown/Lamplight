@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/glass.dart';
 import '../../../../core/widgets/shared_widgets.dart';
 
-/// Compact action tile used in the staff admin dashboard quick-actions row.
+/// Compact action tile used in the staff admin dashboard quick-actions grid:
+/// a frosted, tinted bento cell with a springy press.
 class StaffQuickAction extends StatelessWidget {
   const StaffQuickAction({
     super.key,
@@ -20,57 +23,59 @@ class StaffQuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SurfaceCard(
-      elevated: true,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+    return PressScale(
       onTap: onTap,
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+      child: FrostedCard(
+        tint: color.withValues(alpha: AppColors.isDark ? 0.18 : 0.10),
+        padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
                 ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              if (badge != null && badge! > 0)
-                Positioned(
-                  right: -4,
-                  top: -4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                if (badge != null && badge! > 0)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 20),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(AppRadii.full),
+                      ),
+                      child: Text(
+                        '$badge',
+                        style: AppText.label(11,
+                            w: FontWeight.w800, color: AppColors.textInverse),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              height: 1.2,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title(12.5, w: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }

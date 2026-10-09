@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_constants.dart';
+import '../../core/constants/app_constants.dart' show AppStrings;
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
+import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import 'book_detail_screen.dart';
@@ -12,9 +15,9 @@ import 'search_results_screen.dart';
 
 /// book-search-v2 "Library Catalog".
 ///
-/// The Stitch redesign: catalog header with a live-freshness indicator,
-/// the search field, search-type tabs, filter chips, live result cards
-/// with reserve actions, and an honest "search by ISBN" tip callout.
+/// A discovery screen: large title, a glass search field, search-type and
+/// availability chips, a shelf of tilted covers, then live result cards
+/// with reserve actions and an honest "search by ISBN" tip.
 class BookSearchScreen extends StatefulWidget {
   const BookSearchScreen({super.key});
 
@@ -98,205 +101,208 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final books = _matches(state.books);
+    final browsing = _controller.text.trim().isEmpty &&
+        _availabilityFilters.isEmpty &&
+        state.isHydrated;
     final shown = _showAll || _controller.text.trim().isNotEmpty
         ? books
         : books.take(4).toList();
+    final shelf = books
+        .where((b) => b.availability == BookAvailability.available)
+        .toList();
 
+    // Tab inside the shell: the shell paints the aurora, so stay transparent.
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Library catalog',
-                    style: AppText.title(24, w: FontWeight.w600),
-                  ),
-                ),
-                // Driven by the real last-synced timestamp (D-06).
-                // Flexible so the freshness label ellipsizes instead of
-                // pushing the header row past its bounds.
-                Flexible(child: LiveFreshness(lastSyncedAt: state.lastSyncedAt)),
-              ],
-            ),
-            const SizedBox(height: 18),
-            StaggeredEntrance(
-              child: Text(
-                'Find a Book',
-                style: AppText.display(24, w: FontWeight.w700, ls: -0.5),
-              ),
-            ),
-            const SizedBox(height: 6),
-            StaggeredEntrance(
-              index: 1,
-              child: Text(
-                'Search the campus collection by title, author or ISBN.',
-                style: AppText.body(14, color: AppColors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadii.card),
-                boxShadow: AppShadows.ambient,
-              ),
-              child: TextField(
-                controller: _controller,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _openResults(),
-                decoration: InputDecoration(
-                  hintText: AppStrings.searchBooksHint,
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
-                  suffixIcon: _controller.text.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18),
-                          onPressed: () => setState(() {
-                            _controller.clear();
-                            _showAll = false;
-                          }),
-                        ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadii.card),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(height: 14),
-            StaggeredEntrance(
-              index: 3,
-              child: SegmentedTabs(
-                options: _searchTypes,
-                selected: _searchType,
-                padding: EdgeInsets.zero,
-                onSelected: (value) {
-                  Haptics.selection();
-                  setState(() => _searchType = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Same filter-chip language as the seat map (D-15).
-            StaggeredEntrance(
-              index: 3,
-              child: FilterChipRow(
-                options: _availabilityOptions,
-                selected: '',
-                isSelectedOf: _availabilityFilters.contains,
-                onSelected: (option) {
-                  Haptics.selection();
-                  setState(() {
-                    if (!_availabilityFilters.remove(option)) {
-                      _availabilityFilters.add(option);
-                    }
-                  });
-                },
-                padding: EdgeInsets.zero,
-              ),
-            ),
-            const SizedBox(height: 22),
-            StaggeredEntrance(
-              index: 4,
-              child: Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'LIBRARY CATALOG',
+                          style: AppText.overline(11, color: AppColors.primary),
+                        ),
+                      ),
+                      // Driven by the real last-synced timestamp (D-06).
+                      Flexible(
+                        child: LiveFreshness(lastSyncedAt: state.lastSyncedAt),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  StaggeredEntrance(
                     child: Text(
-                      '${books.length} ${books.length == 1 ? 'Book' : 'Books'} Found',
-                      style: AppText.title(15, w: FontWeight.w700),
+                      'Find your next read',
+                      style: AppText.display(32, w: FontWeight.w800, ls: -1),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadii.full),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Relevant',
-                          style: AppText.label(
-                            12,
-                            w: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        Icon(Icons.expand_more_rounded,
-                            size: 16, color: AppColors.textFaint),
-                      ],
+                  const SizedBox(height: AppSpacing.base),
+                  GlassSurface(
+                    radius: AppRadii.full,
+                    padding: EdgeInsets.zero,
+                    child: TextField(
+                      controller: _controller,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) {
+                        AppFeedback.tap();
+                        _openResults();
+                      },
+                      style: AppText.body(15),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.searchBooksHint,
+                        filled: false,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.base, vertical: 16),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            size: 22, color: AppColors.primary),
+                        suffixIcon: _controller.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                icon: const Icon(Icons.close_rounded, size: 18),
+                                onPressed: () {
+                                  AppFeedback.tap();
+                                  setState(() {
+                                    _controller.clear();
+                                    _showAll = false;
+                                  });
+                                },
+                              ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                      ),
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            // S10 loading: four skeleton cards until the first snapshot.
-            if (!state.isHydrated)
-              const Column(
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xl),
                 children: [
-                  SkeletonCard(height: 92),
-                  SizedBox(height: 10),
-                  SkeletonCard(height: 92),
-                  SizedBox(height: 10),
-                  SkeletonCard(height: 92),
-                  SizedBox(height: 10),
-                  SkeletonCard(height: 92),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: SegmentedTabs(
+                      options: _searchTypes,
+                      selected: _searchType,
+                      padding: EdgeInsets.zero,
+                      onSelected: (value) {
+                        AppFeedback.select();
+                        setState(() => _searchType = value);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Same filter-chip language as the seat map (D-15).
+                  StaggeredEntrance(
+                    index: 2,
+                    child: FilterChipRow(
+                      options: _availabilityOptions,
+                      selected: '',
+                      isSelectedOf: _availabilityFilters.contains,
+                      onSelected: (option) {
+                        AppFeedback.select();
+                        setState(() {
+                          if (!_availabilityFilters.remove(option)) {
+                            _availabilityFilters.add(option);
+                          }
+                        });
+                      },
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                  if (browsing && shelf.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    const SectionHeader(
+                      title: 'Available now',
+                      subtitle: 'Ready to reserve today',
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    StaggeredEntrance(
+                      index: 3,
+                      child: _CoverShelf(books: shelf, onOpen: _openDetail),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  StaggeredEntrance(
+                    index: 4,
+                    child: SectionHeader(
+                      title: browsing ? 'Popular on campus' : 'Results',
+                      subtitle:
+                          '${books.length} ${books.length == 1 ? 'book' : 'books'} found',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // S10 loading: four skeleton cards until the first snapshot.
+                  if (!state.isHydrated)
+                    const Column(
+                      children: [
+                        SkeletonCard(height: 92),
+                        SizedBox(height: AppSpacing.md),
+                        SkeletonCard(height: 92),
+                        SizedBox(height: AppSpacing.md),
+                        SkeletonCard(height: 92),
+                        SizedBox(height: AppSpacing.md),
+                        SkeletonCard(height: 92),
+                      ],
+                    )
+                  else if (books.isEmpty)
+                    const EmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'No matches',
+                      message:
+                          'Nothing in the catalog matches that search. Try a '
+                          'different term or search type.',
+                    )
+                  else ...[
+                    for (var i = 0; i < shown.length; i++) ...[
+                      StaggeredEntrance(
+                        index: i + 5,
+                        child: _CatalogCard(
+                          book: shown[i],
+                          onOpen: () => _openDetail(shown[i]),
+                          onReserve: () => _reserve(shown[i]),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                    if (!_showAll && books.length > shown.length)
+                      StaggeredEntrance(
+                        index: 9,
+                        child: PrimaryButton(
+                          label: 'View all ${books.length} results',
+                          icon: Icons.arrow_forward_rounded,
+                          tone: ButtonTone.secondary,
+                          onPressed: _openResults,
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  // Static, honest tip: scanning ISBNs isn't wired up (D-09).
+                  const StaggeredEntrance(
+                    index: 10,
+                    child: Callout(
+                      tone: CalloutTone.info,
+                      icon: Icons.lightbulb_outline_rounded,
+                      message:
+                          'Tip: search by ISBN. Paste the number from the back '
+                          'cover to find an exact edition.',
+                    ),
+                  ),
                 ],
-              )
-            else if (books.isEmpty)
-              const EmptyState(
-                icon: Icons.search_off_rounded,
-                title: 'No matches',
-                message:
-                    'Nothing in the catalog matches that search. Try a '
-                    'different term or search type.',
-              )
-            else ...[
-              for (var i = 0; i < shown.length; i++) ...[
-                StaggeredEntrance(
-                  index: i + 5,
-                  child: _CatalogCard(
-                    book: shown[i],
-                    onOpen: () => _openDetail(shown[i]),
-                    onReserve: () => _reserve(shown[i]),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (!_showAll && books.length > shown.length)
-                StaggeredEntrance(
-                  index: 9,
-                  child: PrimaryButton(
-                    label: 'View all ${books.length} results',
-                    icon: Icons.arrow_forward_rounded,
-                    tone: ButtonTone.secondary,
-                    onPressed: _openResults,
-                  ),
-                ),
-            ],
-            const SizedBox(height: 18),
-            // Static, honest tip — the decorative barcode banner is gone
-            // this cycle since scanning ISBNs isn't wired up (D-09).
-            const StaggeredEntrance(
-              index: 10,
-              child: Callout(
-                tone: CalloutTone.info,
-                icon: Icons.lightbulb_outline_rounded,
-                message:
-                    'Tip: search by ISBN — paste the number from the back '
-                    'cover to find an exact edition.',
               ),
             ),
           ],
@@ -306,8 +312,69 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   }
 }
 
+/// Horizontal shelf of covers with a slight 3D tilt.
+class _CoverShelf extends StatelessWidget {
+  const _CoverShelf({required this.books, required this.onOpen});
+
+  final List<Book> books;
+  final ValueChanged<Book> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final book in books) ...[
+            SizedBox(
+              width: 108,
+              child: PressScale(
+                onTap: () => onOpen(book),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Tilt3D(
+                      maxTilt: 0.12,
+                      lift: 8,
+                      child: BookCover(
+                        title: book.title,
+                        color: book.coverColor,
+                        isbn: book.isbn,
+                        width: 108,
+                        height: 152,
+                        radius: AppRadii.sm,
+                        heroTag: 'shelf-${book.id}',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(13, w: FontWeight.w700),
+                    ),
+                    Text(
+                      book.author,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(11.5, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.base),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// A catalog result card: cover, title, author, availability pill, shelf
-/// line, and View Details / Reserve Copy actions.
+/// tag, and one clear action (Reserve, or Join Waitlist when unavailable).
 class _CatalogCard extends StatelessWidget {
   const _CatalogCard({
     required this.book,
@@ -342,20 +409,20 @@ class _CatalogCard extends StatelessWidget {
             title: book.title,
             color: book.coverColor,
             isbn: book.isbn,
-            width: 52,
-            height: 74,
+            width: 56,
+            height: 80,
             heroTag: 'book-${book.id}',
           ),
-          const SizedBox(width: 13),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   book.title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title(14.5, w: FontWeight.w700),
+                  style: AppText.title(15, w: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -364,8 +431,11 @@ class _CatalogCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppText.body(12, color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 7),
-                Row(
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     StatusPill(
                       label: pillLabel,
@@ -375,74 +445,35 @@ class _CatalogCard extends StatelessWidget {
                           : Icons.hourglass_bottom_rounded,
                       compact: true,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Shelf ${book.shelfLocation}',
-                        style: AppText.body(11.5, color: AppColors.textFaint),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    ShelfTag(book.shelfLocation),
                   ],
                 ),
-                const SizedBox(height: 11),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 36,
-                        child: OutlinedButton(
-                          onPressed: onOpen,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            side: BorderSide(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.45)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadii.sm),
-                            ),
-                            textStyle:
-                                AppText.label(12.5, w: FontWeight.w700),
-                          ),
-                          child: const Text('View Details'),
-                        ),
+                const SizedBox(height: AppSpacing.md),
+                PressScale(
+                  onTap: canReserve ? onReserve : onOpen,
+                  child: Container(
+                    height: 38,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: canReserve
+                          ? AppColors.primary
+                          : AppColors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                    ),
+                    child: Text(
+                      canReserve ? 'Reserve copy' : 'Join waitlist',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.label(
+                        12.5,
+                        w: FontWeight.w700,
+                        color: canReserve
+                            ? AppColors.textInverse
+                            : AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SizedBox(
-                        height: 36,
-                        child: ElevatedButton(
-                          onPressed: canReserve ? onReserve : onOpen,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: canReserve
-                                ? AppColors.primary
-                                : AppColors.surfaceMuted,
-                            foregroundColor: canReserve
-                                ? AppColors.textInverse
-                                : AppColors.textSecondary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadii.sm),
-                            ),
-                            textStyle:
-                                AppText.label(12.5, w: FontWeight.w700),
-                          ),
-                          child: Text(
-                            canReserve ? 'Reserve Copy' : 'Join Waitlist',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),

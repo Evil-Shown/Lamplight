@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart' hide AppSpacing;
+import '../../../core/constants/app_constants.dart' show AppNavInset;
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import 'staff_mock_data.dart';
 import 'widgets/staff_status_badge.dart';
@@ -40,10 +41,12 @@ class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
             _filter == 'All' || _reservationStatusLabel(r.status) == _filter)
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Reservations')),
+    return AppScaffold(
+      title: 'Reservations',
+      contentUnderBar: true,
       body: Column(
         children: [
+          SizedBox(height: GlassAppBar.contentTopPadding(context)),
           FilterChipRow(
             options: _filters,
             selected: _filter,
@@ -58,8 +61,8 @@ class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
                     message: 'No reservations match this filter.',
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.md,
-                        AppSpacing.sm, AppSpacing.md, AppSpacing.xl),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                        AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
                     itemCount: visible.length,
                     separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSpacing.sm),
@@ -97,8 +100,7 @@ class _ReservationCard extends StatelessWidget {
     final isBook = r.type == StaffReservationType.book;
 
     return SurfaceCard(
-      elevated: true,
-      color: _isExpired ? AppColors.errorSoft : null,
+      tint: _isExpired ? AppColors.error.withValues(alpha: 0.14) : null,
       onTap: () => _showDetails(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,23 +108,21 @@ class _ReservationCard extends StatelessWidget {
           Row(
             children: [
               IconBadge(icon: _typeIcon, color: AppColors.primary),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.base),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       r.studentName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 15),
+                      style: AppText.title(15, w: FontWeight.w800),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       r.studentId,
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
+                      style: AppText.body(13, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -134,13 +134,11 @@ class _ReservationCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.base),
           Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.base),
             decoration: BoxDecoration(
-              color: _isExpired
-                  ? Colors.white.withValues(alpha: 0.6)
-                  : AppColors.surface,
+              color: AppColors.surface.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(AppRadii.md),
               border: Border.all(color: AppColors.border),
             ),
@@ -171,12 +169,12 @@ class _ReservationCard extends StatelessWidget {
     final r = reservation;
     final isBook = r.type == StaffReservationType.book;
 
-    showModalBottomSheet<void>(
-      context: context,
+    showGlassSheet<void>(
+      context,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,10 +184,7 @@ class _ReservationCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Reservation ${r.id}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: AppText.title(20, w: FontWeight.w800),
                     ),
                   ),
                   StaffStatusBadge(
@@ -241,22 +236,16 @@ class _KVRow extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppText.label(12, w: FontWeight.w600),
             ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: valueColor ?? AppColors.textPrimary,
-              ),
+              style: AppText.label(13,
+                  w: FontWeight.w700,
+                  color: valueColor ?? AppColors.textPrimary),
             ),
           ),
         ],

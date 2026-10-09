@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
@@ -58,17 +59,16 @@ class SeatFilters {
 
 /// P-06A Seat Filters.
 ///
-/// A modal sheet over the seat map: floor selector, study-area checkboxes,
-/// and facility toggles, with reset and apply.
+/// A glass sheet over the seat map: floor selector, study-area and
+/// facility chips, with reset and apply.
 class SeatFilterSheet extends StatefulWidget {
   const SeatFilterSheet({super.key, required this.initial});
 
   final SeatFilters initial;
 
   static Future<SeatFilters?> show(BuildContext context, SeatFilters initial) {
-    return showModalBottomSheet<SeatFilters>(
-      context: context,
-      isScrollControlled: true,
+    return showGlassSheet<SeatFilters>(
+      context,
       builder: (_) => SeatFilterSheet(initial: initial),
     );
   }
@@ -90,26 +90,16 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text('Filters',
-                    style: AppText.display(20, w: FontWeight.w700, ls: -0.3)),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.tune_rounded, size: 20),
-                  onPressed: () => setState(
-                    () => _filters = const SeatFilters(),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            Text('Filters',
+                style: AppText.display(22, w: FontWeight.w700, ls: -0.3)),
+            const SizedBox(height: AppSpacing.lg),
             const SectionLabel('Floor'),
             const SizedBox(height: 10),
             SegmentedTabs(
@@ -119,46 +109,66 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
                   setState(() => _filters = _filters.copyWith(floor: value)),
               padding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: AppSpacing.xl),
             const SectionLabel('Study area'),
-            const SizedBox(height: 6),
-            _CheckRow(
-              label: 'Quiet Zone',
-              value: _filters.categories.contains(SeatCategory.quietZone),
-              onChanged: (_) => _toggleCategory(SeatCategory.quietZone),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _ToggleChip(
+                  label: 'Quiet Zone',
+                  icon: Icons.volume_off_rounded,
+                  value: _filters.categories.contains(SeatCategory.quietZone),
+                  onChanged: (_) => _toggleCategory(SeatCategory.quietZone),
+                ),
+                _ToggleChip(
+                  label: 'Collaborative Space',
+                  icon: Icons.groups_rounded,
+                  value:
+                      _filters.categories.contains(SeatCategory.collaborative),
+                  onChanged: (_) => _toggleCategory(SeatCategory.collaborative),
+                ),
+                _ToggleChip(
+                  label: 'Individual Pod',
+                  icon: Icons.person_rounded,
+                  value:
+                      _filters.categories.contains(SeatCategory.individualPod),
+                  onChanged: (_) => _toggleCategory(SeatCategory.individualPod),
+                ),
+              ],
             ),
-            _CheckRow(
-              label: 'Collaborative Space',
-              value: _filters.categories.contains(SeatCategory.collaborative),
-              onChanged: (_) => _toggleCategory(SeatCategory.collaborative),
-            ),
-            _CheckRow(
-              label: 'Individual Pod',
-              value: _filters.categories.contains(SeatCategory.individualPod),
-              onChanged: (_) => _toggleCategory(SeatCategory.individualPod),
-            ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.xl),
             const SectionLabel('Facilities'),
-            const SizedBox(height: 6),
-            _CheckRow(
-              label: 'Power Outlet',
-              value: _filters.powerOutlet,
-              onChanged: (v) =>
-                  setState(() => _filters = _filters.copyWith(powerOutlet: v)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _ToggleChip(
+                  label: 'Power Outlet',
+                  icon: Icons.power_rounded,
+                  value: _filters.powerOutlet,
+                  onChanged: (v) => setState(
+                      () => _filters = _filters.copyWith(powerOutlet: v)),
+                ),
+                _ToggleChip(
+                  label: 'Monitor Screen',
+                  icon: Icons.monitor_rounded,
+                  value: _filters.monitor,
+                  onChanged: (v) =>
+                      setState(() => _filters = _filters.copyWith(monitor: v)),
+                ),
+                _ToggleChip(
+                  label: 'Standing Desk',
+                  icon: Icons.height_rounded,
+                  value: _filters.standingDesk,
+                  onChanged: (v) => setState(
+                      () => _filters = _filters.copyWith(standingDesk: v)),
+                ),
+              ],
             ),
-            _CheckRow(
-              label: 'Monitor Screen',
-              value: _filters.monitor,
-              onChanged: (v) =>
-                  setState(() => _filters = _filters.copyWith(monitor: v)),
-            ),
-            _CheckRow(
-              label: 'Standing Desk',
-              value: _filters.standingDesk,
-              onChanged: (v) => setState(
-                  () => _filters = _filters.copyWith(standingDesk: v)),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             Row(
               children: [
                 Expanded(
@@ -186,27 +196,68 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
   }
 }
 
-class _CheckRow extends StatelessWidget {
-  const _CheckRow({
+/// A pill that toggles a filter: tinted with a check when on, so the
+/// state never rests on colour alone. Fires a toggle cue itself.
+class _ToggleChip extends StatelessWidget {
+  const _ToggleChip({
     required this.label,
+    required this.icon,
     required this.value,
     required this.onChanged,
   });
 
   final String label;
+  final IconData icon;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      value: value,
-      onChanged: (v) => onChanged(v ?? false),
-      contentPadding: EdgeInsets.zero,
-      controlAffinity: ListTileControlAffinity.leading,
-      dense: true,
-      activeColor: AppColors.primary,
-      title: Text(label, style: AppText.body(14)),
+    return Semantics(
+      button: true,
+      toggled: value,
+      label: label,
+      excludeSemantics: true,
+      child: PressScale(
+        feedback: PressFeedback.toggle,
+        onTap: () => onChanged(!value),
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          curve: AppMotion.enter,
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: value
+                ? AppColors.primary.withValues(alpha: 0.14)
+                : AppGlass.cardFill,
+            borderRadius: BorderRadius.circular(AppRadii.full),
+            border: Border.all(
+              color: value ? AppColors.primary : AppGlass.border,
+              width: value ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(value ? Icons.check_rounded : icon,
+                  size: 16,
+                  color: value ? AppColors.primary : AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppText.label(
+                    13.5,
+                    w: value ? FontWeight.w700 : FontWeight.w500,
+                    color: value ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

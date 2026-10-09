@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
+import '../../core/feedback/app_feedback.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../waitlist/waitlist_screen.dart';
@@ -87,6 +89,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
       end: end,
     );
     if (booking == null) {
+      AppFeedback.error();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Seat ${seat.label} was just taken — '
@@ -111,7 +114,8 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
     return AppScaffold(
       title: 'Seat Details',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin,
+            AppSpacing.sm, AppSpacing.screenMargin, AppSpacing.xl),
         children: [
           StaggeredEntrance(
             child: GradientHero(
@@ -130,7 +134,8 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Seat ${seat.label}',
-                    style: AppText.display(AppText.displayMd, w: FontWeight.w800,
+                    style: AppText.display(AppText.displayMd,
+                        w: FontWeight.w800,
                         ls: -1.0,
                         color: AppColors.textInverse),
                   ),
@@ -182,32 +187,24 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
           const SizedBox(height: 10),
           StaggeredEntrance(
             index: 2,
-            child: SurfaceCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  InkWell(
-                    onTap: _pickDate,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 15),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today_rounded,
-                              size: 17, color: AppColors.textSecondary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(dateLabel, style: AppText.body(14)),
-                          ),
-                          Text('Change',
-                              style: AppText.label(13,
-                                  w: FontWeight.w600,
-                                  color: AppColors.primary)),
-                        ],
-                      ),
+            child: PressScale(
+              onTap: _pickDate,
+              child: FrostedCard(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.base, vertical: 15),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded,
+                        size: 17, color: AppColors.textSecondary),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(dateLabel, style: AppText.body(14)),
                     ),
-                  ),
-                ],
+                    Text('Change',
+                        style: AppText.label(13,
+                            w: FontWeight.w600, color: AppColors.primary)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -239,10 +236,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                     availability: _slotAvailability(i),
                     selected: _slot == _slots[i],
                     enabled: !_slots[i].isPastOn(_day),
-                    onTap: () {
-                      Haptics.selection();
-                      setState(() => _slot = _slots[i]);
-                    },
+                    onTap: () => setState(() => _slot = _slots[i]),
                   ),
                 ],
               ],
@@ -256,32 +250,35 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
           const SizedBox(height: 10),
           StaggeredEntrance(
             index: 4,
-            child: SurfaceCard(
-              child: Column(
+            child: FrostedCard(
+              padding: const EdgeInsets.all(AppSpacing.base),
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                 children: [
-                  const _AmenityRow(
-                      label: 'Desk lamp with warm brightness setting'),
-                  const SizedBox(height: 10),
-                  const _AmenityRow(
-                      label: 'Ergonomic lumbar-support mesh chair'),
-                  const SizedBox(height: 10),
-                  const _AmenityRow(
-                      label: 'Acoustic noise-dampening partition shield'),
-                  if (seat.hasMonitor) ...[
-                    const SizedBox(height: 10),
-                    const _AmenityRow(
-                        label: 'Dual 4K monitors with USB-C hub'),
-                  ],
-                  if (seat.standingDesk) ...[
-                    const SizedBox(height: 10),
-                    const _AmenityRow(
-                        label: 'Height-adjustable standing desk'),
-                  ],
-                  if (seat.hasPowerOutlet) ...[
-                    const SizedBox(height: 10),
-                    const _AmenityRow(
-                        label: '65W AC power + fast USB-C charging'),
-                  ],
+                  const _AmenityChip(
+                      icon: Icons.lightbulb_outline_rounded,
+                      label: 'Warm desk lamp'),
+                  const _AmenityChip(
+                      icon: Icons.chair_alt_rounded,
+                      label: 'Lumbar-support chair'),
+                  const _AmenityChip(
+                      icon: Icons.volume_off_rounded,
+                      label: 'Noise-dampening partition'),
+                  if (seat.hasMonitor)
+                    const _AmenityChip(
+                        icon: Icons.monitor_rounded,
+                        label: 'Dual 4K monitors + USB-C hub'),
+                  if (seat.standingDesk)
+                    const _AmenityChip(
+                        icon: Icons.height_rounded, label: 'Standing desk'),
+                  if (seat.hasPowerOutlet)
+                    const _AmenityChip(
+                        icon: Icons.bolt_rounded,
+                        label: '65W AC + USB-C charging'),
+                  if (seat.nearWindow)
+                    const _AmenityChip(
+                        icon: Icons.wb_sunny_outlined, label: 'Window light'),
                 ],
               ),
             ),
@@ -350,10 +347,8 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
   /// Live floor occupancy from Firestore — the same honest number every
   /// slot shows, since desks are shared across the day's slots.
   String _slotAvailability(int index) {
-    final floorSeats = AppScope.of(context)
-        .seats
-        .where((s) => s.floor == seat.floor)
-        .toList();
+    final floorSeats =
+        AppScope.of(context).seats.where((s) => s.floor == seat.floor).toList();
     final total = floorSeats.length;
     if (total == 0) return 'Availability unavailable';
     final free =
@@ -420,21 +415,18 @@ class _ZoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tint = active ? AppColors.primary : AppColors.textFaint;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: active ? AppColors.primarySoft : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-        border: Border.all(
-          color: active ? AppColors.primary.withValues(alpha: 0.45) : AppColors.border,
-        ),
-      ),
+    return FrostedCard(
+      radius: AppRadii.sm,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      tint: active ? AppColors.primary.withValues(alpha: 0.14) : null,
+      border: true,
       child: Column(
         children: [
-          Icon(icon, size: 19, color: tint),
+          Icon(active ? icon : icon, size: 19, color: tint),
           const SizedBox(height: 6),
           Text(
-            label,
+            active ? label : '$label · n/a',
+            textAlign: TextAlign.center,
             style: AppText.label(
               11,
               w: active ? FontWeight.w700 : FontWeight.w500,
@@ -472,31 +464,43 @@ class _SlotRow extends StatelessWidget {
       opacity: enabled ? 1 : 0.45,
       child: PressScale(
         onTap: enabled ? onTap : () {},
+        feedback: enabled ? PressFeedback.select : PressFeedback.none,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          duration: AppMotion.fast,
+          curve: AppMotion.enter,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md + 2, vertical: AppSpacing.md),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primarySoft : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadii.sm),
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : AppGlass.cardFill,
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : AppColors.border,
+              color: selected ? AppColors.primary : AppGlass.border,
               width: selected ? 2 : 1,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.28),
+                      blurRadius: 14,
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: AppMotion.fast,
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: selected ? AppColors.primary : Colors.transparent,
                   border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.borderStrong,
+                    color:
+                        selected ? AppColors.primary : AppColors.borderStrong,
                     width: 1.6,
                   ),
                 ),
@@ -563,22 +567,31 @@ class _SlotRow extends StatelessWidget {
   }
 }
 
-class _AmenityRow extends StatelessWidget {
-  const _AmenityRow({required this.label});
+class _AmenityChip extends StatelessWidget {
+  const _AmenityChip({required this.icon, required this.label});
 
+  final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(Icons.check_circle_rounded, size: 17,
-            color: AppColors.success),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Text(label, style: AppText.body(13.5)),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadii.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(label, style: AppText.label(12.5, w: FontWeight.w600)),
+          ),
+        ],
+      ),
     );
   }
 }

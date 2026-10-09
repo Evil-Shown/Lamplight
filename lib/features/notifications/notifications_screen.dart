@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -31,7 +32,12 @@ class NotificationsScreen extends StatelessWidget {
                   'Reservation updates and reminders will appear here.',
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenMargin,
+                AppSpacing.sm,
+                AppSpacing.screenMargin,
+                AppSpacing.xxl,
+              ),
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -46,7 +52,10 @@ class NotificationsScreen extends StatelessWidget {
                       ),
                       if (unread > 0)
                         TextButton(
-                          onPressed: state.markAllNotificationsRead,
+                          onPressed: () {
+                            AppFeedback.success();
+                            state.markAllNotificationsRead();
+                          },
                           style: TextButton.styleFrom(
                             minimumSize: const Size(0, 34),
                             padding:
@@ -65,17 +74,53 @@ class NotificationsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                for (var i = 0; i < notifications.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 10),
-                  StaggeredEntrance(
-                    index: i,
-                    child: _NotificationCard(item: notifications[i]),
-                  ),
-                ],
+                ..._grouped(notifications),
               ],
             ),
     );
   }
+}
+
+/// Day headers ("Today", "Yesterday", date) with their cards, in feed order.
+List<Widget> _grouped(List<AppNotification> items) {
+  final widgets = <Widget>[];
+  String? lastDay;
+  var n = 0;
+  for (final item in items) {
+    final day = _dayLabel(item.timestamp);
+    if (day != lastDay) {
+      lastDay = day;
+      widgets.add(Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.xs,
+          top: widgets.isEmpty ? 0 : AppSpacing.base,
+          bottom: AppSpacing.sm,
+        ),
+        child: Text(
+          day.toUpperCase(),
+          style: AppText.overline(11, color: AppColors.textFaint),
+        ),
+      ));
+    }
+    widgets.add(Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
+      child: StaggeredEntrance(
+        index: n++,
+        child: _NotificationCard(item: item),
+      ),
+    ));
+  }
+  return widgets;
+}
+
+String _dayLabel(DateTime t) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final d = DateTime(t.year, t.month, t.day);
+  final diff = today.difference(d).inDays;
+  if (diff <= 0) return 'Today';
+  if (diff == 1) return 'Yesterday';
+  return DateFormat('EEE, MMM d').format(t);
 }
 
 class _NotificationCard extends StatelessWidget {
@@ -110,7 +155,8 @@ class _NotificationCard extends StatelessWidget {
       button: true,
       child: SurfaceCard(
         padding: const EdgeInsets.all(14),
-        tint: _color.withValues(alpha: 0.20),
+        tint: isUnread ? _color.withValues(alpha: 0.28) : null,
+        borderColor: isUnread ? _color.withValues(alpha: 0.45) : null,
         onTap: isUnread
             ? () => AppScope.read(context).markNotificationRead(item.id)
             : null,
@@ -120,7 +166,7 @@ class _NotificationCard extends StatelessWidget {
             IconBadge(
               icon: item.icon ?? Icons.notifications_rounded,
               color: _color,
-              background: _color.withValues(alpha: 0.10),
+              background: _color.withValues(alpha: isUnread ? 0.16 : 0.08),
               size: 40,
             ),
             const SizedBox(width: 13),
@@ -132,7 +178,7 @@ class _NotificationCard extends StatelessWidget {
                     item.title,
                     style: AppText.title(
                       14.5,
-                      w: isUnread ? FontWeight.w700 : FontWeight.w600,
+                      w: isUnread ? FontWeight.w800 : FontWeight.w600,
                       height: 1.3,
                     ),
                   ),

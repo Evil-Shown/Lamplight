@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart' hide AppSpacing;
+import '../../../core/constants/app_constants.dart' show AppNavInset;
+import '../../../core/feedback/app_feedback.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import 'staff_mock_data.dart';
 import 'widgets/staff_status_badge.dart';
@@ -50,10 +52,12 @@ class _StaffBooksScreenState extends State<StaffBooksScreen> {
   Widget build(BuildContext context) {
     final visible = _entries.where(_matches).toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Book Availability')),
+    return AppScaffold(
+      title: 'Book Availability',
+      contentUnderBar: true,
       body: Column(
         children: [
+          SizedBox(height: GlassAppBar.contentTopPadding(context)),
           FilterChipRow(
             options: _filters,
             selected: _filter,
@@ -68,8 +72,8 @@ class _StaffBooksScreenState extends State<StaffBooksScreen> {
                     message: 'No titles match this availability filter.',
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.md,
-                        AppSpacing.sm, AppSpacing.md, AppSpacing.xl),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                        AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
                     itemCount: visible.length,
                     separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSpacing.sm),
@@ -116,7 +120,6 @@ class _BookCard extends StatelessWidget {
     final book = entry.book;
 
     return SurfaceCard(
-      elevated: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -129,23 +132,21 @@ class _BookCard extends StatelessWidget {
                 width: 52,
                 height: 72,
               ),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.base),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       book.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 15),
+                      style: AppText.title(15, w: FontWeight.w800),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       book.author,
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
+                      style: AppText.body(13, color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -156,20 +157,18 @@ class _BookCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.base),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 '${entry.availableCopies} of ${entry.totalCopies} copies available',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                style: AppText.label(13,
+                    w: FontWeight.w700, color: AppColors.textPrimary),
               ),
               Text(
                 '${entry.totalCopies - entry.availableCopies} on loan',
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
+                style: AppText.label(12, w: FontWeight.w600),
               ),
             ],
           ),
@@ -186,8 +185,7 @@ class _BookCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'ISBN ${book.isbn}\nShelf ${book.shelfLocation}',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12, height: 1.5),
+                  style: AppText.body(12, color: AppColors.textSecondary),
                 ),
               ),
               _AdjustButton(
@@ -229,13 +227,18 @@ class _AdjustButton extends StatelessWidget {
       tooltip: tooltip,
       icon: Icon(icon, size: 20),
       style: IconButton.styleFrom(
-        minimumSize: const Size(44, 44),
+        minimumSize: const Size(48, 48),
         backgroundColor: AppColors.primarySoft,
         foregroundColor: AppColors.primary,
         disabledBackgroundColor: AppColors.surface,
         disabledForegroundColor: AppColors.textFaint,
       ),
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              AppFeedback.select();
+              onPressed!();
+            },
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 
@@ -23,42 +24,37 @@ class ReservationConfirmationScreen extends StatelessWidget {
     return AppScaffold(
       title: 'Book reserved',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
         children: [
-          // Outcome panel: flat success container — mint gradients retired.
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            decoration: BoxDecoration(
-              color: AppColors.successContainer,
-              borderRadius: BorderRadius.circular(AppRadii.xl),
-            ),
-            child: Column(
-              children: [
-                const SuccessCheck(size: 84),
-                const SizedBox(height: 15),
-                Text(
-                  'Book reserved',
-                  textAlign: TextAlign.center,
-                  style: AppText.display(
-                    22,
-                    w: FontWeight.w800,
-                    ls: -0.9,
-                    color: AppColors.onSuccessContainer,
+          // Outcome panel: glass hero with a soft success tint.
+          GlassSurface(
+            radius: AppRadii.xl,
+            tint: AppColors.success.withValues(alpha: 0.14),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  const SuccessCheck(size: 84),
+                  const SizedBox(height: AppSpacing.base),
+                  Text(
+                    'Book reserved',
+                    textAlign: TextAlign.center,
+                    style: AppText.display(26, w: FontWeight.w800, ls: -0.9),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${book.title} is waiting for you.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    14,
-                    color: AppColors.onSuccessContainer.withValues(alpha: 0.86),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${book.title} is waiting for you.',
+                    textAlign: TextAlign.center,
+                    style: AppText.body(14, color: AppColors.textSecondary),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
             child: SurfaceCard(
               child: Row(
@@ -67,8 +63,9 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     title: book.title,
                     color: book.coverColor,
                     isbn: book.isbn,
-                    width: 48,
-                    height: 68,
+                    width: 52,
+                    height: 74,
+                    heroTag: 'book-${book.id}',
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -95,7 +92,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.md),
           StaggeredEntrance(
             index: 1,
             child: SurfaceCard(
@@ -146,12 +143,12 @@ class ReservationConfirmationScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: AppSpacing.xl),
           PrimaryButton(
             label: 'View my reservations',
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Back to home',
             tone: ButtonTone.secondary,

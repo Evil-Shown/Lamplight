@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 
@@ -19,47 +20,44 @@ class WaitlistJoinedScreen extends StatelessWidget {
     return AppScaffold(
       title: 'Waiting List',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
         children: [
-          Center(
-            child: Column(
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.6, end: 1),
-                  duration: const Duration(milliseconds: 520),
-                  curve: Curves.easeOutBack,
-                  builder: (context, value, child) =>
-                      Transform.scale(scale: value, child: child),
-                  child: Container(
-                    width: 78,
-                    height: 78,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
+          StaggeredEntrance(
+            child: GlassSurface(
+              radius: AppRadii.xl,
+              tint: AppColors.success.withValues(alpha: 0.14),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    const SuccessCheck(size: 78),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      'Joined Waiting List',
+                      textAlign: TextAlign.center,
+                      style: AppText.display(AppText.displayMd,
+                          w: FontWeight.w700, ls: -1.0),
                     ),
-                    child: Icon(Icons.notifications_active_rounded,
-                        size: 38, color: AppColors.textInverse),
-                  ),
+                    const SizedBox(height: 7),
+                    Text(
+                      'You have been added to the waiting list.',
+                      textAlign: TextAlign.center,
+                      style: AppText.body(13, color: AppColors.textSecondary),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'Joined Waiting List',
-                  style: AppText.display(AppText.displayMd, w: FontWeight.w700,
-                      ls: -1.0),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  'You have been added to the waiting list.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(13, color: AppColors.textSecondary),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
+            index: 1,
             child: SurfaceCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base, vertical: 6),
               child: Column(
                 children: [
                   InfoRow(
@@ -93,8 +91,7 @@ class WaitlistJoinedScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const Callout(
             icon: Icons.info_outline_rounded,
-            message:
-                'We will notify you as soon as it is your turn. Keep your '
+            message: 'We will notify you as soon as it is your turn. Keep your '
                 'notifications enabled.',
           ),
           const SizedBox(height: 26),

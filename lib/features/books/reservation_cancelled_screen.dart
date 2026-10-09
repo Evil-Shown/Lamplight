@@ -19,39 +19,54 @@ class ReservationCancelledScreen extends StatelessWidget {
     return AppScaffold(
       title: 'Reservation Cancelled',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
         children: [
-          Center(
-            child: Column(
-              children: [
-                const SuccessCheck(size: 78),
-                const SizedBox(height: 18),
-                Text(
-                  'Reservation Cancelled',
-                  style: AppText.display(22, w: FontWeight.w700, ls: -0.4),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  'Your reservation for ${last?.book.title ?? 'this book'} has been '
-                  'cancelled successfully.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    13,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
+          // Calm, neutral treatment: released, not an error and not a win.
+          StaggeredEntrance(
+            child: Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.neutralSoft,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Icon(Icons.bookmark_remove_outlined,
+                        size: 34, color: AppColors.textSecondary),
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.base),
+                  Text(
+                    'Reservation Cancelled',
+                    textAlign: TextAlign.center,
+                    style: AppText.display(24, w: FontWeight.w800, ls: -0.6),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    'Your reservation for ${last?.book.title ?? 'this book'} has been '
+                    'cancelled successfully.',
+                    textAlign: TextAlign.center,
+                    style: AppText.body(
+                      14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
             child: SurfaceCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SectionLabel('Cancelled receipt'),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.base),
                   if (last != null) ...[
                     Row(
                       children: [
@@ -81,18 +96,21 @@ class ReservationCancelledScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.base),
                     const Divider(),
                     InfoRow(label: 'Reservation ID', value: last.id),
                     const Divider(height: 1),
-                    InfoRow(label: 'Status', value: 'Cancelled',
-                        valueColor: AppColors.error),
+                    InfoRow(
+                      label: 'Status',
+                      value: 'Cancelled',
+                      valueColor: AppColors.textSecondary,
+                    ),
                   ],
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           PrimaryButton(
             label: 'Back to My Reservations',
             onPressed: () => Navigator.of(context).pop(),

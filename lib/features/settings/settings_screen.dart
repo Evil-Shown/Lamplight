@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -21,7 +22,12 @@ class SettingsScreen extends StatelessWidget {
     return AppScaffold(
       title: 'Settings',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenMargin,
+          AppSpacing.sm,
+          AppSpacing.screenMargin,
+          AppSpacing.xxl,
+        ),
         children: [
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
@@ -32,26 +38,26 @@ class SettingsScreen extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  _ToggleRow(
+                  SettingRow(
                     label: 'Email Notifications',
-                    value: prefs.emailEnabled,
-                    onChanged: (v) => state.updatePreferences(
+                    switchValue: prefs.emailEnabled,
+                    onSwitchChanged: (v) => state.updatePreferences(
                       prefs.copyWith(emailEnabled: v),
                     ),
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  _ToggleRow(
+                  const _RowDivider(),
+                  SettingRow(
                     label: 'SMS Notifications',
-                    value: prefs.smsEnabled,
-                    onChanged: (v) => state.updatePreferences(
+                    switchValue: prefs.smsEnabled,
+                    onSwitchChanged: (v) => state.updatePreferences(
                       prefs.copyWith(smsEnabled: v),
                     ),
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  _ToggleRow(
+                  const _RowDivider(),
+                  SettingRow(
                     label: 'Push Notifications',
-                    value: prefs.pushEnabled,
-                    onChanged: (v) => state.updatePreferences(
+                    switchValue: prefs.pushEnabled,
+                    onSwitchChanged: (v) => state.updatePreferences(
                       prefs.copyWith(pushEnabled: v),
                     ),
                   ),
@@ -59,10 +65,9 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
           // Reminders are not implemented in the backend this cycle
-          // (audit gap FR16) â€” shown disabled with an honest label
-          // instead of a spinner or a lie.
+          // (audit gap FR16): shown disabled with an honest label.
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
             child: SectionLabel('Reminders (coming soon)'),
@@ -73,34 +78,22 @@ class SettingsScreen extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  _ToggleRow(
-                    label: 'Before my session starts',
-                    value: prefs.reminderBeforeStart,
-                    onChanged: null,
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  _ToggleRow(
-                    label: 'Before pickup expires',
-                    value: prefs.reminderBeforeExpiry,
-                    onChanged: null,
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  _ToggleRow(
-                    label: 'Waitlist updates',
-                    value: prefs.waitlistUpdates,
-                    onChanged: null,
-                  ),
+                  SettingRow(label: 'Before my session starts', switchValue: prefs.reminderBeforeStart, onSwitchChanged: null),
+                  const _RowDivider(),
+                  SettingRow(label: 'Before pickup expires', switchValue: prefs.reminderBeforeExpiry, onSwitchChanged: null),
+                  const _RowDivider(),
+                  SettingRow(label: 'Waitlist updates', switchValue: prefs.waitlistUpdates, onSwitchChanged: null),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
             child: SectionLabel('Appearance'),
           ),
           StaggeredEntrance(
-            index: 3,
+            index: 2,
             child: SurfaceCard(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -128,7 +121,35 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10),
+            child: SectionLabel('Sound & haptics'),
+          ),
+          StaggeredEntrance(
+            index: 3,
+            child: SurfaceCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  SettingRow(
+                    label: 'Interface sounds',
+                    icon: Icons.volume_up_rounded,
+                    switchValue: state.soundsEnabled,
+                    onSwitchChanged: state.setSoundsEnabled,
+                  ),
+                  const _RowDivider(),
+                  SettingRow(
+                    label: 'Haptic feedback',
+                    icon: Icons.vibration_rounded,
+                    switchValue: state.hapticsEnabled,
+                    onSwitchChanged: state.setHapticsEnabled,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sectionGap),
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
             child: SectionLabel('Other settings'),
@@ -145,7 +166,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.language_rounded,
                     onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  const _RowDivider(),
                   SettingRow(
                     label: 'Help & Support',
                     icon: Icons.help_outline_rounded,
@@ -157,7 +178,7 @@ class SettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  const _RowDivider(),
                   SettingRow(
                     label: 'About App',
                     value: 'v1.4.2',
@@ -173,36 +194,6 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
-    required this.label,
-    required this.value,
-    this.onChanged,
-  });
-
-  final String label;
-  final bool value;
-
-  /// Null disables the row â€” used for features the backend does not
-  /// support yet (reminders).
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SwitchListTile(
-      value: value,
-      onChanged: onChanged == null
-          ? null
-          : (v) {
-              Haptics.selection();
-              onChanged!(v);
-            },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      title: Text(label, style: AppText.body(14.5)),
     );
   }
 }
@@ -235,7 +226,7 @@ class _ThemePicker extends StatelessWidget {
               tooltip: entry.$3,
               selected: mode == entry.$1,
               onTap: () {
-                Haptics.selection();
+                AppFeedback.select();
                 state.setThemeMode(entry.$1);
               },
             ),
@@ -265,7 +256,7 @@ class _ThemePick extends StatelessWidget {
       child: PressScale(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.fast,
           curve: Curves.easeOutCubic,
           width: 36,
           height: 30,
@@ -286,4 +277,12 @@ class _ThemePick extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      const Divider(height: 1, indent: 16, endIndent: 16);
 }

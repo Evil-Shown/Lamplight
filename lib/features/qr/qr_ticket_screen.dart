@@ -35,7 +35,8 @@ class QrTicketScreen extends StatelessWidget {
     return AppScaffold(
       title: 'Your pass',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xl),
         children: [
           Text(
             'Show this at the entrance scanner.',
@@ -43,7 +44,8 @@ class QrTicketScreen extends StatelessWidget {
             style: AppText.body(13.5, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 22),
-          TicketCard(
+          StaggeredEntrance(
+            child: TicketCard(
               top: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -104,7 +106,7 @@ class QrTicketScreen extends StatelessWidget {
                     back: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 24),
+                          horizontal: AppSpacing.base, vertical: AppSpacing.xl),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceMuted,
                         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -187,42 +189,40 @@ class QrTicketScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           const SizedBox(height: 22),
           if (!checkedIn)
             PrimaryButton(
-                label: "I've arrived",
-                icon: Icons.how_to_reg_rounded,
-                tone: ButtonTone.secondary,
-                onPressed: () {
-                  Haptics.tap();
-                  state.checkIn();
-                },
-              )
+              label: "I've arrived",
+              icon: Icons.how_to_reg_rounded,
+              tone: ButtonTone.secondary,
+              onPressed: state.checkIn,
+            )
           else
             Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Callout(
-                      tone: CalloutTone.success,
-                      icon: Icons.how_to_reg_rounded,
-                      title: 'Checked in',
-                      message:
-                          'Checked in at ${DateFormat('HH:mm').format(live.checkedInAt!)}. Enjoy your session.',
-                    ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Callout(
+                    tone: CalloutTone.success,
+                    icon: Icons.how_to_reg_rounded,
+                    title: 'Checked in',
+                    message:
+                        'Checked in at ${DateFormat('HH:mm').format(live.checkedInAt!)}. Enjoy your session.',
                   ),
-                  PrimaryButton(
-                    label: 'Open active session',
-                    trailingIcon: Icons.arrow_forward_rounded,
-                    onPressed: () {
-                      AppRoute.push(
-                        context,
-                        ActiveSessionScreen(booking: live),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                ),
+                PrimaryButton(
+                  label: 'Open active session',
+                  trailingIcon: Icons.arrow_forward_rounded,
+                  onPressed: () {
+                    AppRoute.push(
+                      context,
+                      ActiveSessionScreen(booking: live),
+                    );
+                  },
+                ),
+              ],
+            ),
         ],
       ),
     );

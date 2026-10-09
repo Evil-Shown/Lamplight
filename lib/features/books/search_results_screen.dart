@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import 'book_detail_screen.dart';
@@ -63,45 +65,40 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadii.full),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.search_rounded,
-                            size: 17, color: AppColors.textFaint),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Text(
-                            _query,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.body(14),
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => setState(() => _query = ''),
-                          child: Icon(Icons.close_rounded,
-                              size: 16, color: AppColors.textFaint),
-                        ),
-                      ],
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.base, AppSpacing.xs, AppSpacing.base, 0),
+            child: FrostedCard(
+              radius: AppRadii.full,
+              padding: const EdgeInsets.only(left: 16),
+              child: Row(
+                children: [
+                  Icon(Icons.search_rounded,
+                      size: 18, color: AppColors.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _query.isEmpty ? 'All titles' : _query,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(14.5, w: FontWeight.w600),
                     ),
                   ),
-                ),
-              ],
+                  IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      AppFeedback.tap();
+                      setState(() => _query = '');
+                    },
+                    icon: Icon(Icons.close_rounded,
+                        size: 18, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.base, AppSpacing.base, AppSpacing.base, AppSpacing.md),
             child: Align(
               alignment: Alignment.centerLeft,
               child: _loading
@@ -116,12 +113,12 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           Expanded(
             child: _loading
                 ? ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
                     itemCount: 4,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, i) => StaggeredEntrance(
                       index: i,
-                      child: const SkeletonCard(height: 58),
+                      child: const SkeletonCard(height: 98),
                     ),
                   )
                 : books.isEmpty
@@ -130,12 +127,12 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     title: 'No matches',
                     message:
                         'Nothing in the catalog matches that search. Try a '
-                        'different term.',
+                        'different term, or check the spelling.',
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
                     itemCount: books.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, i) => StaggeredEntrance(
                       index: i,
                       child: _ResultRow(book: books[i]),
@@ -194,7 +191,10 @@ class _ResultRow extends StatelessWidget {
                   style: AppText.body(12.5, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     StatusPill(
                       label: pillLabel,
@@ -204,14 +204,7 @@ class _ResultRow extends StatelessWidget {
                           : Icons.priority_high_rounded,
                       compact: true,
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Shelf ${book.shelfLocation}',
-                        style:
-                            AppText.body(11.5, color: AppColors.textFaint),
-                      ),
-                    ),
+                    ShelfTag(book.shelfLocation),
                   ],
                 ),
               ],
@@ -219,15 +212,8 @@ class _ResultRow extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(left: 4, top: 2),
-            child: Text(
-              'VIEW DETAILS',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-                color: AppColors.primary,
-              ),
-            ),
+            child: Icon(Icons.chevron_right_rounded,
+                size: 22, color: AppColors.textFaint),
           ),
         ],
       ),

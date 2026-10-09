@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app.dart';
+import 'core/feedback/app_feedback.dart';
 import 'data/firebase/firestore_service.dart';
 import 'firebase_options.dart';
 
@@ -27,5 +28,7 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+  // Preload UI sounds so the first tap is not late.
+  unawaited(AppFeedback.init());
   runApp(const LibraryApp());
 }
