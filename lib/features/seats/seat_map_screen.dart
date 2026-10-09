@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -106,16 +107,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                 onPressed: () => Navigator.of(context).maybePop(),
               )
             : const SizedBox(width: 48),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('CAMPUS COMMONS',
-                style: AppText.overline(9.5, ls: 1.4)),
-            const SizedBox(height: 1),
-            Text('Seat Reservation',
-                style: AppText.title(17, w: FontWeight.w700)),
-          ],
-        ),
+        title: Text('Seat map', style: AppText.title(20, w: FontWeight.w600)),
       ),
       body: Column(
         children: [
@@ -305,9 +297,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   }
 
   void _openDetail(Seat seat) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SeatDetailScreen(seat: seat)),
-    );
+    AppRoute.push(context, SeatDetailScreen(seat: seat));
   }
 }
 
@@ -324,62 +314,87 @@ class _ZonePicker extends StatelessWidget {
   final int seatCount;
   final ValueChanged<String> onChanged;
 
+  static const _floors = ['Floor 1', 'Floor 2', 'Floor 3'];
+
+  int _floorNum(String floor) =>
+      int.tryParse(floor.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
+
+  int _occupancyPercent(BuildContext context, String floor) {
+    final n = _floorNum(floor);
+    final seats =
+        AppScope.of(context).seats.where((s) => s.floor == n).toList();
+    if (seats.isEmpty) return 0;
+    final occ =
+        seats.where((s) => s.status == SeatStatus.occupied).length;
+    return ((occ / seats.length) * 100).round();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          IconBadge(
-            icon: Icons.layers_outlined,
-            color: AppColors.primary,
-            background: AppColors.primarySoft,
-            size: 40,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('CURRENT FLOOR',
-                    style: AppText.overline(9.5, ls: 1.3)),
-                const SizedBox(height: 2),
-                Text(
-                  '$value · $seatCount desks',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.title(14, w: FontWeight.w700),
-                ),
-              ],
+          for (final floor in _floors) ...[
+            _FloorPill(
+              label: floor,
+              percent: _occupancyPercent(context, floor),
+              selected: floor == value,
+              desks: floor == value ? seatCount : null,
+              onTap: () => onChanged(floor),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(AppRadii.full),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: value,
-                isDense: true,
-                icon: Icon(Icons.keyboard_arrow_down_rounded,
-                    size: 18, color: AppColors.primary),
-                borderRadius: BorderRadius.circular(AppRadii.md),
-                style: AppText.label(13, w: FontWeight.w600, color: AppColors.textPrimary),
-                items: const [
-                  DropdownMenuItem(value: 'Floor 1', child: Text('Floor 1')),
-                  DropdownMenuItem(value: 'Floor 2', child: Text('Floor 2')),
-                  DropdownMenuItem(value: 'Floor 3', child: Text('Floor 3')),
-                ],
-                onChanged: (v) {
-                  if (v != null) onChanged(v);
-                },
-              ),
-            ),
-          ),
+            const SizedBox(width: 10),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _FloorPill extends StatelessWidget {
+  const _FloorPill({
+    required this.label,
+    required this.percent,
+    required this.selected,
+    required this.onTap,
+    this.desks,
+  });
+
+  final String label;
+  final int percent;
+  final bool selected;
+  final int? desks;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.indigo.withValues(alpha: 0.14)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+            color: selected ? AppColors.indigo : AppColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+          boxShadow: selected ? AppShadows.ambient : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: AppText.title(14, w: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(
+              desks != null ? '$desks desks · $percent% full' : '$percent% full',
+              style: AppText.body(11, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -524,21 +539,26 @@ class _SeatBadge extends StatelessWidget {
         !_renderMine &&
         seat.status != SeatStatus.occupied;
 
+    final glow = dimmed
+        ? <BoxShadow>[]
+        : [
+            BoxShadow(
+              color: _glowColor.withValues(alpha: isSelected ? 0.45 : 0.28),
+              blurRadius: isSelected ? 14 : 10,
+              spreadRadius: -2,
+            ),
+          ];
+
     final node = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       width: 52,
       height: 52,
-      foregroundDecoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: _ringColor,
-          width: _ringWidth,
-        ),
-      ),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(14),
         color: _fillColor,
+        border: Border.all(color: _ringColor, width: _ringWidth),
+        boxShadow: glow,
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -643,10 +663,20 @@ class _SeatBadge extends StatelessWidget {
 
   /// Ring: 3 px tertiaryContainer halo when selected, 2 px status ring
   /// otherwise, 1.5 px when occupied. Selection is a ring, not a glow.
+  Color get _glowColor => isSelected
+      ? AppColors.indigo
+      : _renderMine
+          ? AppColors.amberHighlight
+          : switch (seat.status) {
+              SeatStatus.available => AppColors.success,
+              SeatStatus.limited => AppColors.warning,
+              SeatStatus.occupied => const Color(0xFF64748B),
+            };
+
   Color get _ringColor => dimmed
       ? Colors.transparent
       : isSelected
-          ? AppColors.scheme.tertiaryContainer
+          ? AppColors.indigo
           : _renderMine
               ? AppColors.seatYours
               : switch (seat.status) {

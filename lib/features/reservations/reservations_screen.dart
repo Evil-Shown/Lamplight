@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../app_shell.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -174,10 +175,9 @@ class _BookHoldCard extends StatelessWidget {
     final pickupBy = DateFormat('d MMM').format(reservation.pickupBy);
 
     return SurfaceCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ReservationDetailScreen(reservation: reservation),
-        ),
+      onTap: () => AppRoute.push(
+        context,
+        ReservationDetailScreen(reservation: reservation),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,10 +336,9 @@ class _SeatBookingCard extends StatelessWidget {
                   child: PrimaryButton(
                     label: 'Show QR',
                     icon: Icons.qr_code_rounded,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => QrTicketScreen(booking: booking),
-                      ),
+                    onPressed: () => AppRoute.push(
+                      context,
+                      QrTicketScreen(booking: booking),
                     ),
                   ),
                 ),
@@ -426,10 +425,9 @@ class _WaitlistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SurfaceCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => WaitlistJoinedScreen(entry: entry),
-        ),
+      onTap: () => AppRoute.push(
+        context,
+        WaitlistJoinedScreen(entry: entry),
       ),
       child: Column(
         children: [
@@ -500,9 +498,5 @@ class _WaitlistCard extends StatelessWidget {
 
 /// Navigates to the cancelled-receipt screen after a cancel is confirmed.
 void openReservationCancelled(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => const ReservationCancelledScreen(),
-    ),
-  );
+  AppRoute.push(context, const ReservationCancelledScreen());
 }

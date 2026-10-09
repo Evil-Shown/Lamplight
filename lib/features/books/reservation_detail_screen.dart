@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -59,8 +60,9 @@ class ReservationDetailScreen extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
 
     state.cancelReservation(reservation.id);
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const ReservationCancelledScreen()),
+    AppRoute.pushReplacement(
+      context,
+      const ReservationCancelledScreen(),
     );
   }
 
@@ -175,10 +177,9 @@ class ReservationDetailScreen extends StatelessWidget {
           PrimaryButton(
             label: 'View QR Code',
             icon: Icons.qr_code_rounded,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => _ReservationQrScreen(reservation: reservation),
-              ),
+            onPressed: () => AppRoute.push(
+              context,
+              _ReservationQrScreen(reservation: reservation),
             ),
           ),
           const SizedBox(height: 10),

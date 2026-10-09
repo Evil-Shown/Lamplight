@@ -72,7 +72,7 @@ class SurfaceCard extends StatelessWidget {
     this.onTap,
     this.color,
     this.borderColor,
-    this.radius = AppRadii.md,
+    this.radius = AppRadii.card,
     this.elevated = false,
     this.tint,
     this.gradient,
@@ -97,7 +97,7 @@ class SurfaceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final shadow = tint != null
         ? AppShadows.layered(tint!)
-        : (elevated ? AppShadows.raised : null);
+        : (elevated ? AppShadows.raised : AppShadows.ambient);
 
     // Material (not Container) so ListTile children still paint their own
     // background and ink splashes. M3 tonal surface: no hairline border
@@ -138,7 +138,7 @@ class GradientHero extends StatelessWidget {
     this.gradient,
     this.padding = const EdgeInsets.all(20),
     this.radius = AppRadii.xl,
-    this.animated = true,
+    this.animated = false,
   });
 
   final Widget child;
@@ -1012,9 +1012,10 @@ class BookCover extends StatelessWidget {
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 16,
+            spreadRadius: -2,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -1232,8 +1233,8 @@ class _PressScaleState extends State<PressScale> {
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _pressed ? widget.scale : 1,
-        duration: const Duration(milliseconds: 130),
-        curve: Curves.easeOutCubic,
+        duration: AppMotion.instant,
+        curve: AppMotion.press,
         child: widget.child,
       ),
     );
@@ -1959,6 +1960,100 @@ class ErrorState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Nordic bento quick-action tile (2×2 grid on Home).
+class BentoTile extends StatelessWidget {
+  const BentoTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.tint,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      onTap: onTap,
+      child: Container(
+        height: 96,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: tint.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.5),
+          ),
+          boxShadow: AppShadows.ambient,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 26, color: tint),
+            const Spacer(),
+            Text(
+              label,
+              style: AppText.title(14, w: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Depth hero with ambient halo (one per screen).
+class DepthHero extends StatelessWidget {
+  const DepthHero({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: Transform.translate(
+            offset: const Offset(0, 10),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 32,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        GradientHero(
+          animated: false,
+          padding: padding,
+          radius: AppRadii.xl,
+          child: child,
+        ),
+      ],
     );
   }
 }

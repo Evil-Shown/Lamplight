@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -79,10 +80,9 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
     if (_isSeat) {
       final booking = _seatBookingForPass();
       if (booking != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ActiveSessionScreen(booking: booking),
-          ),
+        AppRoute.pushReplacement(
+          context,
+          ActiveSessionScreen(booking: booking),
         );
         return;
       }

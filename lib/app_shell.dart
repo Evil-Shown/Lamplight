@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'core/state/app_state.dart';
+import 'core/theme/app_theme.dart';
+import 'core/widgets/glass_dock.dart';
 import 'features/account/account_screen.dart';
 import 'features/books/book_search_screen.dart';
 import 'features/home/home_screen.dart';
@@ -20,12 +21,7 @@ class AppTab {
   static const profile = 4;
 }
 
-/// The role-aware shell with a standard Material 3 navigation bar.
-///
-/// The prototype ships two destination sets: `Home · Seats · Books ·
-/// Bookings · Profile` for students and `Home · Seats · Catalog ·
-/// Bookings · Staff` for library staff, so the tab list is built from the
-/// signed-in role rather than being fixed.
+/// Role-aware shell with a floating glass navigation dock.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -43,7 +39,6 @@ class _AppShellState extends State<AppShell> {
   void switchTo(int index) {
     if (index < 0 || index >= _destinations.length) return;
     if (index == _index) return;
-    HapticFeedback.selectionClick();
     setState(() => _index = index);
   }
 
@@ -91,19 +86,47 @@ class _AppShellState extends State<AppShell> {
     final destinations = _destinations;
     final screens = _screens;
     final safeIndex = _index.clamp(0, destinations.length - 1);
+    final dockDestinations = [
+      for (final d in destinations)
+        GlassDockDestination(
+          icon: d.icon,
+          selectedIcon: d.selectedIcon,
+          label: d.label,
+        ),
+    ];
+
+    final dockHeight = GlassDock.height +
+        GlassDock.bottomInset +
+        MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      body: IndexedStack(index: safeIndex, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: safeIndex,
-        onDestinationSelected: switchTo,
-        destinations: [
-          for (final destination in destinations)
-            NavigationDestination(
-              icon: Icon(destination.icon),
-              selectedIcon: Icon(destination.selectedIcon),
-              label: destination.label,
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: AppMotion.tabFade,
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: KeyedSubtree(
+                key: ValueKey<int>(safeIndex),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: dockHeight),
+                  child: screens[safeIndex],
+                ),
+              ),
             ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: GlassDock(
+              selectedIndex: safeIndex,
+              onSelected: switchTo,
+              destinations: dockDestinations,
+            ),
+          ),
         ],
       ),
     );

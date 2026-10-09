@@ -169,21 +169,19 @@ queue, and the demo student identity.
 
 ## Design system
 
-The visual language follows one north star: *"a quiet, well-run reading room — warm
-paper, one colour of blue ink, a rust bookmark for what you've chosen."*
+**Nordic Modern Campus** — porcelain surfaces, sapphire actions, indigo selection,
+amber only for “yours / top pick / hold ready.”
 
-- **Colour (80 / 15 / 5).** 80 % neutrals (paper `#F4F6FB`, ink `#191C20`, hairlines),
-  15 % primary blue `#0B57D0` (actions, links, "yours"), 5 % semantic + rust
-  `#9A4A26` (selected seat / Top pick only). Full light **and** dark schemes are
-  hand-built — no `ColorScheme.fromSeed`.
-- **Semantic palette** (success / warning / error containers) is pinned, never
-  alpha-blended, so pills and callouts stay legible on every surface in both themes.
-- **Two gradients only**: `hero` (deep blue, 135°) and `brand` (mark/avatar).
-  Everything else is flat. No glass, no neon glow, no gradient buttons.
-- **Type**: Inter only. Display 58/30/22 with tight tracking, overlines at 11 sp with
-  wide tracking, tabular figures for IDs/times/counts. `AppText` is the single factory.
-- **Spacing / radius**: `4 · 8 · 12 · 16 · 20 · 24 · 32 · 40`; cards r20, hero r28,
-  inputs r16, pills stadium; min hit target 48×48.
+- **Colour.** Canvas `#F8FAFC` (light) / `#0F172A` (dark); primary sapphire
+  `#0D50E8`; selection indigo `#4F46E5`; amber `#F59E0B` for personal highlights only.
+  Hand-built light **and** dark `ColorScheme`s (no `fromSeed`).
+- **Surfaces (three tiers).** (1) Porcelain cards — white fill, r24, `AppShadows.ambient`.
+  (2) Frosted glass — floating nav dock and modal sheets only (`GlassDock`).
+  (3) Depth hero — one sapphire→indigo gradient per route (`DepthHero` / `AppGradients.hero`).
+- **Type:** Plus Jakarta Sans via `AppText`. Headlines w600, tracking ~−0.4; body 15 /
+  line-height 1.45. Uppercase stamp pills (`CHECKED IN`) only — not section headers.
+- **Spacing / radius:** `AppSpacing` scale; cards r24 (`AppRadii.card`), heroes r28,
+  inputs r16; min hit target 48×48.
 - **Signature details**: overline-above-title section headers, the notched
   **TicketCard** (QR pass, receipts), outlined uppercase *stamp* pills
   (`CHECKED IN`, `SEAT OPEN`), the `ShelfTag` (`B2-14`) in tabular figures, and the

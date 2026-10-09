@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -80,20 +81,18 @@ class AccountScreen extends StatelessWidget {
                     SettingRow(
                       label: 'Notifications',
                       icon: Icons.notifications_none_rounded,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsScreen(),
-                        ),
+                      onTap: () => AppRoute.push(
+                        context,
+                        const NotificationsScreen(),
                       ),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     SettingRow(
                       label: 'Settings',
                       icon: Icons.settings_outlined,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsScreen(),
-                        ),
+                      onTap: () => AppRoute.push(
+                        context,
+                        const SettingsScreen(),
                       ),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),

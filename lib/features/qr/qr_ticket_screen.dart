@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion3d.dart';
@@ -42,16 +43,14 @@ class QrTicketScreen extends StatelessWidget {
             style: AppText.body(13.5, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 22),
-          StaggeredEntrance(
-            child: TicketCard(
+          TicketCard(
               top: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'FLOOR ${live.seat.floor} · ${live.seat.section.toUpperCase()}',
-                    style: AppText.overline(
-                      11,
-                      ls: 1.2,
+                    style: AppText.body(
+                      12,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -188,12 +187,9 @@ class QrTicketScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ),
           const SizedBox(height: 22),
           if (!checkedIn)
-            StaggeredEntrance(
-              index: 1,
-              child: PrimaryButton(
+            PrimaryButton(
                 label: "I've arrived",
                 icon: Icons.how_to_reg_rounded,
                 tone: ButtonTone.secondary,
@@ -201,12 +197,9 @@ class QrTicketScreen extends StatelessWidget {
                   Haptics.tap();
                   state.checkIn();
                 },
-              ),
-            )
+              )
           else
-            StaggeredEntrance(
-              index: 1,
-              child: Column(
+            Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -222,17 +215,14 @@ class QrTicketScreen extends StatelessWidget {
                     label: 'Open active session',
                     trailingIcon: Icons.arrow_forward_rounded,
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ActiveSessionScreen(booking: live),
-                        ),
+                      AppRoute.push(
+                        context,
+                        ActiveSessionScreen(booking: live),
                       );
                     },
                   ),
                 ],
               ),
-            ),
         ],
       ),
     );

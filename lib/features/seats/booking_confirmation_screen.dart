@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
@@ -95,10 +96,9 @@ class BookingConfirmationScreen extends StatelessWidget {
           const SizedBox(height: 26),
           PrimaryButton(
             label: 'Show QR pass',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => QrTicketScreen(booking: booking),
-              ),
+            onPressed: () => AppRoute.push(
+              context,
+              QrTicketScreen(booking: booking),
             ),
           ),
           const SizedBox(height: 10),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -94,11 +95,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
       );
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BookingConfirmationScreen(booking: booking),
-      ),
-    );
+    AppRoute.push(context, BookingConfirmationScreen(booking: booking));
   }
 
   @override
@@ -330,11 +327,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                 icon: Icons.hourglass_bottom_rounded,
                 tone: ButtonTone.secondary,
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WaitlistScreen(seat: seat),
-                    ),
-                  );
+                  AppRoute.push(context, WaitlistScreen(seat: seat));
                 },
               ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -161,9 +162,7 @@ class _ResultRow extends StatelessWidget {
     };
 
     return SurfaceCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
-      ),
+      onTap: () => AppRoute.push(context, BookDetailScreen(book: book)),
       tint: pillColor.withValues(alpha: 0.22),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

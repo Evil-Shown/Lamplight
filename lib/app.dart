@@ -44,6 +44,7 @@ class _LibraryAppState extends State<LibraryApp> {
           return MaterialApp(
             title: AppStrings.appName,
             debugShowCheckedModeBanner: false,
+            scrollBehavior: NordicScrollBehavior(),
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: _state.themeMode,

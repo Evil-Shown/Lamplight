@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/navigation/app_route.dart';
 import '../../../core/theme/app_theme.dart' hide AppSpacing;
 import '../../../core/widgets/shared_widgets.dart';
 import 'staff_books_screen.dart';
@@ -220,11 +221,9 @@ class _StatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void openReservations(String filter) => Navigator.push(
+    void openReservations(String filter) => AppRoute.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => StaffReservationsScreen(initialFilter: filter),
-          ),
+          StaffReservationsScreen(initialFilter: filter),
         );
 
     return LayoutBuilder(builder: (context, constraints) {
@@ -258,9 +257,9 @@ class _StatsSection extends StatelessWidget {
             value: '${StaffMockData.waitlistCount}',
             label: 'Waiting List',
             color: AppColors.warning,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffWaitlistScreen()),
+              const StaffWaitlistScreen(),
             ),
           ),
           StaffStatCard(
@@ -268,9 +267,9 @@ class _StatsSection extends StatelessWidget {
             value: '${StaffMockData.availableSeatCount}',
             label: 'Available Seats',
             color: AppColors.info,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffSeatsScreen()),
+              const StaffSeatsScreen(),
             ),
           ),
         ],
@@ -292,10 +291,9 @@ class _QuickActions extends StatelessWidget {
             label: 'Reservations',
             color: AppColors.primary,
             badge: StaffMockData.activeReservationCount,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const StaffReservationsScreen()),
+              const StaffReservationsScreen(),
             ),
           ),
         ),
@@ -306,9 +304,9 @@ class _QuickActions extends StatelessWidget {
             label: 'Waiting\nList',
             color: AppColors.warning,
             badge: StaffMockData.waitlistCount,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffWaitlistScreen()),
+              const StaffWaitlistScreen(),
             ),
           ),
         ),
@@ -318,9 +316,9 @@ class _QuickActions extends StatelessWidget {
             icon: Icons.menu_book_rounded,
             label: 'Book\nAvailability',
             color: AppColors.accent,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffBooksScreen()),
+              const StaffBooksScreen(),
             ),
           ),
         ),
@@ -330,9 +328,9 @@ class _QuickActions extends StatelessWidget {
             icon: Icons.event_seat_rounded,
             label: 'Seat\nAvailability',
             color: AppColors.info,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffSeatsScreen()),
+              const StaffSeatsScreen(),
             ),
           ),
         ),
@@ -360,10 +358,9 @@ class _DueNextSection extends StatelessWidget {
           title: 'Needs attention next',
           subtitle: 'Active reservations by pickup deadline',
           actionLabel: 'View all',
-          onAction: () => Navigator.push(
+          onAction: () => AppRoute.push(
             context,
-            MaterialPageRoute(
-                builder: (_) => const StaffReservationsScreen()),
+            const StaffReservationsScreen(),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -379,10 +376,9 @@ class _DueNextSection extends StatelessWidget {
                 (r) => SurfaceCard(
                   elevated: true,
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  onTap: () => Navigator.push(
+                  onTap: () => AppRoute.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const StaffReservationsScreen()),
+                    const StaffReservationsScreen(),
                   ),
                   child: Row(
                     children: [
