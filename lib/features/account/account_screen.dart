@@ -96,7 +96,7 @@ class AccountScreen extends StatelessWidget {
             ],
             StaggeredEntrance(
               child: Text('Profile',
-                  style: AppText.display(32, w: FontWeight.w800, ls: -0.8)),
+                  style: AppText.title(30, w: FontWeight.w800, ls: -0.8)),
             ),
             const SizedBox(height: 18),
             StaggeredEntrance(
@@ -334,7 +334,7 @@ class _Avatar extends StatelessWidget {
         : profile.name.trim().substring(0, 1).toUpperCase();
     final fallback = Text(
       initial,
-      style: AppText.display(
+      style: AppText.title(
         22,
         w: FontWeight.w800,
         color: AppColors.textInverse,
@@ -734,7 +734,7 @@ class _MemberStats extends StatelessWidget {
               children: [
                 CountUp(
                   value: state.activeReservations.length,
-                  style: AppText.display(
+                  style: AppText.title(
                     22,
                     w: FontWeight.w800,
                     color: AppColors.primary,
@@ -757,7 +757,7 @@ class _MemberStats extends StatelessWidget {
               children: [
                 CountUp(
                   value: state.bookings.length,
-                  style: AppText.display(
+                  style: AppText.title(
                     22,
                     w: FontWeight.w800,
                     color: AppColors.accent,
@@ -780,7 +780,7 @@ class _MemberStats extends StatelessWidget {
               children: [
                 CountUp(
                   value: state.waitlist.length,
-                  style: AppText.display(
+                  style: AppText.title(
                     22,
                     w: FontWeight.w800,
                     color: AppColors.cyan,
