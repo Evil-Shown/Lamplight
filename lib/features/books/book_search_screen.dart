@@ -248,7 +248,20 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            if (books.isEmpty)
+            // S10 loading: four skeleton cards until the first snapshot.
+            if (!state.isHydrated)
+              const Column(
+                children: [
+                  SkeletonCard(height: 92),
+                  SizedBox(height: 10),
+                  SkeletonCard(height: 92),
+                  SizedBox(height: 10),
+                  SkeletonCard(height: 92),
+                  SizedBox(height: 10),
+                  SkeletonCard(height: 92),
+                ],
+              )
+            else if (books.isEmpty)
               const EmptyState(
                 icon: Icons.search_off_rounded,
                 title: 'No matches',

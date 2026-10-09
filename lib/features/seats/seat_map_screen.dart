@@ -486,6 +486,11 @@ class _SeatGridCard extends StatelessWidget {
   }
 }
 
+/// The signature seat node (spec §3.10): a 52 dp circle with flat
+/// container fills and a status ring — never a gradient or a glow.
+/// Status is a language, so every state also carries a glyph or shape
+/// cue: bolt (power), half clock (limited), diagonal slash (occupied),
+/// check badge (yours). Precedence: yours > selected > status.
 class _SeatBadge extends StatelessWidget {
   const _SeatBadge({
     required this.seat,
@@ -507,18 +512,6 @@ class _SeatBadge extends StatelessWidget {
   /// A seat held by the signed-in user wins over the shared status.
   bool get _renderMine => isMine && !isSelected;
 
-  Color get _color => dimmed
-      ? AppColors.scheme.outlineVariant
-      : isSelected
-          ? AppColors.seatSelected
-          : _renderMine
-              ? AppColors.seatSelected.withValues(alpha: 0.88)
-              : switch (seat.status) {
-                  SeatStatus.available => AppColors.seatAvailable,
-                  SeatStatus.limited => AppColors.seatLimited,
-                  SeatStatus.occupied => AppColors.seatOccupied,
-                };
-
   @override
   Widget build(BuildContext context) {
     final statusLabel = dimmed
@@ -526,6 +519,93 @@ class _SeatBadge extends StatelessWidget {
         : _renderMine
             ? 'reserved by you'
             : _statusLabel(seat.status);
+    final showPower = seat.hasPowerOutlet &&
+        !dimmed &&
+        !_renderMine &&
+        seat.status != SeatStatus.occupied;
+
+    final node = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      width: 52,
+      height: 52,
+      foregroundDecoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: _ringColor,
+          width: _ringWidth,
+        ),
+      ),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _fillColor,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            seat.label,
+            style: AppText.title(
+              12.5,
+              w: FontWeight.w700,
+              color: dimmed
+                  ? AppColors.scheme.onSurfaceVariant
+                  : _labelColor,
+            ),
+          ),
+          // Shape cues — status is never colour alone.
+          if (seat.status == SeatStatus.occupied && !dimmed && !_renderMine)
+            // Diagonal slash across the node.
+            SizedBox(
+              width: 52,
+              height: 52,
+              child: Center(
+                child: Transform.rotate(
+                  angle: -math.pi / 4,
+                  child: Container(
+                    width: 34,
+                    height: 1.8,
+                    color: AppColors.seatOccupied
+                        .withValues(alpha: 0.75),
+                  ),
+                ),
+              ),
+            ),
+          if (seat.status == SeatStatus.limited &&
+              !dimmed &&
+              !_renderMine &&
+              !isSelected)
+            Positioned(
+              top: 5,
+              right: 5,
+              child: Icon(Icons.timelapse_rounded,
+                  size: 12, color: AppColors.seatLimited),
+            ),
+          if (_renderMine)
+            Positioned(
+              top: -1,
+              right: -1,
+              child: Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: Icon(Icons.check_rounded,
+                    size: 10, color: AppColors.seatYours),
+              ),
+            )
+          else if (showPower)
+            Positioned(
+              right: 5,
+              bottom: 5,
+              child: Icon(Icons.bolt_rounded,
+                  size: 12, color: AppColors.seatAvailable),
+            ),
+        ],
+      ),
+    );
+
     return Semantics(
       label: 'Seat ${seat.label}, $statusLabel',
       button: onTap != null,
@@ -534,82 +614,67 @@ class _SeatBadge extends StatelessWidget {
         onTap: onTap,
         child: Opacity(
           opacity: dimmed ? 0.45 : 1,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: dimmed
-                  ? null
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color.alphaBlend(
-                            Colors.white.withValues(alpha: 0.22), _color),
-                        _color,
-                      ],
-                    ),
-              color: dimmed ? _color : null,
-              boxShadow: isSelected || _renderMine
-                  ? AppShadows.glow(_color)
-                  : [
-                      BoxShadow(
-                        color: _color.withValues(alpha: 0.22),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Text(
-                  seat.label,
-                  style: AppText.title(
-                    13,
-                    w: FontWeight.w700,
-                    color: dimmed
-                        ? AppColors.scheme.onSurfaceVariant
-                        : AppColors.textInverse,
-                  ),
-                ),
-                if (_renderMine)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: Icon(Icons.check_rounded,
-                          size: 9, color: AppColors.seatSelected),
-                    ),
-                  )
-                else if (seat.hasPowerOutlet &&
-                    seat.status != SeatStatus.occupied &&
-                    !dimmed)
-                  Positioned(
-                    right: 7,
-                    bottom: 9,
-                    child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          child: isSelected
+              ? AnimatedScale(
+                  duration: const Duration(milliseconds: 420),
+                  curve: Curves.easeOutBack,
+                  scale: 1.08,
+                  child: node,
+                )
+              : node,
         ),
       ),
     );
   }
+
+  /// Fill: solid tertiary when selected, primary when yours, otherwise
+  /// the status container colour — always flat.
+  Color get _fillColor => dimmed
+      ? AppColors.scheme.outlineVariant
+      : isSelected
+          ? AppColors.seatSelected
+          : _renderMine
+              ? AppColors.seatYours
+              : switch (seat.status) {
+                  SeatStatus.available => AppColors.successContainer,
+                  SeatStatus.limited => AppColors.warningContainer,
+                  SeatStatus.occupied => AppColors.errorContainer,
+                };
+
+  /// Ring: 3 px tertiaryContainer halo when selected, 2 px status ring
+  /// otherwise, 1.5 px when occupied. Selection is a ring, not a glow.
+  Color get _ringColor => dimmed
+      ? Colors.transparent
+      : isSelected
+          ? AppColors.scheme.tertiaryContainer
+          : _renderMine
+              ? AppColors.seatYours
+              : switch (seat.status) {
+                  SeatStatus.available => AppColors.seatAvailable,
+                  SeatStatus.limited => AppColors.seatLimited,
+                  SeatStatus.occupied => AppColors.seatOccupied,
+                };
+
+  double get _ringWidth => dimmed
+      ? 0
+      : isSelected
+          ? 3
+          : _renderMine
+              ? 0
+              : seat.status == SeatStatus.occupied
+                  ? 1.5
+                  : 2;
+
+  Color get _labelColor => isSelected
+      ? AppColors.scheme.onTertiary
+      : _renderMine
+          ? AppColors.scheme.onPrimary
+          : switch (seat.status) {
+              SeatStatus.available => AppColors.onSuccessContainer,
+              SeatStatus.limited => AppColors.onWarningContainer,
+              SeatStatus.occupied =>
+                AppColors.onErrorContainer.withValues(alpha: 0.70),
+            };
 
   String _statusLabel(SeatStatus status) => switch (status) {
         SeatStatus.available => 'available',
@@ -636,15 +701,21 @@ class _Legend extends StatelessWidget {
           label: 'AVAILABILITY',
           items: [
             (
+              AppColors.successContainer,
               AppColors.seatAvailable,
+              null,
               'Available (${visible.where((s) => s.status == SeatStatus.available).length})'
             ),
             (
+              AppColors.warningContainer,
               AppColors.seatLimited,
+              Icons.timelapse_rounded,
               'Limited (${visible.where((s) => s.status == SeatStatus.limited).length})'
             ),
             (
+              AppColors.errorContainer,
               AppColors.seatOccupied,
+              Icons.close_rounded,
               'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
             ),
           ],
@@ -653,10 +724,17 @@ class _Legend extends StatelessWidget {
         _LegendRow(
           label: 'OWNERSHIP',
           items: [
-            (AppColors.seatSelected, 'Selected'),
+            (
+              AppColors.seatSelected,
+              AppColors.scheme.tertiaryContainer,
+              null,
+              'Selected'
+            ),
             if (mySeatIds.isNotEmpty)
               (
-                AppColors.seatSelected.withValues(alpha: 0.88),
+                AppColors.seatYours,
+                AppColors.seatYours,
+                Icons.check_rounded,
                 'Yours${mySeatIds.length > 1 ? ' ×${mySeatIds.length}' : ''}'
               ),
           ],
@@ -670,7 +748,10 @@ class _LegendRow extends StatelessWidget {
   const _LegendRow({required this.label, required this.items});
 
   final String label;
-  final List<(Color, String)> items;
+
+  /// (fill, ring, glyph, text) — the same visual language as the seat
+  /// nodes, so the legend teaches the map (spec §3.10).
+  final List<(Color, Color, IconData?, String)> items;
 
   @override
   Widget build(BuildContext context) {
@@ -684,14 +765,21 @@ class _LegendRow extends StatelessWidget {
           label,
           style: AppText.overline(9, ls: 1.1, color: AppColors.textFaint),
         ),
-        for (final (color, text) in items)
+        for (final (fill, ring, glyph, text) in items)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: fill,
+                  border: Border.all(color: ring, width: 1.6),
+                ),
+                child: glyph == null
+                    ? null
+                    : Icon(glyph, size: 8, color: ring),
               ),
               const SizedBox(width: 6),
               Text(text,
