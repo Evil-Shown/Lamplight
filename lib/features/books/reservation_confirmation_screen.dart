@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import 'pickup_countdown.dart';
 
 /// reservation-success "Reservation Successful".
 ///
@@ -21,58 +23,55 @@ class ReservationConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: 'Reservation Complete',
+      title: 'Book reserved',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
         children: [
-          GradientHero(
-            padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            gradient: AppGradients.mint,
-            child: Column(
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.24),
+          // Outcome panel: glass hero with a soft success tint.
+          GlassSurface(
+            radius: AppRadii.xl,
+            tint: AppColors.success.withValues(alpha: 0.14),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xl),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  const SuccessCheck(size: 84),
+                  const SizedBox(height: AppSpacing.base),
+                  Text(
+                    'Book reserved',
+                    textAlign: TextAlign.center,
+                    style: AppText.display(26, w: FontWeight.w800, ls: -0.9),
                   ),
-                  child: Icon(Icons.check_rounded,
-                      size: 34, color: AppColors.textInverse),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  'Reservation Successful',
-                  textAlign: TextAlign.center,
-                  style: AppText.display(22, w: FontWeight.w800, ls: -0.4,
-                      color: AppColors.textInverse),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Your book has been reserved.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    13,
-                    color: AppColors.textInverse.withValues(alpha: 0.86),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${book.title} is waiting for you.',
+                    textAlign: TextAlign.center,
+                    style: AppText.body(14, color: AppColors.textSecondary),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
             child: SurfaceCard(
-              tint: AppColors.success,
-              elevated: true,
               child: Row(
                 children: [
-                  BookCover(
-                    title: book.title,
-                    color: book.coverColor,
-                    isbn: book.isbn,
-                    width: 48,
-                    height: 68,
-                  ),
+                  Semantics(
+                      image: true,
+                      label: 'Cover of ${book.title}',
+                      excludeSemantics: true,
+                      child: BookCover(
+                        title: book.title,
+                        color: book.coverColor,
+                        isbn: book.isbn,
+                        width: 52,
+                        height: 74,
+                        heroTag: 'book-${book.id}',
+                      )),
                   const SizedBox(width: 13),
                   Expanded(
                     child: Column(
@@ -83,8 +82,8 @@ class ReservationConfirmationScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           book.author,
-                          style: AppText.body(
-                              12.5, color: AppColors.textSecondary),
+                          style: AppText.body(12.5,
+                              color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -98,7 +97,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.md),
           StaggeredEntrance(
             index: 1,
             child: SurfaceCard(
@@ -109,7 +108,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 12, bottom: 4),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('PICKUP',
+                      child: Text('PICK UP BY',
                           style: AppText.overline(
                             10.5,
                             color: AppColors.textFaint,
@@ -119,16 +118,22 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '${reservation.pickupLocation} – Counter 01',
+                      DateFormat('EEE d MMMM yyyy')
+                          .format(reservation.pickupBy),
                       style: AppText.title(15, w: FontWeight.w600),
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: PickupCountdownText(reservation: reservation),
                   ),
                   const Divider(height: 22),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('EXPIRES',
+                      child: Text('COLLECT FROM',
                           style: AppText.overline(
                             10.5,
                             color: AppColors.textFaint,
@@ -140,7 +145,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        DateFormat('d MMMM yyyy').format(reservation.pickupBy),
+                        '${reservation.pickupLocation} – Counter 01',
                         style: AppText.title(15, w: FontWeight.w600),
                       ),
                     ),
@@ -149,14 +154,14 @@ class ReservationConfirmationScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: AppSpacing.xl),
           PrimaryButton(
-            label: 'VIEW MY RESERVATIONS',
+            label: 'View my reservations',
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           PrimaryButton(
-            label: 'BACK TO HOME',
+            label: 'Back to home',
             tone: ButtonTone.secondary,
             onPressed: () =>
                 Navigator.of(context).popUntil((route) => route.isFirst),

@@ -1,19 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_constants.dart';
+import '../../core/constants/app_constants.dart'
+    show AppNavInset, AppStrings, AppTouchTarget;
+import '../../core/feedback/app_feedback.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
+import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import 'book_detail_screen.dart';
+import 'book_filters.dart';
 import 'reservation_confirmation_screen.dart';
-import 'search_results_screen.dart';
 
 /// book-search-v2 "Library Catalog".
 ///
-/// The Stitch redesign: catalog header with a live-status pill, the search
-/// field, search-type tabs, live result cards with reserve actions, and a
-/// dark barcode-scanner banner.
+/// A discovery screen: large title, a glass search field with a filter
+/// button, a shelf of tilted covers, then result cards that page in from
+/// the server as you scroll.
 class BookSearchScreen extends StatefulWidget {
   const BookSearchScreen({super.key});
 
@@ -22,257 +29,445 @@ class BookSearchScreen extends StatefulWidget {
 }
 
 class _BookSearchScreenState extends State<BookSearchScreen> {
-  final _controller = TextEditingController();
-  String _searchType = 'Title';
-  bool _showAll = false;
+  static const _debounce = Duration(milliseconds: 300);
+  static const _pageSize = 20;
 
-  static const _searchTypes = ['Title', 'Author', 'ISBN', 'Category'];
+  /// Distance from the end of the list at which the next page loads.
+  static const _loadMoreExtent = 480.0;
+
+  final _controller = TextEditingController();
+  final _scroll = ScrollController();
+  Timer? _debounceTimer;
+
+  BookFilters _filters = const BookFilters();
+  List<Book> _results = [];
+  Object? _cursor;
+  bool _hasMore = false;
+  bool _loadingFirst = true;
+  bool _loadingMore = false;
+  bool _failed = false;
+  bool? _wasHydrated;
+
+  /// Bumped on every new query so late responses are dropped.
+  int _generation = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-run once when the first snapshot lands (demo data and subjects
+    // only exist after that).
+    final hydrated = AppScope.read(context).isHydrated;
+    if (_wasHydrated != hydrated) {
+      final first = _wasHydrated == null;
+      _wasHydrated = hydrated;
+      if (first) {
+        _runSearch();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _runSearch();
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  List<Book> _matches(List<Book> books) {
-    final q = _controller.text.trim().toLowerCase();
-    if (q.isEmpty) return books;
-    return books.where((b) {
-      return switch (_searchType) {
-        'Author' => b.author.toLowerCase().contains(q),
-        'ISBN' => b.isbn.replaceAll('-', '').contains(q.replaceAll('-', '')),
-        'Category' => b.subject.toLowerCase().contains(q),
-        _ => b.title.toLowerCase().contains(q) ||
-            b.author.toLowerCase().contains(q) ||
-            b.subject.toLowerCase().contains(q),
-      };
-    }).toList();
+  String get _query => _controller.text.trim();
+  bool get _browsing => _query.isEmpty && _filters.activeCount == 0;
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    if (_scroll.position.extentAfter < _loadMoreExtent) _loadMore();
+  }
+
+  void _onQueryChanged(String _) {
+    setState(() {}); // clear button
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounce, _runSearch);
+  }
+
+  Future<void> _runSearch() async {
+    _debounceTimer?.cancel();
+    final gen = ++_generation;
+    final state = AppScope.read(context);
+    setState(() {
+      _loadingFirst = true;
+      _loadingMore = false;
+      _failed = false;
+    });
+    try {
+      final page = await state.searchBooks(
+        query: _query,
+        subject: _filters.subject,
+        availableOnly: _filters.availableOnly,
+        sort: _filters.sort,
+        pageSize: _pageSize,
+      );
+      if (!mounted || gen != _generation) return;
+      setState(() {
+        _results = page.books;
+        _cursor = page.cursor;
+        _hasMore = page.hasMore;
+        _loadingFirst = false;
+      });
+    } catch (_) {
+      if (!mounted || gen != _generation) return;
+      setState(() {
+        _failed = true;
+        _loadingFirst = false;
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingFirst || _loadingMore || !_hasMore || _failed) return;
+    final gen = _generation;
+    final state = AppScope.read(context);
+    setState(() => _loadingMore = true);
+    try {
+      final page = await state.searchBooks(
+        query: _query,
+        subject: _filters.subject,
+        availableOnly: _filters.availableOnly,
+        sort: _filters.sort,
+        startAfter: _cursor,
+        pageSize: _pageSize,
+      );
+      if (!mounted || gen != _generation) return;
+      setState(() {
+        _results = [..._results, ...page.books];
+        _cursor = page.cursor;
+        _hasMore = page.hasMore;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted || gen != _generation) return;
+      setState(() {
+        _loadingMore = false;
+        _hasMore = false;
+      });
+    }
+  }
+
+  void _applyFilters(BookFilters next) {
+    if (next == _filters) return;
+    setState(() => _filters = next);
+    _runSearch();
+  }
+
+  /// Subjects seen in the loaded catalogue and in the current results.
+  List<String> _subjects(AppState state) {
+    final set = <String>{
+      for (final b in state.books)
+        if (b.subject.isNotEmpty) b.subject,
+      for (final b in _results)
+        if (b.subject.isNotEmpty) b.subject,
+      if (_filters.subject != null) _filters.subject!,
+    };
+    return set.toList()..sort();
+  }
+
+  void _openFilters() {
+    AppFeedback.tap();
+    showBookFilterSheet(
+      context,
+      initial: _filters,
+      subjects: _subjects(AppScope.read(context)),
+      onChanged: _applyFilters,
+    );
   }
 
   void _openDetail(Book book) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
-    );
+    AppRoute.push(context, BookDetailScreen(book: book));
   }
 
   void _reserve(Book book) {
     final state = AppScope.read(context);
     final reservation = state.reserveBook(book);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ReservationConfirmationScreen(
-          book: book,
-          reservation: reservation,
-        ),
+    AppRoute.push(
+      context,
+      ReservationConfirmationScreen(
+        book: book,
+        reservation: reservation,
       ),
     );
   }
 
-  void _scanBarcode() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SearchResultsScreen(
-          query: _controller.text.trim().isEmpty
-              ? 'All titles'
-              : _controller.text.trim(),
-          searchType: _searchType.toUpperCase(),
+  Widget _skeletons() => const Column(
+        children: [
+          SkeletonCard(height: 92),
+          SizedBox(height: AppSpacing.md),
+          SkeletonCard(height: 92),
+          SizedBox(height: AppSpacing.md),
+          SkeletonCard(height: 92),
+          SizedBox(height: AppSpacing.md),
+          SkeletonCard(height: 92),
+        ],
+      );
+
+  Widget _activeFilterChips() {
+    final chips = <Widget>[
+      if (_filters.subject != null)
+        _FilterPill(
+          label: _filters.subject!,
+          clearLabel: 'Clear subject filter ${_filters.subject}',
+          onClear: () => _applyFilters(_filters.copyWith(clearSubject: true)),
         ),
+      if (_filters.availableOnly)
+        _FilterPill(
+          label: 'Available now',
+          clearLabel: 'Clear available now filter',
+          onClear: () => _applyFilters(_filters.copyWith(availableOnly: false)),
+        ),
+      if (_filters.sort != BookSort.title)
+        _FilterPill(
+          label: 'Sort: ${bookSortLabel(_filters.sort)}',
+          clearLabel: 'Reset sort order',
+          onClear: () => _applyFilters(_filters.copyWith(sort: BookSort.title)),
+        ),
+    ];
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          ...chips,
+          if (chips.length > 1)
+            TextButton(
+              onPressed: () {
+                AppFeedback.tap();
+                _applyFilters(const BookFilters());
+              },
+              style: TextButton.styleFrom(
+                  minimumSize: const Size(48, AppTouchTarget.minSize)),
+              child: const Text('Clear all'),
+            ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final books = _matches(AppScope.of(context).books);
-    final shown = _showAll || _controller.text.trim().isNotEmpty
-        ? books
-        : books.take(4).toList();
+    final state = AppScope.of(context);
+    final books = _results;
+    final browsing = _browsing && state.isHydrated;
+    final shelf = state.books
+        .where((b) => b.availability == BookAvailability.available)
+        .toList();
 
+    // Tab inside the shell: the shell paints the aurora, so stay transparent.
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('CAMPUS COMMONS',
-                          style: AppText.overline(9.5, ls: 1.4)),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Library Catalog',
-                        style: AppText.display(
-                          20,
-                          w: FontWeight.w800,
-                          ls: -0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.successSoft,
-                    borderRadius: BorderRadius.circular(AppRadii.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.success,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'LIVE CATALOG',
-                        style: AppText.overline(
-                          9.5,
-                          ls: 1.0,
-                          color: AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            StaggeredEntrance(
-              child: Text(
-                'Find a Book',
-                style: AppText.display(24, w: FontWeight.w700, ls: -0.5),
-              ),
-            ),
-            const SizedBox(height: 6),
-            StaggeredEntrance(
-              index: 1,
-              child: Text(
-                'Search the campus collection by title, author or ISBN.',
-                style: AppText.body(14, color: AppColors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: 18),
-            StaggeredEntrance(
-              index: 2,
-              child: TextField(
-                controller: _controller,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _scanBarcode(),
-                decoration: InputDecoration(
-                  hintText: AppStrings.searchBooksHint,
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: _controller.text.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18),
-                          onPressed: () => setState(() {
-                            _controller.clear();
-                            _showAll = false;
-                          }),
-                        ),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(height: 14),
-            StaggeredEntrance(
-              index: 3,
-              child: SegmentedTabs(
-                options: _searchTypes,
-                selected: _searchType,
-                padding: EdgeInsets.zero,
-                onSelected: (value) {
-                  Haptics.selection();
-                  setState(() => _searchType = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 22),
-            StaggeredEntrance(
-              index: 4,
-              child: Row(
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'LIBRARY CATALOG',
+                          style: AppText.overline(11, color: AppColors.primary),
+                        ),
+                      ),
+                      // Driven by the real last-synced timestamp (D-06).
+                      Flexible(
+                        child: LiveFreshness(lastSyncedAt: state.lastSyncedAt),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  StaggeredEntrance(
                     child: Text(
-                      '${books.length} ${books.length == 1 ? 'Book' : 'Books'} Found',
-                      style: AppText.title(15, w: FontWeight.w700),
+                      'Find your next read',
+                      style: AppText.display(32, w: FontWeight.w800, ls: -1),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadii.full),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Relevant',
-                          style: AppText.label(
-                            12,
-                            w: FontWeight.w600,
-                            color: AppColors.textSecondary,
+                  const SizedBox(height: AppSpacing.base),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GlassSurface(
+                          radius: AppRadii.full,
+                          padding: EdgeInsets.zero,
+                          child: TextField(
+                            controller: _controller,
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (_) {
+                              AppFeedback.tap();
+                              _runSearch();
+                            },
+                            style: AppText.body(15),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.searchBooksHint,
+                              filled: false,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.base, vertical: 16),
+                              prefixIcon: Icon(Icons.search_rounded,
+                                  size: 22, color: AppColors.primary),
+                              suffixIcon: _controller.text.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      tooltip: 'Clear search',
+                                      icon: const Icon(Icons.close_rounded,
+                                          size: 18),
+                                      onPressed: () {
+                                        AppFeedback.tap();
+                                        _controller.clear();
+                                        setState(() {});
+                                        _runSearch();
+                                      },
+                                    ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                            ),
+                            onChanged: _onQueryChanged,
                           ),
                         ),
-                        const SizedBox(width: 3),
-                        Icon(Icons.expand_more_rounded,
-                            size: 16, color: AppColors.textFaint),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Badge(
+                        isLabelVisible: _filters.activeCount > 0,
+                        label: Text('${_filters.activeCount}'),
+                        child: IconButton.filledTonal(
+                          tooltip: 'Filter and sort',
+                          constraints: const BoxConstraints(
+                            minWidth: AppTouchTarget.minSize,
+                            minHeight: AppTouchTarget.minSize,
+                          ),
+                          icon: const Icon(Icons.tune_rounded),
+                          onPressed: _openFilters,
+                        ),
+                      ),
+                    ],
                   ),
+                  _activeFilterChips(),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (books.isEmpty)
-              const EmptyState(
-                icon: Icons.search_off_rounded,
-                title: 'No matches',
-                message:
-                    'Nothing in the catalog matches that search. Try a '
-                    'different term or search type.',
-              )
-            else ...[
-              for (var i = 0; i < shown.length; i++) ...[
-                StaggeredEntrance(
-                  index: i + 5,
-                  child: _CatalogCard(
-                    book: shown[i],
-                    onOpen: () => _openDetail(shown[i]),
-                    onReserve: () => _reserve(shown[i]),
-                  ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await state.refresh();
+                  if (mounted) await _runSearch();
+                },
+                child: ListView(
+                  controller: _scroll,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, 0, AppSpacing.lg, AppNavInset.bottom),
+                  children: [
+                    if (browsing && shelf.isNotEmpty) ...[
+                      const SectionHeader(
+                        title: 'Available now',
+                        subtitle: 'Ready to reserve today',
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      StaggeredEntrance(
+                        index: 1,
+                        child: _CoverShelf(books: shelf, onOpen: _openDetail),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                    StaggeredEntrance(
+                      index: 2,
+                      child: SectionHeader(
+                        title: browsing ? 'Popular on campus' : 'Results',
+                        subtitle: _loadingFirst
+                            ? 'Searching…'
+                            : '${books.length}${_hasMore ? '+' : ''} '
+                                '${books.length == 1 ? 'book' : 'books'} found',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (_failed)
+                      ErrorState(onRetry: _runSearch)
+                    else if (_loadingFirst && books.isEmpty ||
+                        !state.isHydrated && books.isEmpty)
+                      _skeletons()
+                    else if (books.isEmpty)
+                      EmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: 'No matches',
+                        message:
+                            'Nothing in the catalog matches that search. Try a '
+                            'different term or loosen the filters.',
+                        actionLabel:
+                            _filters.activeCount > 0 ? 'Clear filters' : null,
+                        onAction: _filters.activeCount > 0
+                            ? () => _applyFilters(const BookFilters())
+                            : null,
+                      )
+                    else ...[
+                      for (var i = 0; i < books.length; i++) ...[
+                        _CatalogCard(
+                          book: books[i],
+                          onOpen: () => _openDetail(books[i]),
+                          onReserve: () => _reserve(books[i]),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                      if (_loadingMore)
+                        const SkeletonCard(height: 92)
+                      else if (!_hasMore)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.base),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle_outline_rounded,
+                                  size: 16, color: AppColors.textFaint),
+                              const SizedBox(width: AppSpacing.sm),
+                              Flexible(
+                                child: Text(
+                                  'You have reached the end of the list',
+                                  textAlign: TextAlign.center,
+                                  style: AppText.body(12.5,
+                                      color: AppColors.textFaint),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    // Static, honest tip: scanning ISBNs isn't wired up (D-09).
+                    const Callout(
+                      tone: CalloutTone.info,
+                      icon: Icons.lightbulb_outline_rounded,
+                      message:
+                          'Tip: search by ISBN. Paste the number from the back '
+                          'cover to find an exact edition.',
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-              ],
-              if (!_showAll && books.length > shown.length)
-                StaggeredEntrance(
-                  index: 9,
-                  child: PrimaryButton(
-                    label: 'View all ${books.length} results',
-                    icon: Icons.arrow_forward_rounded,
-                    tone: ButtonTone.secondary,
-                    onPressed: () => _scanBarcode(),
-                  ),
-                ),
-            ],
-            const SizedBox(height: 18),
-            StaggeredEntrance(
-              index: 10,
-              child: _BarcodeBanner(onTap: _scanBarcode),
+              ),
             ),
           ],
         ),
@@ -281,8 +476,128 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   }
 }
 
+/// Removable chip for one active filter; the whole pill is the 48 dp
+/// clear target.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.clearLabel,
+    required this.onClear,
+  });
+
+  final String label;
+  final String clearLabel;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: clearLabel,
+      excludeSemantics: true,
+      onTap: onClear,
+      child: PressScale(
+        onTap: onClear,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: AppTouchTarget.minSize),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadii.full),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label(12.5,
+                        w: FontWeight.w700, color: AppColors.primaryDark),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(Icons.close_rounded,
+                    size: 16, color: AppColors.primaryDark),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Horizontal shelf of covers with a slight 3D tilt.
+class _CoverShelf extends StatelessWidget {
+  const _CoverShelf({required this.books, required this.onOpen});
+
+  final List<Book> books;
+  final ValueChanged<Book> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final book in books) ...[
+            SizedBox(
+              width: 108,
+              child: PressScale(
+                onTap: () => onOpen(book),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Tilt3D(
+                      maxTilt: 0.12,
+                      lift: 8,
+                      child: Semantics(
+                          image: true,
+                          label: 'Cover of ${book.title}',
+                          excludeSemantics: true,
+                          child: BookCover(
+                            title: book.title,
+                            color: book.coverColor,
+                            isbn: book.isbn,
+                            width: 108,
+                            height: 152,
+                            radius: AppRadii.sm,
+                            heroTag: 'shelf-${book.id}',
+                          )),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(13, w: FontWeight.w700),
+                    ),
+                    Text(
+                      book.author,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(11.5, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.base),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// A catalog result card: cover, title, author, availability pill, shelf
-/// line, and View Details / Reserve Copy actions.
+/// tag, and one clear action (Reserve, or Join Waitlist when unavailable).
 class _CatalogCard extends StatelessWidget {
   const _CatalogCard({
     required this.book,
@@ -297,8 +612,11 @@ class _CatalogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (pillColor, pillLabel) = switch (book.availability) {
-      BookAvailability.available => (AppColors.success, 'Available'),
-      BookAvailability.onLoan => (AppColors.error, 'On Loan'),
+      BookAvailability.available => (
+          AppColors.success,
+          'Available · ${book.copiesAvailable} copies',
+        ),
+      BookAvailability.onLoan => (AppColors.error, 'On loan'),
       BookAvailability.waitlisted => (AppColors.warning, 'Waitlist'),
     };
     final canReserve = book.availability == BookAvailability.available;
@@ -310,24 +628,28 @@ class _CatalogCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BookCover(
-            title: book.title,
-            color: book.coverColor,
-            isbn: book.isbn,
-            width: 52,
-            height: 74,
-            heroTag: 'book-${book.id}',
-          ),
-          const SizedBox(width: 13),
+          Semantics(
+              image: true,
+              label: 'Cover of ${book.title}',
+              excludeSemantics: true,
+              child: BookCover(
+                title: book.title,
+                color: book.coverColor,
+                isbn: book.isbn,
+                width: 56,
+                height: 80,
+                heroTag: 'book-${book.id}',
+              )),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   book.title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.title(14.5, w: FontWeight.w700),
+                  style: AppText.title(15, w: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -336,8 +658,11 @@ class _CatalogCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppText.body(12, color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 7),
-                Row(
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     StatusPill(
                       label: pillLabel,
@@ -347,143 +672,40 @@ class _CatalogCard extends StatelessWidget {
                           : Icons.hourglass_bottom_rounded,
                       compact: true,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Shelf ${book.shelfLocation}',
-                        style: AppText.body(11.5, color: AppColors.textFaint),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    ShelfTag(book.shelfLocation),
                   ],
                 ),
-                const SizedBox(height: 11),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 36,
-                        child: OutlinedButton(
-                          onPressed: onOpen,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            side: BorderSide(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.45)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadii.sm),
-                            ),
-                            textStyle:
-                                AppText.label(12.5, w: FontWeight.w700),
-                          ),
-                          child: const Text('View Details'),
-                        ),
+                const SizedBox(height: AppSpacing.md),
+                PressScale(
+                  onTap: canReserve ? onReserve : onOpen,
+                  child: Container(
+                    height: 38,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: canReserve
+                          ? AppColors.primary
+                          : AppColors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                    ),
+                    child: Text(
+                      canReserve ? 'Reserve copy' : 'Join waitlist',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.label(
+                        12.5,
+                        w: FontWeight.w700,
+                        color: canReserve
+                            ? AppColors.textInverse
+                            : AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SizedBox(
-                        height: 36,
-                        child: ElevatedButton(
-                          onPressed: canReserve ? onReserve : onOpen,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: canReserve
-                                ? AppColors.primary
-                                : AppColors.surfaceMuted,
-                            foregroundColor: canReserve
-                                ? AppColors.textInverse
-                                : AppColors.textSecondary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadii.sm),
-                            ),
-                            textStyle:
-                                AppText.label(12.5, w: FontWeight.w700),
-                          ),
-                          child: Text(
-                            canReserve ? 'Reserve Copy' : 'Join Waitlist',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The dark "Barcode Scanner" banner from the Stitch design.
-class _BarcodeBanner extends StatelessWidget {
-  const _BarcodeBanner({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return PressScale(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        decoration: BoxDecoration(
-          gradient: AppGradients.panel,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          boxShadow: AppShadows.glow(AppColors.primary),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadii.xs),
-                border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.16)),
-              ),
-              child: Icon(Icons.qr_code_scanner_rounded,
-                  size: 19, color: AppColors.textInverse),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Barcode Scanner',
-                    style: AppText.title(
-                      14,
-                      w: FontWeight.w700,
-                      color: AppColors.textInverse,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Scan a physical copy to find it on the shelf',
-                    style: AppText.body(
-                      11.5,
-                      color: Colors.white.withValues(alpha: 0.62),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: Colors.white),
-          ],
-        ),
       ),
     );
   }

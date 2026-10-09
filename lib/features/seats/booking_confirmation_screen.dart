@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/app_constants.dart' show AppPolicy;
+import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../qr/qr_ticket_screen.dart';
@@ -18,55 +21,48 @@ class BookingConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time =
-        '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
+        '${DateFormat('HH:mm').format(booking.startTime)} – ${DateFormat('HH:mm').format(booking.endTime)}';
 
     return AppScaffold(
-      title: 'Booking Confirmed',
+      title: 'Booking confirmed',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
         children: [
-          GradientHero(
-            padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            gradient: AppGradients.mint,
-            child: Column(
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.24),
-                  ),
-                  child: Icon(Icons.check_rounded,
-                      size: 34, color: AppColors.textInverse),
+          // Outcome panel: a glass hero with a success wash.
+          StaggeredEntrance(
+            child: GlassSurface(
+              radius: AppRadii.xl,
+              tint: AppColors.success.withValues(alpha: 0.16),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, 26, AppSpacing.lg, 26),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    const SuccessCheck(size: 84),
+                    const SizedBox(height: 15),
+                    Text(
+                      'Booking confirmed',
+                      textAlign: TextAlign.center,
+                      style: AppText.display(22, w: FontWeight.w800, ls: -0.9),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Seat ${booking.seat.label} is yours.',
+                      textAlign: TextAlign.center,
+                      style: AppText.body(14,
+                          color: AppColors.textSecondary, height: 1.5),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 15),
-                Text(
-                  'Booking Confirmed!',
-                  textAlign: TextAlign.center,
-                  style: AppText.display(22, w: FontWeight.w800, ls: -0.4,
-                      color: AppColors.textInverse),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Your seat has been reserved successfully.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    13,
-                    color: AppColors.textInverse.withValues(alpha: 0.86),
-                    height: 1.5,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
-            child: SurfaceCard(
-              tint: AppColors.success,
-              elevated: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Column(
+            index: 1,
+            child: TicketCard(
+              top: Column(
                 children: [
                   InfoRow(
                     label: 'Seat',
@@ -77,33 +73,37 @@ class BookingConfirmationScreen extends StatelessWidget {
                   const Divider(height: 1),
                   InfoRow(
                     label: 'Date',
-                    value: DateFormat('d MMM yyyy').format(booking.date),
+                    value: DateFormat('EEE d MMM yyyy').format(booking.date),
                   ),
                   const Divider(height: 1),
                   InfoRow(label: 'Time', value: time),
-                  const Divider(height: 1),
-                  InfoRow(
-                    label: 'Booking ID',
-                    value: booking.id,
-                    valueColor: AppColors.primary,
-                  ),
                 ],
+              ),
+              bottom: InfoRow(
+                label: 'Booking ID',
+                value: booking.id,
+                valueColor: AppColors.primary,
               ),
             ),
           ),
           const SizedBox(height: 16),
           const Callout(
             icon: Icons.qr_code_rounded,
-            message:
-                'Show your QR code at the library entrance for quick check-in.',
+            message: 'Your QR pass is ready. Show it at the entrance.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Callout(
+            icon: Icons.timer_outlined,
+            tone: CalloutTone.warning,
+            message: "Your seat is released if you don't check in within "
+                '${AppPolicy.checkInGraceMinutes} minutes of the start time.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(
             label: 'Show QR pass',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => QrTicketScreen(booking: booking),
-              ),
+            onPressed: () => AppRoute.push(
+              context,
+              QrTicketScreen(booking: booking),
             ),
           ),
           const SizedBox(height: 10),

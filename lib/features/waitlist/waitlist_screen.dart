@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
+import '../reservations/live_widgets.dart';
 import 'waitlist_joined_screen.dart';
 
 /// P-09 Waiting List.
 ///
-/// Shown when the wanted seat is taken: what the user is waiting for, their
-/// preferences, their place in the queue, and the join action.
+/// One screen for both resource types (D-08): pass a [seat] for an
+/// occupied reading-room desk or a [book] for a fully-loaned title. Shows
+/// what the user is waiting for, their preferences, their place in the
+/// queue, and the join action.
 class WaitlistScreen extends StatelessWidget {
-  const WaitlistScreen({super.key, this.seat});
+  const WaitlistScreen({super.key, this.seat, this.book});
 
   final Seat? seat;
+  final Book? book;
+
+  WaitlistType get _type =>
+      book != null ? WaitlistType.book : WaitlistType.seat;
+
+  String get _title =>
+      _type == WaitlistType.book ? 'Join Book Waitlist' : 'Join Waitlist';
 
   Seat _seat(BuildContext context) {
     if (seat != null) return seat!;
@@ -36,92 +48,142 @@ class WaitlistScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final current = _seat(context);
     final state = AppScope.of(context);
+    final isBook = _type == WaitlistType.book;
+    final current = isBook ? null : _seat(context);
+    final resourceTitle = isBook ? book!.title : 'Seat ${current!.label}';
+    final resourceSubtitle = isBook
+        ? 'By ${book!.author}'
+        : 'Floor ${current!.floor} · ${current.section}';
+    final preferences = isBook
+        ? <String>['Any edition', book!.subject]
+        : _preferences(current!);
+
+    // Entries that ended (expired / declined) no longer block rejoining.
     final mine = state.waitlist.where(
-      (entry) => entry.title == 'Seat ${current.label}',
+      (entry) =>
+          entry.title == resourceTitle &&
+          (entry.status == WaitlistStatus.waiting || entry.isOffered),
+    );
+    final past = state.waitlist.where(
+      (entry) =>
+          entry.title == resourceTitle &&
+          entry.status == WaitlistStatus.expired,
     );
     final alreadyWaiting = mine.isNotEmpty;
-    final position = alreadyWaiting ? mine.first.position : state.waitlist.length + 1;
-    final preferences = _preferences(current);
+    final offer = mine.where((e) => e.isOffered).firstOrNull;
+    final position =
+        alreadyWaiting ? mine.first.position : state.waitlist.length + 1;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text('Waiting List',
-            style: AppText.title(17, w: FontWeight.w600)),
-      ),
+    return AppScaffold(
+      title: _title,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin,
+            AppSpacing.sm, AppSpacing.screenMargin, AppSpacing.xl),
         children: [
           Callout(
             icon: Icons.warning_amber_rounded,
             tone: CalloutTone.warning,
-            message:
-                'Seat ${current.label} is currently unavailable. Join the '
-                'queue and we will tell you when it frees up.',
+            message: isBook
+                ? '${book!.title} is fully loaned out. Join the queue and '
+                    'we will tell you the moment a copy is returned.'
+                : 'Seat ${current!.label} is currently unavailable. Join the '
+                    'queue and we will tell you when it frees up.',
           ),
+          if (offer != null) ...[
+            const SizedBox(height: AppSpacing.base),
+            OfferCard(entry: offer),
+          ],
+          if (alreadyWaiting || past.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.base),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Semantics(
+                label: 'Waitlist status',
+                child: WaitlistStatusPill(
+                  status: alreadyWaiting
+                      ? mine.first.status
+                      : WaitlistStatus.expired,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 22),
           const SectionLabel('Your preferences'),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
-              for (final label in preferences) _PreferenceChip(label: label),
+              for (final label in preferences)
+                Semantics(
+                  label: 'Preference: $label',
+                  child: _PreferenceChip(label: label),
+                ),
             ],
           ),
           const SizedBox(height: 30),
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  '#$position',
-                  style: AppText.display(58, w: FontWeight.w800, ls: -1.6,
-                      color: AppColors.primary),
+          StaggeredEntrance(
+            child: GlassSurface(
+              radius: AppRadii.xl,
+              tint: AppColors.primary.withValues(alpha: 0.10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    Semantics(
+                      label: 'You are number $position in the queue',
+                      child: CountUp(
+                        value: position,
+                        prefix: '#',
+                        style: AppText.display(
+                          AppText.displayXl,
+                          w: FontWeight.w800,
+                          ls: -1.6,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Your position in queue',
+                        style:
+                            AppText.body(14, color: AppColors.textSecondary)),
+                    const SizedBox(height: AppSpacing.sm),
+                    StatusPill(
+                      label: 'Estimate: about 45 minutes',
+                      icon: Icons.schedule_rounded,
+                      color: AppColors.primary,
+                      compact: true,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text('Your position in queue',
-                    style: AppText.body(14, color: AppColors.textSecondary)),
-                const SizedBox(height: 4),
-                Text(
-                  'Estimated wait: about 45 minutes',
-                  style: AppText.body(12.5, color: AppColors.textFaint),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: AppSpacing.xl),
           const Callout(
             icon: Icons.notifications_active_outlined,
-            message:
-                'You will be notified in the app when a matching seat becomes available.',
+            message: 'You will be notified in the app when it is your turn.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(
-            label: alreadyWaiting ? 'Already on the waitlist' : 'Join waiting list',
+            label: alreadyWaiting
+                ? 'Already on the waitlist'
+                : 'Join waiting list',
             onPressed: alreadyWaiting
                 ? null
                 : () {
                     final entry = AppScope.read(context).joinWaitlist(
-                      title: 'Seat ${current.label}',
-                      subtitle: 'Floor ${current.floor} · ${current.section}',
+                      title: resourceTitle,
+                      subtitle: resourceSubtitle,
+                      type: _type,
                       seatPreference: preferences.join(' + '),
                     );
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => WaitlistJoinedScreen(entry: entry),
-                      ),
+                    AppRoute.push(
+                      context,
+                      WaitlistJoinedScreen(entry: entry),
                     );
                   },
           ),
@@ -145,11 +207,12 @@ class _PreferenceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppGlass.cardFill,
         borderRadius: BorderRadius.circular(AppRadii.full),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppGlass.border),
       ),
       child: Text(label, style: AppText.label(12.5, w: FontWeight.w600)),
     );

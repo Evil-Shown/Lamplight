@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_constants.dart' show AppNavInset;
+import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../../../models/models.dart';
-import 'staff_mock_data.dart';
+import '../../../core/state/app_state.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_status_badge.dart';
 
 /// Staff-side seat availability: floor filter, live status grid and a
-/// status editor per seat on local mock state.
+/// status editor per seat that writes through [AppState.setSeatStatus].
 class StaffSeatsScreen extends StatefulWidget {
   const StaffSeatsScreen({super.key});
 
@@ -18,76 +21,91 @@ class StaffSeatsScreen extends StatefulWidget {
 class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
   String _floorFilter = 'All';
 
-  late final List<Seat> _seats = List<Seat>.from(StaffMockData.seats);
-
-  List<String> get _floorOptions => [
+  List<String> _floorOptions(List<Seat> seats) => [
         'All',
-        ...(_seats.map((s) => 'Floor ${s.floor}').toSet().toList()..sort()),
+        ...(seats.map((s) => 'Floor ${s.floor}').toSet().toList()..sort()),
       ];
 
   @override
   Widget build(BuildContext context) {
-    final visible = _seats
-        .where(
-            (s) => _floorFilter == 'All' || 'Floor ${s.floor}' == _floorFilter)
+    final state = AppScope.of(context);
+    final seats = state.adminSeats;
+    final options = _floorOptions(seats);
+    final floor = options.contains(_floorFilter) ? _floorFilter : 'All';
+    final visible = seats
+        .where((s) => floor == 'All' || 'Floor ${s.floor}' == floor)
         .toList();
     final available =
-        _seats.where((s) => s.status == SeatStatus.available).length;
+        seats.where((s) => s.status == SeatStatus.available).length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Seat Availability'),
-        actions: [
+    return AppScaffold(
+      title: 'Seat Availability',
+      contentUnderBar: true,
+      actions: [
+        if (seats.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
+            padding: const EdgeInsets.only(right: AppSpacing.base),
             child: Center(
               child: StaffStatusBadge(
-                label: '$available of ${_seats.length} free',
+                label: '$available of ${seats.length} free',
                 tone: available > 0
                     ? StaffBadgeTone.success
                     : StaffBadgeTone.danger,
               ),
             ),
           ),
-        ],
-      ),
+      ],
       body: Column(
         children: [
+          SizedBox(height: GlassAppBar.contentTopPadding(context)),
           FilterChipRow(
-            options: _floorOptions,
-            selected: _floorFilter,
+            options: options,
+            selected: floor,
             onSelected: (f) => setState(() => _floorFilter = f),
           ),
           const SizedBox(height: AppSpacing.sm),
           const _SeatLegend(),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: visible.isEmpty
-                ? const EmptyState(
-                    icon: Icons.event_seat_rounded,
-                    title: 'No seats',
-                    message: 'No seats match this floor filter.',
-                  )
-                : LayoutBuilder(builder: (context, constraints) {
-                    final columns =
-                        (constraints.maxWidth / 104).clamp(3, 8).round();
-                    return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.md,
-                          AppSpacing.sm, AppSpacing.md, AppSpacing.xl),
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisSpacing: AppSpacing.sm,
-                        crossAxisSpacing: AppSpacing.sm,
-                        childAspectRatio: 1.18,
+            child: StaffLiveGate(
+              state: state,
+              hasData: seats.isNotEmpty,
+              builder: (context) => visible.isEmpty
+                  ? StaffScrollable(
+                      state: state,
+                      child: EmptyState(
+                        icon: Icons.event_seat_rounded,
+                        title: seats.isEmpty ? 'No seats yet' : 'No seats',
+                        message: seats.isEmpty
+                            ? 'No seats have been set up in the library.'
+                            : 'No seats match this floor filter.',
                       ),
-                      itemCount: visible.length,
-                      itemBuilder: (context, index) => _SeatTile(
-                        seat: visible[index],
-                        onTap: () => _editStatus(visible[index]),
-                      ),
-                    );
-                  }),
+                    )
+                  : StaffRefreshable(
+                      state: state,
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        final columns =
+                            (constraints.maxWidth / 104).clamp(3, 8).round();
+                        return GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                              AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1.18,
+                          ),
+                          itemCount: visible.length,
+                          itemBuilder: (context, index) => _SeatTile(
+                            seat: visible[index],
+                            onTap: () => _editStatus(visible[index]),
+                          ),
+                        );
+                      }),
+                    ),
+            ),
           ),
         ],
       ),
@@ -97,12 +115,12 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
   void _editStatus(Seat seat) {
     SeatStatus chosen = seat.status;
 
-    showModalBottomSheet<void>(
-      context: context,
+    showGlassSheet<void>(
+      context,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,10 +130,7 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                   Expanded(
                     child: Text(
                       'Seat ${seat.label}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: AppText.title(20, w: FontWeight.w800),
                     ),
                   ),
                   _statusBadge(seat.status),
@@ -127,19 +142,19 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
               _SheetRow(
                   label: 'Power outlet',
                   value: seat.hasPowerOutlet ? 'Available' : 'Not available'),
-              const Divider(height: AppSpacing.lg),
+              const Divider(height: AppSpacing.xl),
               Text(
                 'Change status',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: AppText.title(15, w: FontWeight.w800),
               ),
               const SizedBox(height: AppSpacing.sm),
               StatefulBuilder(
                 builder: (context, setSheetState) => RadioGroup<SeatStatus>(
                   groupValue: chosen,
-                  onChanged: (v) => setSheetState(() => chosen = v ?? chosen),
+                  onChanged: (v) {
+                    AppFeedback.select();
+                    setSheetState(() => chosen = v ?? chosen);
+                  },
                   child: Column(
                     children: [
                       for (final status in SeatStatus.values)
@@ -161,6 +176,7 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                   onPressed: chosen == seat.status
                       ? null
                       : () {
+                          AppFeedback.success();
                           _applyStatus(seat, chosen);
                           Navigator.pop(context);
                         },
@@ -175,21 +191,19 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
     );
   }
 
-  void _applyStatus(Seat seat, SeatStatus status) {
-    final index = _seats.indexOf(seat);
-    if (index == -1) return;
-
-    final updated = seat.copyWith(status: status);
-    setState(() => _seats[index] = updated);
-    // Mirror into the shared mock so dashboard counters stay accurate.
-    final mockIndex = StaffMockData.seats.indexOf(seat);
-    if (mockIndex != -1) StaffMockData.seats[mockIndex] = updated;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+  Future<void> _applyStatus(Seat seat, SeatStatus status) async {
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await state.setSeatStatus(seat.id, status);
+      messenger.showSnackBar(SnackBar(
           content: Text(
-              'Seat ${seat.label} is now ${_statusLabel(status).toLowerCase()}')),
-    );
+              'Seat ${seat.label} is now ${_statusLabel(status).toLowerCase()}')));
+    } catch (_) {
+      AppFeedback.error();
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not update seat ${seat.label}. Try again.')));
+    }
   }
 
   static String _statusLabel(SeatStatus status) => switch (status) {
@@ -228,22 +242,15 @@ class _SheetRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppText.label(12, w: FontWeight.w600),
             ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
+              style: AppText.label(13,
+                  w: FontWeight.w700, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -258,14 +265,14 @@ class _SeatLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _legendDot(AppColors.seatAvailable, 'Available'),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.base),
           _legendDot(AppColors.seatLimited, 'Limited'),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.base),
           _legendDot(AppColors.seatOccupied, 'Occupied'),
         ],
       ),
@@ -284,11 +291,7 @@ class _SeatLegend extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppText.label(12, w: FontWeight.w600),
         ),
       ],
     );
@@ -309,48 +312,35 @@ class _SeatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: _color.withValues(alpha: 0.10),
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: _color.withValues(alpha: 0.55)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.chair_rounded,
-                size: 22,
-                color: _color,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                seat.label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'F${seat.floor}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+    return PressScale(
+      onTap: onTap,
+      feedback: PressFeedback.select,
+      child: FrostedCard(
+        radius: AppRadii.md,
+        tint: _color.withValues(alpha: AppColors.isDark ? 0.2 : 0.12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chair_rounded, size: 22, color: _color),
+            const SizedBox(height: 4),
+            Text(seat.label, style: AppText.title(14, w: FontWeight.w800)),
+            Text(
+              'F${seat.floor} · ${_word(seat.status)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.label(11, w: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  /// Text companion so status never relies on colour alone.
+  static String _word(SeatStatus s) => switch (s) {
+        SeatStatus.available => 'Free',
+        SeatStatus.limited => 'Few',
+        SeatStatus.occupied => 'Taken',
+      };
 }

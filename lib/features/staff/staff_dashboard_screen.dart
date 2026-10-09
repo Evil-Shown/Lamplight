@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../core/constants/app_constants.dart' show AppNavInset;
+import '../../core/feedback/app_feedback.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
-import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
+import 'admin/widgets/staff_live_states.dart';
 import 'staff_scanner_screen.dart';
 
 /// P-13 Staff Dashboard.
@@ -47,70 +52,91 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    const stats = MockData.dashboardStats;
+    final stats = state.dashboardStats;
+    final loading = staffLoading(state);
+    final failed = staffFailed(state) && state.queue.isEmpty;
     final queue = _filtered(state.queue);
+    final waiting =
+        state.queue.where((e) => e.status != QueueStatus.expired).length;
 
+    // The staff shell already paints the aurora behind this tab.
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+        child: RefreshIndicator(
+          onRefresh: state.refresh,
+          child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.base, AppSpacing.base, AppSpacing.base, AppNavInset.bottom),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.panel,
-                      borderRadius: BorderRadius.circular(AppRadii.md),
-                      boxShadow: AppShadows.glow(AppColors.primary),
-                    ),
-                    child: Row(
+            // App-level cached-data banner (D-14).
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+            GlassSurface(
+              radius: AppRadii.xl,
+              padding: const EdgeInsets.all(AppSpacing.base),
+              child: Row(
+                children: [
+                  const CampusMark(size: 44),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const CampusMark(size: 36, onDark: true),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Staff Dashboard',
-                                style: AppText.title(16, w: FontWeight.w700,
-                                    color: AppColors.textInverse),
-                              ),
-                              Text(
-                                'Library Control Hub',
-                                style: AppText.body(11.5,
-                                    color: AppColors.textInverse
-                                        .withValues(alpha: 0.66)),
-                              ),
-                            ],
-                          ),
+                        Text(
+                          'Staff Dashboard',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.title(18, w: FontWeight.w800),
+                        ),
+                        Text(
+                          'Library Control Hub',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.body(12.5,
+                              color: AppColors.textSecondary),
                         ),
                       ],
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const StaffScannerScreen(),
+                  const SizedBox(width: AppSpacing.md),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      CountUp(
+                        value: waiting,
+                        style: AppText.display(AppText.displayLg,
+                            w: FontWeight.w800, color: AppColors.primary),
+                      ),
+                      Text('waiting',
+                          style: AppText.label(12, w: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  PressScale(
+                    onTap: () => AppRoute.push(
+                      context,
+                      const StaffScannerScreen(),
+                    ),
+                    child: Tooltip(
+                      message: 'Scan a pass',
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: AppGradients.hero,
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                        ),
+                        child: Icon(Icons.qr_code_scanner_rounded,
+                            size: 24, color: AppColors.textInverse),
+                      ),
                     ),
                   ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    side: BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.sm),
-                    ),
-                  ),
-                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.base),
             TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
@@ -126,95 +152,118 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.base),
             Row(
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'Reservations',
-                    value: stats['reservations']!,
-                    caption: '+4 today',
+                    label: 'Due today',
+                    value: stats.reservationsDueToday,
+                    caption: 'Book pickups',
                     color: AppColors.primary,
                     icon: Icons.confirmation_num_outlined,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: StatTile(
                     label: 'Waitlisted',
-                    value: stats['waitlisted']!,
-                    caption: '3 expired',
+                    value: stats.waitingCount,
+                    caption: 'Books and seats',
                     color: AppColors.warning,
                     icon: Icons.hourglass_top_rounded,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'On-time',
-                    value: stats['onTime']!,
-                    suffix: '%',
-                    caption: 'Excellent',
+                    label: 'In session',
+                    value: stats.activeSessions,
+                    caption: 'Seated now',
                     color: AppColors.success,
                     icon: Icons.schedule_rounded,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: StatTile(
                     label: 'Seat fill',
-                    value: stats['seatFill']!,
+                    value: stats.seatFillPercent,
                     suffix: '%',
-                    caption: 'Moderate',
+                    caption:
+                        '${stats.seatsOccupied} of ${stats.seatsTotal} seats',
                     color: AppColors.accent,
                     icon: Icons.event_seat_outlined,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             Row(
               children: [
                 Expanded(
-                  child: Text('Queue Dispatch · ${queue.length}',
-                      style: AppText.title(15.5, w: FontWeight.w700)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dispatch queue · ${queue.length}',
+                          style: AppText.title(15.5, w: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Updates in real time',
+                        style: AppText.body(12, color: AppColors.textFaint),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
             FilterChipRow(
               options: const ['All', 'Active', 'Urgent'],
               selected: _queueFilter,
               onSelected: (value) => setState(() => _queueFilter = value),
               padding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 14),
-            if (queue.isEmpty)
+            const SizedBox(height: AppSpacing.base),
+            if (loading)
+              const Column(
+                children: [
+                  SkeletonCard(height: 100),
+                  SizedBox(height: AppSpacing.md),
+                  SkeletonCard(height: 100),
+                ],
+              )
+            else if (failed)
+              ErrorState(
+                message: state.lastError?.message ??
+                    'We could not load the dispatch queue.',
+                onRetry: state.refresh,
+              )
+            else if (queue.isEmpty)
               const EmptyState(
                 icon: Icons.inbox_rounded,
                 title: 'Queue is clear',
-                message: 'No students are waiting right now.',
+                message:
+                    'No students waiting. Queue updates in real time.',
               )
             else
               for (var i = 0; i < queue.length; i++) ...[
-                if (i > 0) const SizedBox(height: 10),
+                if (i > 0) const SizedBox(height: AppSpacing.md),
                 StaggeredEntrance(
                   index: i,
                   child: _QueueRow(
                     entry: queue[i],
                     onApprove: () => state.approveQueueEntry(queue[i].id),
                     onDismiss: () => state.dismissQueueEntry(queue[i].id),
-                    onWarn: () => ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${queue[i].studentName} warned')),
-                    ),
                   ),
                 ),
               ],
           ],
+        ),
         ),
       ),
     );
@@ -226,13 +275,11 @@ class _QueueRow extends StatelessWidget {
     required this.entry,
     required this.onApprove,
     required this.onDismiss,
-    required this.onWarn,
   });
 
   final QueueEntry entry;
   final VoidCallback onApprove;
   final VoidCallback onDismiss;
-  final VoidCallback onWarn;
 
   (Color, String) get _status => switch (entry.status) {
         QueueStatus.active => (AppColors.success, 'Active'),
@@ -253,15 +300,17 @@ class _QueueRow extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 40,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.xs),
                 ),
                 child: Text(
-                  entry.studentName.substring(0, 1).toUpperCase(),
+                  entry.studentName.isEmpty
+                      ? '?'
+                      : entry.studentName.substring(0, 1).toUpperCase(),
                   style:
                       AppText.title(14, w: FontWeight.w700, color: color),
                 ),
@@ -273,13 +322,17 @@ class _QueueRow extends StatelessWidget {
                   children: [
                     Text(
                       '${entry.studentName} ${entry.studentId}',
-                      style: AppText.title(14, w: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(15, w: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${entry.location} · waited ${waited.inMinutes}m',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style:
-                          AppText.body(12, color: AppColors.textSecondary),
+                          AppText.body(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -294,7 +347,7 @@ class _QueueRow extends StatelessWidget {
                 child: _RowAction(
                   label: 'Contact',
                   icon: Icons.phone_outlined,
-                  onTap: () {},
+                  onTap: () => _showContact(context, entry),
                 ),
               ),
               const SizedBox(width: 8),
@@ -321,6 +374,62 @@ class _QueueRow extends StatelessWidget {
   }
 }
 
+/// Glass sheet with the student's identity and what can be done from the
+/// device. A queue entry only carries name, ID and location (no phone or
+/// email), and `url_launcher` is not a dependency, so copying the ID is the
+/// working action.
+void _showContact(BuildContext context, QueueEntry entry) {
+  showGlassSheet<void>(
+    context,
+    builder: (sheetContext) => Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Contact student',
+              style: AppText.title(20, w: FontWeight.w800)),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+              entry.studentName.isEmpty ? 'Unknown student' : entry.studentName,
+              style: AppText.title(17, w: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            entry.studentId.isEmpty ? 'No student ID on file' : entry.studentId,
+            style: AppText.body(13.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 2),
+          Text(entry.location,
+              style: AppText.body(13, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+            'No phone number or email is on file for this request. '
+            'Use the student ID to look them up at the desk.',
+            style: AppText.body(12.5, color: AppColors.textFaint),
+          ),
+          const SizedBox(height: AppSpacing.base),
+          PrimaryButton(
+            label: 'Copy student ID',
+            icon: Icons.copy_rounded,
+            onPressed: entry.studentId.isEmpty
+                ? null
+                : () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await Clipboard.setData(
+                        ClipboardData(text: entry.studentId));
+                    AppFeedback.success();
+                    if (sheetContext.mounted) Navigator.pop(sheetContext);
+                    messenger.showSnackBar(
+                        const SnackBar(content: Text('Student ID copied')));
+                  },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.label,
@@ -337,26 +446,36 @@ class _RowAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveTone = tone ?? AppColors.primary;
-    return PressScale(
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: PressScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(vertical: 13),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: effectiveTone.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(AppRadii.xs),
+          borderRadius: BorderRadius.circular(AppRadii.sm),
           border: Border.all(color: effectiveTone.withValues(alpha: 0.28)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: effectiveTone),
+            Icon(icon, size: 17, color: effectiveTone),
             const SizedBox(width: 6),
-            Text(label,
-                style: AppText.label(
-                    12.5, w: FontWeight.w600, color: effectiveTone)),
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.label(
+                      13.5, w: FontWeight.w700, color: effectiveTone)),
+            ),
           ],
         ),
+      ),
       ),
     );
   }

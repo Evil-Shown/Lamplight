@@ -1,77 +1,143 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_constants.dart'
+    show AppNavInset, AppStrings;
+import '../../../core/navigation/app_route.dart';
+import '../../../core/state/app_state.dart';
+import '../../../models/models.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import 'staff_books_screen.dart';
-import 'staff_mock_data.dart';
 import 'staff_reservations_screen.dart';
 import 'staff_seats_screen.dart';
 import 'staff_waitlist_screen.dart';
 import 'widgets/staff_quick_action.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_stat_card.dart';
 import 'widgets/staff_status_badge.dart';
 
 /// Staff admin module home: today's summary, quick navigation and the
 /// pickups that need attention next.
 ///
-/// Sits alongside the Firestore-backed staff dashboard in the parent
-/// folder; wire it into navigation once the team decides how the two
-/// implementations integrate.
+/// Every figure comes from [AppState]; sample data is never shown here.
 class StaffAdminDashboardScreen extends StatelessWidget {
   const StaffAdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final today = DateFormat('EEEE, d MMMM yyyy').format(DateTime.now());
-    final expired = StaffMockData.expiredReservationCount;
+    final state = AppScope.of(context);
+    final counts = _Counts.of(state);
+    final expired = counts.expired;
+    final loading = staffLoading(state);
+    final failed = staffFailed(state) && state.adminReservations.isEmpty;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _StaffHeader(date: today)),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppNavInset.bottom),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (expired > 0) ...[
-                    Callout(
-                      tone: CalloutTone.danger,
-                      icon: Icons.warning_amber_rounded,
-                      message:
-                          '$expired reservation${expired == 1 ? '' : 's'} expired without pickup — follow up with the students.',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                  const _StatsSection(),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Quick actions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  const _QuickActions(),
-                  const SizedBox(height: AppSpacing.lg),
-                  const _DueNextSection(),
-                ]),
-              ),
-            ),
-          ],
+    return AppScaffold(
+      title: 'Staff Admin',
+      showBack: false,
+      contentUnderBar: true,
+      body: StaffRefreshable(
+        state: state,
+        child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.base,
+          GlassAppBar.contentTopPadding(context),
+          AppSpacing.base,
+          AppNavInset.bottom,
         ),
+        children: [
+          _StaffHeader(date: today, counts: counts, loading: loading),
+          const SizedBox(height: AppSpacing.base),
+          if (failed) ...[
+            Callout(
+              tone: CalloutTone.danger,
+              icon: Icons.cloud_off_rounded,
+              message: state.lastError?.message ??
+                  'We could not load the latest figures. Pull down to retry.',
+            ),
+            const SizedBox(height: AppSpacing.base),
+          ],
+          if (expired > 0) ...[
+            Callout(
+              tone: CalloutTone.danger,
+              icon: Icons.warning_amber_rounded,
+              message:
+                  '$expired reservation${expired == 1 ? '' : 's'} expired without pickup — follow up with the students.',
+            ),
+            const SizedBox(height: AppSpacing.base),
+          ],
+          _StatsSection(counts: counts, loading: loading),
+          const SizedBox(height: AppSpacing.xl),
+          Text('Quick actions', style: AppText.title(17, w: FontWeight.w800)),
+          const SizedBox(height: AppSpacing.md),
+          _QuickActions(counts: counts),
+          const SizedBox(height: AppSpacing.xl),
+          _DueNextSection(
+              reservations: state.adminReservations, loading: loading),
+        ],
+      ),
       ),
     );
   }
 }
 
+/// Counts derived once per build from live [AppState] lists.
+class _Counts {
+  const _Counts({
+    required this.active,
+    required this.expired,
+    required this.waiting,
+    required this.freeSeats,
+    required this.staffName,
+    required this.staffId,
+    required this.sessions,
+  });
+
+  final int active;
+  final int expired;
+  final int waiting;
+  final int freeSeats;
+  final int sessions;
+  final String staffName;
+  final String staffId;
+
+  factory _Counts.of(AppState state) {
+    final now = DateTime.now();
+    var active = 0;
+    var expired = 0;
+    for (final r in state.adminReservations) {
+      switch (staffReservationStatusLabel(r, now)) {
+        case 'Active':
+          active++;
+        case 'Expired':
+          expired++;
+      }
+    }
+    return _Counts(
+      active: active,
+      expired: expired,
+      waiting: state.dashboardStats.waitingCount,
+      freeSeats:
+          state.adminSeats.where((s) => s.status == SeatStatus.available).length,
+      sessions: state.dashboardStats.activeSessions,
+      staffName: state.staffName,
+      staffId: state.staffId,
+    );
+  }
+}
+
+/// Glass hero: brand, date, who is on shift and the key live figure.
 class _StaffHeader extends StatelessWidget {
-  const _StaffHeader({required this.date});
+  const _StaffHeader({
+    required this.date,
+    required this.counts,
+    required this.loading,
+  });
+
+  final _Counts counts;
+  final bool loading;
 
   String get _brandLabel => '${AppStrings.appName} · Staff';
 
@@ -79,152 +145,103 @@ class _StaffHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primaryLift,
-            Color.lerp(AppColors.primary, Colors.black, 0.25)!,
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
-      child: Stack(
+    return GlassSurface(
+      radius: AppRadii.xl,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(right: -52, top: -40, child: _circle(180, 0.07)),
-          Positioned(left: -44, bottom: -64, child: _circle(170, 0.06)),
-          Positioned(right: 52, bottom: -34, child: _circle(96, 0.05)),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              MediaQuery.paddingOf(context).top + AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.xl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Icon(Icons.local_library_rounded,
+                  color: AppColors.primary, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  _brandLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.label(13,
+                      w: FontWeight.w700, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.base),
+          Text('Staff Dashboard',
+              style: AppText.display(26, w: FontWeight.w800)),
+          const SizedBox(height: AppSpacing.xs),
+          Text(date, style: AppText.body(14, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.base),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadii.full),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    IconBadge(
+                        icon: Icons.badge_rounded, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.local_library_rounded,
-                              color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
+                          Text(counts.staffName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.title(15, w: FontWeight.w700)),
                           Text(
-                            _brandLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
+                            counts.staffId.isEmpty
+                                ? 'Library staff'
+                                : 'Library staff · ${counts.staffId}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.body(12.5,
+                                color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Staff Dashboard',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.xs + 2),
-                Text(
-                  date,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: const Icon(Icons.badge_rounded,
-                          color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (loading)
+                    const Skeleton(width: 48, height: 40)
+                  else
+                    CountUp(
+                      value: counts.sessions,
+                      style: AppText.display(AppText.displayLg,
+                          w: FontWeight.w800, color: AppColors.primary),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          StaffMockData.staffName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${StaffMockData.staffRole} · ${StaffMockData.staffId}',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  Text('seated now',
+                      style: AppText.label(12, w: FontWeight.w600)),
+                ],
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _circle(double size, double opacity) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
       ),
     );
   }
 }
 
 class _StatsSection extends StatelessWidget {
-  const _StatsSection();
+  const _StatsSection({required this.counts, required this.loading});
+
+  final _Counts counts;
+  final bool loading;
+
+  String _v(int n) => loading ? '—' : '$n';
 
   @override
   Widget build(BuildContext context) {
-    void openReservations(String filter) => Navigator.push(
+    void openReservations(String filter) => AppRoute.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => StaffReservationsScreen(initialFilter: filter),
-          ),
+          StaffReservationsScreen(initialFilter: filter),
         );
 
     return LayoutBuilder(builder: (context, constraints) {
@@ -234,43 +251,43 @@ class _StatsSection extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
-          mainAxisExtent: 138,
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
+          mainAxisExtent: 156,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
         ),
         children: [
           StaffStatCard(
             icon: Icons.bookmark_rounded,
-            value: '${StaffMockData.activeReservationCount}',
+            value: _v(counts.active),
             label: 'Active Reservations',
             color: AppColors.success,
             onTap: () => openReservations('Active'),
           ),
           StaffStatCard(
             icon: Icons.event_busy_rounded,
-            value: '${StaffMockData.expiredReservationCount}',
+            value: _v(counts.expired),
             label: 'Expired Reservations',
             color: AppColors.error,
             onTap: () => openReservations('Expired'),
           ),
           StaffStatCard(
             icon: Icons.hourglass_top_rounded,
-            value: '${StaffMockData.waitlistCount}',
+            value: _v(counts.waiting),
             label: 'Waiting List',
             color: AppColors.warning,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffWaitlistScreen()),
+              const StaffWaitlistScreen(),
             ),
           ),
           StaffStatCard(
             icon: Icons.event_seat_rounded,
-            value: '${StaffMockData.availableSeatCount}',
+            value: _v(counts.freeSeats),
             label: 'Available Seats',
             color: AppColors.info,
-            onTap: () => Navigator.push(
+            onTap: () => AppRoute.push(
               context,
-              MaterialPageRoute(builder: (_) => const StaffSeatsScreen()),
+              const StaffSeatsScreen(),
             ),
           ),
         ],
@@ -279,77 +296,73 @@ class _StatsSection extends StatelessWidget {
   }
 }
 
+/// Bento grid of the four admin destinations.
 class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+  const _QuickActions({required this.counts});
+
+  final _Counts counts;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: StaffQuickAction(
-            icon: Icons.bookmark_rounded,
-            label: 'Reservations',
-            color: AppColors.primary,
-            badge: StaffMockData.activeReservationCount,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const StaffReservationsScreen()),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: StaffQuickAction(
-            icon: Icons.hourglass_top_rounded,
-            label: 'Waiting\nList',
-            color: AppColors.warning,
-            badge: StaffMockData.waitlistCount,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StaffWaitlistScreen()),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: StaffQuickAction(
-            icon: Icons.menu_book_rounded,
-            label: 'Book\nAvailability',
-            color: AppColors.accent,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StaffBooksScreen()),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: StaffQuickAction(
-            icon: Icons.event_seat_rounded,
-            label: 'Seat\nAvailability',
-            color: AppColors.info,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StaffSeatsScreen()),
-            ),
-          ),
-        ),
-      ],
-    );
+    void open(Widget screen) => AppRoute.push(context, screen);
+    final items = [
+      StaffQuickAction(
+        icon: Icons.bookmark_rounded,
+        label: 'Reservations',
+        color: AppColors.primary,
+        badge: counts.active,
+        onTap: () => open(const StaffReservationsScreen()),
+      ),
+      StaffQuickAction(
+        icon: Icons.hourglass_top_rounded,
+        label: 'Waiting list',
+        color: AppColors.warning,
+        badge: counts.waiting,
+        onTap: () => open(const StaffWaitlistScreen()),
+      ),
+      StaffQuickAction(
+        icon: Icons.menu_book_rounded,
+        label: 'Book availability',
+        color: AppColors.accent,
+        onTap: () => open(const StaffBooksScreen()),
+      ),
+      StaffQuickAction(
+        icon: Icons.event_seat_rounded,
+        label: 'Seat availability',
+        color: AppColors.info,
+        onTap: () => open(const StaffSeatsScreen()),
+      ),
+    ];
+    return LayoutBuilder(builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 640 ? 4 : 2;
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: columns,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childAspectRatio: columns == 2 ? 1.4 : 1.25,
+        children: [
+          for (var i = 0; i < items.length; i++)
+            StaggeredEntrance(index: i, child: items[i]),
+        ],
+      );
+    });
   }
 }
 
 /// Active reservations closest to their pickup deadline / booking end.
 class _DueNextSection extends StatelessWidget {
-  const _DueNextSection();
+  const _DueNextSection({required this.reservations, required this.loading});
+
+  final List<AdminReservation> reservations;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final dueNext = StaffMockData.reservations
+    final dueNext = reservations
         .where((r) =>
-            r.status == StaffReservationStatus.active && r.dueAt != null)
+            staffReservationStatusLabel(r) == 'Active' && r.dueAt != null)
         .toList()
       ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
 
@@ -360,36 +373,35 @@ class _DueNextSection extends StatelessWidget {
           title: 'Needs attention next',
           subtitle: 'Active reservations by pickup deadline',
           actionLabel: 'View all',
-          onAction: () => Navigator.push(
+          onAction: () => AppRoute.push(
             context,
-            MaterialPageRoute(
-                builder: (_) => const StaffReservationsScreen()),
+            const StaffReservationsScreen(),
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        if (dueNext.isEmpty)
+        const SizedBox(height: AppSpacing.md),
+        if (loading)
+          const SkeletonCard(height: 60)
+        else if (dueNext.isEmpty)
           SurfaceCard(
             child: Text(
               'No active reservations right now.',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: AppText.body(14, color: AppColors.textSecondary),
             ),
           )
         else
           ...dueNext.take(3).map(
                 (r) => SurfaceCard(
-                  elevated: true,
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  onTap: () => Navigator.push(
+                  onTap: () => AppRoute.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const StaffReservationsScreen()),
+                    const StaffReservationsScreen(),
                   ),
                   child: Row(
                     children: [
                       IconBadge(
-                        icon: r.type == StaffReservationType.book
-                            ? Icons.menu_book_rounded
-                            : Icons.event_seat_rounded,
+                        icon: r.isSeat
+                            ? Icons.event_seat_rounded
+                            : Icons.menu_book_rounded,
                         color: AppColors.primary,
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -399,16 +411,15 @@ class _DueNextSection extends StatelessWidget {
                           children: [
                             Text(
                               r.studentName,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w800, fontSize: 15),
+                              style: AppText.title(15, w: FontWeight.w800),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${r.itemTitle} · ${r.studentId}',
-                              style: TextStyle(
-                                  color: AppColors.textSecondary, fontSize: 13),
+                              style: AppText.body(13,
+                                  color: AppColors.textSecondary),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
