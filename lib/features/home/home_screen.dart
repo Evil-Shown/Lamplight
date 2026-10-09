@@ -1,21 +1,26 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../app_shell.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../qr/qr_ticket_screen.dart';
 import '../reservations/reservations_screen.dart';
 
-/// Home — a Material 3 dashboard on the tonal surface.
+/// Redesigned Home Screen â€” A modern, elegant dashboard for SLIIT Campus Library.
 ///
-/// The header carries the profile avatar and greeting, the day's session
-/// sits on the brand aurora sweep, quick actions are tonal cards, and the
-/// hold-shelf and noise cards close out the scroll. All colour comes from
-/// the seeded scheme, so the tab follows light/dark mode.
+/// Features:
+/// - Personalized header with initial avatar, live greeting & notifications.
+/// - Integrated quick-search banner bar.
+/// - Hero study session banner (Aurora sweep with countdown & facility pills).
+/// - Campus live metrics summary chips.
+/// - 2x2 quick action grid with vibrant icons & QR pass entry.
+/// - "Ready for collection" hold-shelf showcase.
+/// - Real-time floor occupancy gauge & live density meter.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -27,6 +32,20 @@ class HomeScreen extends StatelessWidget {
         ? null
         : state.activeReservations.first;
 
+    // S02 loading: a skeleton of the real layout until the first
+    // snapshot lands (or the offline fallback releases it).
+    if (!state.isHydrated) {
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: AppColors.isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          body: const SafeArea(bottom: false, child: _HomeSkeleton()),
+        ),
+      );
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: AppColors.isDark
           ? SystemUiOverlayStyle.light
@@ -36,23 +55,55 @@ class HomeScreen extends StatelessWidget {
         body: SafeArea(
           bottom: false,
           child: ListView(
-            padding: const EdgeInsets.only(bottom: 28),
+            padding: const EdgeInsets.only(bottom: 32),
             children: [
-              // App-level cached-data banner (D-14).
+              // Connectivity Sync Banner
               ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+
+              // Header Section
               const _HomeHeader(),
+
+              const SizedBox(height: 16),
+
+              // Search Bar Entry Point
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: StaggeredEntrance(
+                  index: 0,
+                  child: _SearchBarCard(),
+                ),
+              ),
+
               const SizedBox(height: 20),
+
+              // Today's Session Hero or Quick Seat Booking Prompt
               if (booking != null)
                 _TodaySession(booking: booking)
               else
                 const _NoSessionCard(),
-              const SizedBox(height: 26),
+
+              const SizedBox(height: 24),
+
+              // Live Campus Overview Pills
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: StaggeredEntrance(
+                  index: 1,
+                  child: _CampusOverviewPills(),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Quick Actions Section Header
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: SectionLabel('Quick actions'),
               ),
               const SizedBox(height: 12),
               const _QuickActions(),
+
+              // Ready for Collection Shelf
               if (ready != null) ...[
                 const SizedBox(height: 26),
                 Padding(
@@ -67,16 +118,19 @@ class HomeScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: StaggeredEntrance(
-                    index: 2,
+                    index: 5,
                     child: _ReadyForCollection(reservation: ready),
                   ),
                 ),
               ],
+
               const SizedBox(height: 26),
+
+              // Live Density Gauge
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: StaggeredEntrance(
-                  index: 3,
+                  index: 6,
                   child: _DensityCard(lastSyncedAt: state.lastSyncedAt),
                 ),
               ),
@@ -88,6 +142,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+/// Personalized header with profile avatar, greeting, and notification button.
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader();
 
@@ -117,19 +172,33 @@ class _HomeHeader extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primarySoft,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primaryDark,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  initials,
+                  initials.isEmpty ? 'SL' : initials,
                   style: AppText.title(
                     14,
-                    w: FontWeight.w700,
-                    color: AppColors.primaryDark,
+                    w: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -138,63 +207,65 @@ class _HomeHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'CAMPUS COMMONS',
-                      style: AppText.overline(
-                        10,
-                        ls: 1.6,
-                        color: AppColors.textFaint,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'SLIIT MAIN LIBRARY â€¢ OPEN',
+                            style: AppText.overline(
+                              9.5,
+                              ls: 1.0,
+                              color: AppColors.primary,
+                              w: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Main Library · Open',
-                      style: AppText.body(
-                        13,
-                        color: AppColors.textSecondary,
+                      '$_greeting, ${profile.firstName} Ã°Å¸â€˜â€¹',
+                      style: AppText.display(
+                        19,
+                        w: FontWeight.w800,
+                        ls: -0.4,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               IconButton.filledTonal(
                 onPressed: () => AppShell.switchTab(context, AppTab.bookings),
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.surfaceMuted,
+                  backgroundColor: AppColors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ),
                 icon: Badge(
                   isLabelVisible: state.unreadNotifications > 0,
-                  child: const Icon(Icons.notifications_none_rounded,
-                      size: 22),
+                  backgroundColor: AppColors.error,
+                  child: const Icon(Icons.notifications_none_rounded, size: 22),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 18),
-          StaggeredEntrance(
-            index: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$_greeting, ${profile.firstName}',
-                  style: AppText.display(
-                    26,
-                    w: FontWeight.w800,
-                    ls: -0.7,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Your books, seats and study spots at a glance.',
-                  style: AppText.body(
-                    13.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -202,8 +273,160 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-/// The "Today's study session" hero — the brand aurora sweep with
-/// facility pills and the starts-in countdown.
+/// Interactive Search Bar that navigates to the Books tab.
+class _SearchBarCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => AppShell.switchTab(context, AppTab.books),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.border,
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Search books, authors, or study podsâ€¦',
+                style: AppText.body(
+                  13,
+                  color: AppColors.textFaint,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.tune_rounded, size: 16, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quick live status pills summarizing library status.
+class _CampusOverviewPills extends StatelessWidget {
+  const _CampusOverviewPills();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final totalBooks = state.books.length;
+    final totalReservations = state.reservations.length;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _MetricPill(
+            icon: Icons.menu_book_rounded,
+            value: '$totalBooks',
+            label: 'Books Catalog',
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 10),
+          _MetricPill(
+            icon: Icons.event_seat_rounded,
+            value: 'Floor 2',
+            label: 'Quiet Study',
+            color: AppColors.success,
+          ),
+          const SizedBox(width: 10),
+          _MetricPill(
+            icon: Icons.bookmark_added_rounded,
+            value: '$totalReservations',
+            label: 'Active Holds',
+            color: AppColors.accent,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  const _MetricPill({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 14, color: color),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: AppText.label(12, w: FontWeight.w800),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                label,
+                style: AppText.body(9.5, color: AppColors.textFaint),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Today's study session hero card.
 class _TodaySession extends StatelessWidget {
   const _TodaySession({required this.booking});
 
@@ -213,13 +436,15 @@ class _TodaySession extends StatelessWidget {
   Widget build(BuildContext context) {
     final startsIn = booking.startTime.difference(DateTime.now());
     final time =
-        '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
+        '${DateFormat('h:mm a').format(booking.startTime)} â€“ ${DateFormat('h:mm a').format(booking.endTime)}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: StaggeredEntrance(
-        child: GradientHero(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        child: Tilt3D(
+          maxTilt: 0.07,
+          child: GradientHero(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -231,18 +456,18 @@ class _TodaySession extends StatelessWidget {
                       style: AppText.overline(
                         10.5,
                         ls: 1.6,
-                        color: AppColors.textInverse.withValues(alpha: 0.78),
+                        color: AppColors.textInverse.withValues(alpha: 0.85),
                       ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 4),
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.20),
+                      color: Colors.white.withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.28)),
+                          color: Colors.white.withValues(alpha: 0.35)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -273,18 +498,18 @@ class _TodaySession extends StatelessWidget {
               Text(
                 'Seat ${booking.seat.label}',
                 style: AppText.display(
-                  AppText.displayMd,
+                  28,
                   w: FontWeight.w800,
-                  ls: -1.0,
+                  ls: -0.8,
                   color: AppColors.textInverse,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
-                'Floor ${booking.seat.floor} · ${booking.seat.section}',
+                'Floor ${booking.seat.floor} Â· ${booking.seat.section}',
                 style: AppText.body(
                   13.5,
-                  color: AppColors.textInverse.withValues(alpha: 0.82),
+                  color: AppColors.textInverse.withValues(alpha: 0.85),
                 ),
               ),
               const SizedBox(height: 14),
@@ -295,19 +520,19 @@ class _TodaySession extends StatelessWidget {
                   if (booking.seat.hasPowerOutlet)
                     const _HeroPill(
                       icon: Icons.bolt_rounded,
-                      label: 'FREE POWER',
+                      label: 'POWER OUTLET',
                       highlight: true,
                     ),
-                  const _HeroPill(icon: Icons.wifi_rounded, label: 'FAST WI-FI'),
+                  const _HeroPill(icon: Icons.wifi_rounded, label: 'HIGH-SPEED WI-FI'),
                   if (booking.seat.nearWindow)
-                    const _HeroPill(icon: Icons.wb_sunny_outlined, label: 'DAYLIGHT'),
+                    const _HeroPill(icon: Icons.wb_sunny_outlined, label: 'NATURAL LIGHT'),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Icon(Icons.schedule_rounded,
-                      size: 15, color: AppColors.textInverse),
+                      size: 16, color: AppColors.textInverse),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -327,7 +552,7 @@ class _TodaySession extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: Colors.white.withValues(alpha: 0.20),
                         borderRadius: BorderRadius.circular(AppRadii.full),
                       ),
                       child: Text(
@@ -344,6 +569,7 @@ class _TodaySession extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -362,13 +588,13 @@ class _HeroPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: highlight
-            ? Colors.white.withValues(alpha: 0.26)
-            : Colors.white.withValues(alpha: 0.14),
+            ? Colors.white.withValues(alpha: 0.28)
+            : Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppRadii.full),
         border: Border.all(
           color: highlight
-              ? Colors.white.withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.16),
+              ? Colors.white.withValues(alpha: 0.50)
+              : Colors.white.withValues(alpha: 0.18),
         ),
       ),
       child: Row(
@@ -385,7 +611,7 @@ class _HeroPill extends StatelessWidget {
             style: AppText.overline(
               9.5,
               ls: 1.0,
-              color: AppColors.textInverse.withValues(alpha: 0.90),
+              color: AppColors.textInverse.withValues(alpha: 0.95),
             ),
           ),
         ],
@@ -402,34 +628,49 @@ class _NoSessionCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SurfaceCard(
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             IconBadge(
               icon: Icons.event_seat_outlined,
               color: AppColors.primary,
-              background: AppColors.infoSoft,
+              background: AppColors.primarySoft,
+              size: 42,
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('No active session',
-                      style: AppText.title(15, w: FontWeight.w600)),
+                  Text('No active study session',
+                      style: AppText.title(15, w: FontWeight.w700)),
                   const SizedBox(height: 3),
                   Text(
-                    'Book a seat to start studying today.',
+                    'Book a quiet seat or group pod to start studying today.',
                     style: AppText.body(
-                      12.5,
+                      12,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            TextButton(
+            const SizedBox(width: 8),
+            ElevatedButton(
               onPressed: () => AppShell.switchTab(context, AppTab.seats),
-              child: const Text('Find a seat'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Find Seat',
+                style: AppText.label(12.5, w: FontWeight.w700, color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -438,8 +679,7 @@ class _NoSessionCard extends StatelessWidget {
   }
 }
 
-/// The 2x2 quick-action grid. QR check-in is the aurora tile — the
-/// obvious next action.
+/// The 2x2 quick-action grid.
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
@@ -456,7 +696,7 @@ class _QuickActions extends StatelessWidget {
                   index: 0,
                   icon: Icons.search_rounded,
                   label: 'Search books',
-                  caption: 'Find titles and shelf locations',
+                  caption: 'Find titles & shelf locations',
                   tint: AppColors.primary,
                   onTap: () => AppShell.switchTab(context, AppTab.books),
                 ),
@@ -532,7 +772,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StaggeredEntrance(
-      index: index + 4,
+      index: index + 2,
       child: PressScale(
         onTap: onTap,
         child: SurfaceCard(
@@ -547,13 +787,12 @@ class _ActionTile extends StatelessWidget {
                   IconBadge(
                     icon: icon,
                     color: tint,
-                    background: Color.alphaBlend(
-                        tint.withValues(alpha: 0.14), AppColors.surface),
-                    size: 34,
+                    background: tint.withValues(alpha: 0.12),
+                    size: 36,
                   ),
                   const Spacer(),
                   Icon(Icons.arrow_outward_rounded,
-                      size: 14, color: AppColors.textFaint),
+                      size: 15, color: AppColors.textFaint),
                 ],
               ),
               const SizedBox(height: 12),
@@ -566,7 +805,7 @@ class _ActionTile extends StatelessWidget {
                   w: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 caption,
                 maxLines: 2,
@@ -600,7 +839,7 @@ class _ReadyForCollection extends StatelessWidget {
       onTap: () => AppShell.switchTab(context, AppTab.bookings),
       child: SurfaceCard(
         padding: const EdgeInsets.all(14),
-        tint: AppColors.gold.withValues(alpha: 0.30),
+        tint: AppColors.gold.withValues(alpha: 0.25),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -661,7 +900,7 @@ class _ReadyForCollection extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Ready for pickup · Shelf ${book.shelfLocation}',
+                          'Ready for pickup Â· Shelf ${book.shelfLocation}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppText.body(
@@ -682,9 +921,7 @@ class _ReadyForCollection extends StatelessWidget {
   }
 }
 
-/// The live-density card. Floor-level only — the seats model has no
-/// per-slot occupancy, so the label always says which floor this is and
-/// never implies desk-level precision (D-11).
+/// Real-time floor occupancy and density gauge.
 class _DensityCard extends StatelessWidget {
   const _DensityCard({required this.lastSyncedAt});
 
@@ -701,8 +938,8 @@ class _DensityCard extends StatelessWidget {
     final ratio = total == 0 ? 0.0 : occupied / total;
 
     final (tone, toneLabel) = switch (ratio) {
-      < 0.5 => (AppColors.success, 'Quiet'),
-      < 0.8 => (AppColors.warning, 'Filling up'),
+      < 0.5 => (AppColors.success, 'Quiet Zone'),
+      < 0.8 => (AppColors.warning, 'Filling Up'),
       _ => (AppColors.error, 'Busy'),
     };
 
@@ -715,21 +952,20 @@ class _DensityCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'FLOOR 2 · LIVE DENSITY',
-                  style: AppText.overline(10, ls: 1.6,
-                      color: AppColors.textFaint),
+                  'FLOOR 2 â€¢ LIVE DENSITY GAUGE',
+                  style: AppText.overline(10, ls: 1.4,
+                      color: AppColors.textFaint, w: FontWeight.w700),
                 ),
               ),
               IconBadge(
                 icon: Icons.groups_rounded,
                 color: tone,
-                background: Color.alphaBlend(
-                    tone.withValues(alpha: 0.12), AppColors.surface),
-                size: 30,
+                background: tone.withValues(alpha: 0.12),
+                size: 32,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -744,14 +980,12 @@ class _DensityCard extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 10),
               const Spacer(),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Color.alphaBlend(
-                      tone.withValues(alpha: 0.12), AppColors.surface),
+                  color: tone.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                 ),
                 child: Text(
@@ -767,7 +1001,7 @@ class _DensityCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           MeterBar(value: ratio, color: tone, height: 8),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           LiveFreshness(lastSyncedAt: lastSyncedAt),
         ],
       ),
@@ -775,8 +1009,7 @@ class _DensityCard extends StatelessWidget {
   }
 }
 
-/// The QR check-in tile — the aurora sweep, the highest-contrast tile in
-/// the grid so "check in" is the obvious next action.
+/// The QR check-in tile â€” high contrast tile in the grid for quick check-in.
 class _QrTile extends StatelessWidget {
   const _QrTile({required this.onTap});
 
@@ -785,37 +1018,38 @@ class _QrTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StaggeredEntrance(
-      index: 7,
-      child: PressScale(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: AppGradients.aurora,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            boxShadow: AppShadows.glow(AppColors.primary),
-          ),
+      index: 5,
+      child: Tilt3D(
+        maxTilt: 0.12,
+        child: PressScale(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: AppGradients.brand,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.20)),
+                          color: Colors.white.withValues(alpha: 0.25)),
                     ),
                     child: Icon(Icons.qr_code_rounded,
                         size: 18, color: AppColors.textInverse),
                   ),
                   const Spacer(),
                   const Icon(Icons.arrow_outward_rounded,
-                      size: 14,
-                      color: Color.fromRGBO(255, 255, 255, 0.55)),
+                      size: 15,
+                      color: Color.fromRGBO(255, 255, 255, 0.70)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -829,20 +1063,136 @@ class _QrTile extends StatelessWidget {
                   color: AppColors.textInverse,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 'Open digital pass for entry',
                 maxLines: 2,
                 style: AppText.body(
                   11,
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: Colors.white.withValues(alpha: 0.80),
                   height: 1.35,
                 ),
               ),
             ],
           ),
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// S02 loading skeleton â€” the same geometry as the real home screen:
+/// header, hero block, overview pills, the 2x2 action grid, meter.
+class _HomeSkeleton extends StatelessWidget {
+  const _HomeSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 32),
+      children: const [
+        // Header: avatar + two text lines + bell.
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Row(
+            children: [
+              Skeleton(width: 44, height: 44, radius: 22),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Skeleton(width: 110, height: 10, radius: AppRadii.full),
+                    SizedBox(height: 7),
+                    Skeleton(width: 190, height: 16, radius: AppRadii.full),
+                  ],
+                ),
+              ),
+              Skeleton(width: 40, height: 40, radius: AppRadii.sm),
+            ],
+          ),
+        ),
+        SizedBox(height: 20),
+        // Search field.
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Skeleton(height: 50, radius: AppRadii.full),
+        ),
+        SizedBox(height: 20),
+        // Hero block.
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Skeleton(height: 190, radius: AppRadii.xl),
+        ),
+        SizedBox(height: 24),
+        // Overview pills.
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(child: Skeleton(height: 58, radius: 14)),
+              SizedBox(width: 10),
+              Expanded(child: Skeleton(height: 58, radius: 14)),
+              SizedBox(width: 10),
+              Expanded(child: Skeleton(height: 58, radius: 14)),
+            ],
+          ),
+        ),
+        SizedBox(height: 24),
+        // Quick-action grid.
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Skeleton(width: 110, height: 10, radius: AppRadii.full),
+              SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Skeleton(height: 96, radius: AppRadii.lg),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Skeleton(height: 96, radius: AppRadii.lg),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Skeleton(height: 96, radius: AppRadii.lg),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Skeleton(height: 96, radius: AppRadii.lg),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 26),
+        // Density meter.
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: SurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Skeleton(width: 140, height: 10, radius: AppRadii.full),
+                SizedBox(height: 12),
+                Skeleton(width: 84, height: 24, radius: AppRadii.full),
+                SizedBox(height: 12),
+                Skeleton(height: 8, radius: AppRadii.full),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

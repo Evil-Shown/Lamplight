@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../theme/app_theme.dart';
 
@@ -125,54 +128,9 @@ class SurfaceCard extends StatelessWidget {
   }
 }
 
-/// A softly tinted, glassy tile — the replacement for the old flat
-/// quick-action blocks. Reads as a distinct surface without the weight of
-/// a full card.
-class GlassTile extends StatelessWidget {
-  const GlassTile({
-    super.key,
-    required this.child,
-    this.onTap,
-    this.tint,
-    this.padding = const EdgeInsets.all(14),
-    this.radius = AppRadii.lg,
-  });
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final Color? tint;
-  final EdgeInsetsGeometry padding;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveTint = tint ?? AppColors.primary;
-    final content = Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.alphaBlend(
-                  effectiveTint.withValues(alpha: 0.10), AppColors.surface),
-              Color.alphaBlend(
-                  effectiveTint.withValues(alpha: 0.04), AppColors.surface),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: effectiveTint.withValues(alpha: 0.16)),
-        ),
-        child: Padding(padding: padding, child: child),
-      ),
-    );
-    return onTap == null ? content : PressScale(onTap: onTap!, child: content);
-  }
-}
-
-/// A gradient panel with a slow drifting highlight, used behind hero
-/// content on the home, session, and account screens.
+/// The one hero panel per screen: `hero` gradient (deep blue, 135°) with
+/// a slow drifting white sheen. Radius 28, white text, calm shadow — the
+/// spec retires glow, so the lift comes from the gradient itself.
 class GradientHero extends StatelessWidget {
   const GradientHero({
     super.key,
@@ -194,9 +152,17 @@ class GradientHero extends StatelessWidget {
     final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
-        gradient: gradient ?? AppGradients.aurora,
+        gradient: gradient ?? AppGradients.hero,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: AppShadows.glow(AppColors.primary),
+        boxShadow: AppColors.isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0842A0).withValues(alpha: 0.22),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: child,
     );
@@ -1036,6 +1002,9 @@ class BookCover extends StatelessWidget {
 
     Widget plate() => _CoverPlate(title: title, base: base, radius: radius);
 
+    // OpenLibrary keys on bare digits — dashes in stored ISBNs break the URL.
+    final cleanIsbn = isbn?.replaceAll(RegExp(r'[^0-9Xx]'), '');
+
     Widget cover = Container(
       width: width,
       height: height,
@@ -1051,15 +1020,21 @@ class BookCover extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: isbn == null
+        child: cleanIsbn == null || cleanIsbn.isEmpty
             ? plate()
             : Image.network(
-                'https://covers.openlibrary.org/b/isbn/$isbn-L.jpg',
+                'https://covers.openlibrary.org/b/isbn/$cleanIsbn-L.jpg?default=false',
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
                 errorBuilder: (_, __, ___) => plate(),
                 loadingBuilder: (context, child, progress) =>
-                    progress == null ? child : plate(),
+                    progress == null
+                        ? AnimatedOpacity(
+                            opacity: 1,
+                            duration: const Duration(milliseconds: 260),
+                            child: child,
+                          )
+                        : plate(),
               ),
       ),
     );
@@ -1573,6 +1548,285 @@ class _StaticDot extends StatelessWidget {
       width: 7,
       height: 7,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}
+
+/// The signature call-slip motif (spec §2.4 / §4.1): a surface card with
+/// 12 dp semicircular side notches at the perforation line and a dashed
+/// perforation. Top = identity, bottom = QR/meta. Light mode only gets
+/// the soft card shadow; dimmed + a diagonal stamp when cancelled.
+class TicketCard extends StatelessWidget {
+  const TicketCard({
+    super.key,
+    required this.top,
+    required this.bottom,
+    this.notchFraction = 0.60,
+    this.radius = AppRadii.lg,
+    this.dimmed = false,
+  });
+
+  final Widget top;
+  final Widget bottom;
+
+  /// Vertical position of the perforation, as a fraction of height.
+  final double notchFraction;
+  final double radius;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = TicketShapeBorder(
+      radius: radius,
+      notchFraction: notchFraction,
+    );
+    return Material(
+      color: AppColors.surface,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      elevation: AppColors.isDark ? 0 : 5,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      child: Opacity(
+        opacity: dimmed ? 0.35 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+              child: top,
+            ),
+            // Perforation: dashed hairline between the notches.
+            CustomPaint(
+              size: const Size.fromHeight(1),
+              painter: _DashedLinePainter(color: AppColors.border),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              child: bottom,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Rounded-rect shape with concave semicircular notches cut from both
+/// sides at [notchFraction] of the height — drawn with arcs, not images.
+class TicketShapeBorder extends ShapeBorder {
+  const TicketShapeBorder({
+    this.radius = AppRadii.lg,
+    this.notchRadius = 12,
+    this.notchFraction = 0.60,
+  });
+
+  final double radius;
+  final double notchRadius;
+  final double notchFraction;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRect(rect);
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final r = radius;
+    final n = notchRadius;
+    final cy = rect.top + (rect.height * notchFraction);
+    return Path()
+      ..moveTo(rect.left + r, rect.top)
+      ..lineTo(rect.right - r, rect.top)
+      ..arcToPoint(
+        Offset(rect.right, rect.top + r),
+        radius: Radius.circular(r),
+      )
+      ..lineTo(rect.right, cy - n)
+      ..arcToPoint(
+        Offset(rect.right, cy + n),
+        radius: Radius.circular(n),
+        clockwise: false,
+      )
+      ..lineTo(rect.right, rect.bottom - r)
+      ..arcToPoint(
+        Offset(rect.right - r, rect.bottom),
+        radius: Radius.circular(r),
+      )
+      ..lineTo(rect.left + r, rect.bottom)
+      ..arcToPoint(
+        Offset(rect.left, rect.bottom - r),
+        radius: Radius.circular(r),
+      )
+      ..lineTo(rect.left, cy + n)
+      ..arcToPoint(
+        Offset(rect.left, cy - n),
+        radius: Radius.circular(n),
+        clockwise: false,
+      )
+      ..lineTo(rect.left, rect.top + r)
+      ..arcToPoint(
+        Offset(rect.left + r, rect.top),
+        radius: Radius.circular(r),
+      )
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+
+  @override
+  ShapeBorder scale(double t) => this;
+}
+
+class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    const dash = 5;
+    const gap = 5;
+    var x = 0.0;
+    while (x < size.width) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(math.min(x + dash, size.width), 0),
+        paint,
+      );
+      x += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// The QR tile (spec §4.2 QrPassTile): always white with ink modules,
+/// regardless of theme — QR codes never invert. Generous quiet zone.
+class QrPassTile extends StatelessWidget {
+  const QrPassTile({
+    super.key,
+    required this.data,
+    this.size = 240,
+  });
+
+  final String data;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      // The QR shrinks to fit narrow tickets instead of overflowing.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final qr = math.min(size, constraints.maxWidth - 2);
+          return QrImageView(
+            data: data,
+            version: QrVersions.auto,
+            size: qr,
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Color(0xFF191C20),
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Color(0xFF191C20),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The one destructive-action confirmation (spec §4.4 / M01): radius 28,
+/// title, body with the consequence spelled out, safe action left in a
+/// tonal tone, destructive right in danger. Returns true when the user
+/// chose the destructive action.
+Future<bool> showConfirmDialog(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String confirmLabel,
+  String cancelLabel = 'Cancel',
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+      ),
+      title: Text(title, style: AppText.title(19, w: FontWeight.w700)),
+      content: Text(
+        body,
+        style: AppText.body(14.5, height: 1.5, color: AppColors.textSecondary),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(
+            cancelLabel,
+            style: AppText.label(14, w: FontWeight.w600,
+                color: AppColors.primary),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.error,
+          ),
+          child: Text(
+            confirmLabel,
+            style: AppText.label(14, w: FontWeight.w700,
+                color: AppColors.error),
+          ),
+        ),
+      ],
+    ),
+  ).then((value) => value ?? false);
+}
+
+/// Outlined shelf-code tag (`B2-14`) in tabular figures — one of the
+/// signature details of the design language.
+class ShelfTag extends StatelessWidget {
+  const ShelfTag(this.code, {super.key, this.color});
+
+  final String code;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color ?? AppColors.borderStrong),
+      ),
+      child: Text(
+        code,
+        style: AppText.label(
+          11.5,
+          w: FontWeight.w600,
+          ls: 0.3,
+          color: AppColors.textSecondary,
+        ),
+      ),
     );
   }
 }

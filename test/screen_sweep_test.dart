@@ -36,17 +36,8 @@ Future<void> pumpScreen(WidgetTester tester, Widget screen) async {
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.reset);
 
-  await tester.pumpWidget(AppScope(
-    state: AppState(),
-    child: MaterialApp(theme: AppTheme.light(), home: screen),
-  ));
-  // Several screens hold a repeating pulse/shimmer animation, so
-  // pumpAndSettle would never return. Pump a fixed number of frames
-  // instead, then assert nothing threw.
-  for (var i = 0; i < 6; i++) {
-    await tester.pump(const Duration(milliseconds: 120));
-  }
-  // Route overflow diagnostics to the console so the failing widget is named.
+  // Route overflow diagnostics to the console so the failing widget is
+  // named — installed before the first pump so nothing slips through.
   final overflows = <String>[];
   final previous = FlutterError.onError;
   FlutterError.onError = (details) {
@@ -57,6 +48,17 @@ Future<void> pumpScreen(WidgetTester tester, Widget screen) async {
     previous?.call(details);
   };
   addTearDown(() => FlutterError.onError = previous);
+
+  await tester.pumpWidget(AppScope(
+    state: AppState(),
+    child: MaterialApp(theme: AppTheme.light(), home: screen),
+  ));
+  // Several screens hold a repeating pulse/shimmer animation, so
+  // pumpAndSettle would never return. Pump a fixed number of frames
+  // instead, then assert nothing threw.
+  for (var i = 0; i < 6; i++) {
+    await tester.pump(const Duration(milliseconds: 120));
+  }
 
   await tester.pumpWidget(AppScope(
     state: AppState(),
