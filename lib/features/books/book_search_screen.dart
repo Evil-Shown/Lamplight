@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -66,33 +67,29 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   }
 
   void _openDetail(Book book) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
-    );
+    AppRoute.push(context, BookDetailScreen(book: book));
   }
 
   void _reserve(Book book) {
     final state = AppScope.read(context);
     final reservation = state.reserveBook(book);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ReservationConfirmationScreen(
-          book: book,
-          reservation: reservation,
-        ),
+    AppRoute.push(
+      context,
+      ReservationConfirmationScreen(
+        book: book,
+        reservation: reservation,
       ),
     );
   }
 
   void _openResults() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SearchResultsScreen(
-          query: _controller.text.trim().isEmpty
-              ? 'All titles'
-              : _controller.text.trim(),
-          searchType: _searchType.toUpperCase(),
-        ),
+    AppRoute.push(
+      context,
+      SearchResultsScreen(
+        query: _controller.text.trim().isEmpty
+            ? 'All titles'
+            : _controller.text.trim(),
+        searchType: _searchType.toUpperCase(),
       ),
     );
   }
@@ -115,21 +112,9 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('CAMPUS COMMONS',
-                          style: AppText.overline(9.5, ls: 1.4)),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Library Catalog',
-                        style: AppText.display(
-                          20,
-                          w: FontWeight.w800,
-                          ls: -0.4,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Library catalog',
+                    style: AppText.title(24, w: FontWeight.w600),
                   ),
                 ),
                 // Driven by the real last-synced timestamp (D-06).
@@ -154,15 +139,20 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            StaggeredEntrance(
-              index: 2,
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadii.card),
+                boxShadow: AppShadows.ambient,
+              ),
               child: TextField(
                 controller: _controller,
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _openResults(),
                 decoration: InputDecoration(
                   hintText: AppStrings.searchBooksHint,
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
                   suffixIcon: _controller.text.isEmpty
                       ? null
                       : IconButton(
@@ -172,6 +162,10 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                             _showAll = false;
                           }),
                         ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -328,8 +322,11 @@ class _CatalogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (pillColor, pillLabel) = switch (book.availability) {
-      BookAvailability.available => (AppColors.success, 'Available'),
-      BookAvailability.onLoan => (AppColors.error, 'On Loan'),
+      BookAvailability.available => (
+          AppColors.success,
+          'Available · ${book.copiesAvailable} copies',
+        ),
+      BookAvailability.onLoan => (AppColors.error, 'On loan'),
       BookAvailability.waitlisted => (AppColors.warning, 'Waitlist'),
     };
     final canReserve = book.availability == BookAvailability.available;

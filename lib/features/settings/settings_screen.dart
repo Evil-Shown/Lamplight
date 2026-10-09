@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -161,10 +162,9 @@ class SettingsScreen extends StatelessWidget {
                     label: 'About App',
                     value: 'v1.4.2',
                     icon: Icons.info_outline_rounded,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ValuePropositionScreen(),
-                      ),
+                    onTap: () => AppRoute.push(
+                      context,
+                      const ValuePropositionScreen(),
                     ),
                   ),
                 ],

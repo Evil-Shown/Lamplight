@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -151,10 +152,9 @@ class WaitlistScreen extends StatelessWidget {
                       type: _type,
                       seatPreference: preferences.join(' + '),
                     );
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => WaitlistJoinedScreen(entry: entry),
-                      ),
+                    AppRoute.push(
+                      context,
+                      WaitlistJoinedScreen(entry: entry),
                     );
                   },
           ),
