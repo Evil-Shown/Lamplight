@@ -17,7 +17,7 @@ class ShelfScene extends StatelessWidget {
       );
 }
 
-/// Top-down reading desk: striped green baize with a couple of books.
+/// Top-down reading desk: striped blue desk with a couple of books.
 class DeskScene extends StatelessWidget {
   const DeskScene({super.key});
 
@@ -42,7 +42,7 @@ class _ShelfPainter extends CustomPainter {
   const _ShelfPainter();
 
   static const _spines = [
-    Color(0xFF6B8544),
+    Color(0xFF3A62C4),
     Color(0xFFD9A441),
     Color(0xFFB5533C),
     Color(0xFF2F5D7C),
@@ -61,7 +61,7 @@ class _ShelfPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF2A4231), Color(0xFF182619)],
+          colors: [Color(0xFF102A5C), Color(0xFF050D26)],
         ).createShader(rect),
     );
 
@@ -118,11 +118,11 @@ class _DeskPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF557A2F), Color(0xFF2E4219)],
+          colors: [Color(0xFF1A44A0), Color(0xFF081C4A)],
         ).createShader(rect),
     );
 
-    // Mown-stripe baize.
+    // Mown-stripe desk.
     final stripe = Paint()..color = Colors.white.withValues(alpha: 0.05);
     const band = 34.0;
     for (var y = 0.0; y < size.height; y += band * 2) {
@@ -144,14 +144,14 @@ class _DeskPainter extends CustomPainter {
       center: Offset(size.width * 0.66, size.height * 0.31),
       size: Size(size.width * 0.34, size.width * 0.44),
       angle: -0.34,
-      cover: const Color(0xFFD9E84A),
+      cover: const Color(0xFFBFD7FF),
     );
     _book(
       canvas,
       center: Offset(size.width * 0.98, size.height * 0.43),
       size: Size(size.width * 0.3, size.width * 0.4),
       angle: 0.28,
-      cover: const Color(0xFFE9C34A),
+      cover: const Color(0xFFF2C75A),
     );
   }
 
@@ -191,7 +191,7 @@ class _DeskPainter extends CustomPainter {
       Paint()..color = Colors.black.withValues(alpha: 0.18),
     );
     // Title lines.
-    final line = Paint()..color = AuthPalette.forest.withValues(alpha: 0.55);
+    final line = Paint()..color = AuthPalette.navy.withValues(alpha: 0.55);
     final lx = r.left + size.width * 0.26;
     final lw = size.width * 0.52;
     for (var i = 0; i < 3; i++) {
@@ -233,8 +233,8 @@ class HeroScrim extends StatelessWidget {
               stops: [0, math.min(from, 0.9), 1],
               colors: [
                 Colors.black.withValues(alpha: 0.28),
-                AuthPalette.forest.withValues(alpha: 0),
-                AuthPalette.turf.withValues(alpha: 0.96),
+                AuthPalette.navy.withValues(alpha: 0),
+                AuthPalette.deep.withValues(alpha: 0.96),
               ],
             ),
           ),

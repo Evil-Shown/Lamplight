@@ -291,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
       border: side(),
       enabledBorder: side(),
-      focusedBorder: side(AuthPalette.olive, 1.5),
+      focusedBorder: side(AuthPalette.blue, 1.5),
       errorBorder: side(AuthPalette.error),
       focusedErrorBorder: side(AuthPalette.error, 1.5),
     );
@@ -342,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        backgroundColor: AuthPalette.forest,
+        backgroundColor: AuthPalette.navy,
         body: Stack(
           children: [
             const Positioned(
@@ -595,14 +595,14 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextButton.styleFrom(
                 minimumSize: const Size(44, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                foregroundColor: AuthPalette.olive,
+                foregroundColor: AuthPalette.blue,
               ),
               child: Text(
                 'Forgot Password?',
                 style: AppText.label(
                   12.5,
                   w: FontWeight.w600,
-                  color: AuthPalette.olive,
+                  color: AuthPalette.blue,
                 ),
               ),
             ),
@@ -626,7 +626,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AuthPalette.olive.withValues(alpha: 0.38),
+                color: AuthPalette.blue.withValues(alpha: 0.38),
                 blurRadius: 18,
                 offset: const Offset(0, 7),
               ),
@@ -640,9 +640,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     _handleEmailAuth();
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: AuthPalette.olive,
+              backgroundColor: AuthPalette.blue,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: AuthPalette.olive.withValues(alpha: 0.5),
+              disabledBackgroundColor: AuthPalette.blue.withValues(alpha: 0.5),
               disabledForegroundColor: Colors.white,
               minimumSize: const Size.fromHeight(54),
               elevation: 0,
@@ -698,7 +698,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: AppText.title(
                       12.5,
                       w: FontWeight.w700,
-                      color: AuthPalette.olive,
+                      color: AuthPalette.blue,
                     ),
                   ),
                 ),
@@ -809,7 +809,7 @@ class _RolePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = selected ? AuthPalette.olive : AuthPalette.muted;
+    final tone = selected ? AuthPalette.blue : AuthPalette.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -821,11 +821,11 @@ class _RolePill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
             color: selected
-                ? AuthPalette.olive.withValues(alpha: 0.12)
+                ? AuthPalette.blue.withValues(alpha: 0.12)
                 : AuthPalette.field,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AuthPalette.olive : Colors.transparent,
+              color: selected ? AuthPalette.blue : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -884,7 +884,7 @@ class _GoogleButton extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AuthPalette.olive,
+                      color: AuthPalette.blue,
                     ),
                   )
                 else
@@ -930,7 +930,7 @@ class _ConsentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = AppText.body(12.5, color: AuthPalette.muted);
     final link =
-        AppText.label(12.5, w: FontWeight.w600, color: AuthPalette.olive);
+        AppText.label(12.5, w: FontWeight.w600, color: AuthPalette.blue);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -941,7 +941,7 @@ class _ConsentRow extends StatelessWidget {
               label: 'Accept Terms and Privacy notice',
               child: Checkbox(
                 value: value,
-                activeColor: AuthPalette.olive,
+                activeColor: AuthPalette.blue,
                 checkColor: Colors.white,
                 side: const BorderSide(color: AuthPalette.muted, width: 1.5),
                 onChanged: (v) {
