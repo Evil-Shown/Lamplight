@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_constants.dart';
 import '../theme/app_theme.dart';
+import 'motion3d.dart';
 
 /// ─────────────────────────────────────────────────────────────────────
 ///  Brand pieces: the animated splash and the campus mark. The Ledger
@@ -27,7 +28,6 @@ class CampusMark extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.brand,
         borderRadius: BorderRadius.circular(size * 0.28),
-        boxShadow: AppShadows.primary,
       ),
       child: Text(
         AppStrings.appName.substring(0, 1).toUpperCase(),
@@ -132,7 +132,12 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 22),
                 ScaleTransition(
                   scale: mark,
-                  child: const CampusMark(size: 62),
+                  child: const Float3D(
+                    distance: 4,
+                    wobble: 0.05,
+                    period: Duration(milliseconds: 2800),
+                    child: CampusMark(size: 62),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 FadeTransition(

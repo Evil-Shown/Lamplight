@@ -245,6 +245,30 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
             tone: ButtonTone.secondary,
             onPressed: () => setState(() => _extendedMinutes += 30),
           ),
+          const SizedBox(height: 12),
+          PrimaryButton(
+            label: 'End session',
+            icon: Icons.task_alt_rounded,
+            tone: ButtonTone.secondary,
+            onPressed: () async {
+              // M01: ending a session confirms with the consequence first.
+              final confirmed = await showConfirmDialog(
+                context,
+                title: 'End your session now?',
+                body:
+                    'Seat ${booking.seat.label} will be released and the next person waiting may be offered it.',
+                confirmLabel: 'End session',
+                cancelLabel: 'Keep session',
+              );
+              if (confirmed && context.mounted) {
+                AppScope.read(context)
+                    .cancelSeatBooking(booking.id);
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((r) => r.isFirst);
+                }
+              }
+            },
+          ),
         ],
       ),
     );

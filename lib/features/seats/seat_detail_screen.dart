@@ -289,18 +289,6 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          const StaggeredEntrance(
-            index: 5,
-            child: Callout(
-              tone: CalloutTone.info,
-              icon: Icons.auto_awesome_rounded,
-              title: 'Freshly serviced in 5 min',
-              message:
-                  'A cleaning pass runs before your slot — the desk is '
-                  'sanitised and reset for you.',
-            ),
-          ),
         ],
       ),
       bottomBar: BottomActionBar(
@@ -377,7 +365,7 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
     if (total == 0) return 'Availability unavailable';
     final free =
         floorSeats.where((s) => s.status == SeatStatus.available).length;
-    return '$free of $total desks left';
+    return '$free of $total desks left on Floor ${seat.floor}';
   }
 }
 
@@ -502,10 +490,8 @@ class _SlotRow extends StatelessWidget {
               color: selected
                   ? AppColors.primary
                   : AppColors.border,
-              width: selected ? 1.4 : 1,
+              width: selected ? 2 : 1,
             ),
-            boxShadow:
-                selected ? AppShadows.glow(AppColors.primary) : null,
           ),
           child: Row(
             children: [

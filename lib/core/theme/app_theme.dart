@@ -33,7 +33,7 @@ class AppColors {
     tertiary: Color(0xFF9A4A26),
     onTertiary: Color(0xFFFFFFFF),
     tertiaryContainer: Color(0xFFFFDBCF),
-    onTertiaryContainer: Color(0xFF3A1100),
+    onTertiaryContainer: Color(0xFF380D00),
     error: Color(0xFFBA1A1A),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
@@ -66,8 +66,8 @@ class AppColors {
     secondaryContainer: Color(0xFF3F4759),
     onSecondaryContainer: Color(0xFFDBE2F9),
     tertiary: Color(0xFFFFB69E),
-    onTertiary: Color(0xFF5A1F00),
-    tertiaryContainer: Color(0xFF7A3413),
+    onTertiary: Color(0xFF5A1C00),
+    tertiaryContainer: Color(0xFF7D3A1E),
     onTertiaryContainer: Color(0xFFFFDBCF),
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
@@ -136,27 +136,28 @@ class AppColors {
   static Color get border => scheme.outlineVariant;
   static Color get borderStrong => scheme.outline;
 
-  // Status — semantic tonal pairs, pinned rather than derived so pills,
-  // icons and text stay harmonised across surfaces in both brightnesses.
+  // Status — semantic tonal pairs pinned to the design-spec `AppSemantic`
+  // extension so pills, icons and text stay harmonised across surfaces in
+  // both brightnesses.
   static Color get success =>
-      isDark ? const Color(0xFF6DD58C) : const Color(0xFF146C2E);
+      isDark ? const Color(0xFF8FD6A3) : const Color(0xFF1E6B3A);
 
   /// Explicit success container — never an alpha blend.
   static Color get successContainer =>
-      isDark ? const Color(0xFF0A3818) : const Color(0xFFD7F2DE);
+      isDark ? const Color(0xFF12432A) : const Color(0xFFD8F0DE);
   static Color get onSuccessContainer =>
-      isDark ? const Color(0xFFD7F2DE) : const Color(0xFF05210C);
+      isDark ? const Color(0xFFBDF0CB) : const Color(0xFF0B3318);
 
   /// Alias so legacy call sites resolve onto the pinned container.
   static Color get successSoft => successContainer;
   static Color get warning =>
-      isDark ? const Color(0xFFFFB95C) : const Color(0xFF8F5000);
+      isDark ? const Color(0xFFF2C25B) : const Color(0xFF8A5A00);
 
   /// Explicit warning container — never an alpha blend.
   static Color get warningContainer =>
-      isDark ? const Color(0xFF3F2A00) : const Color(0xFFFFE0B3);
+      isDark ? const Color(0xFF4A3500) : const Color(0xFFFFE9B8);
   static Color get onWarningContainer =>
-      isDark ? const Color(0xFFFFE0B3) : const Color(0xFF2E1A00);
+      isDark ? const Color(0xFFFFE08A) : const Color(0xFF3D2800);
 
   /// Alias so legacy call sites resolve onto the pinned container.
   static Color get warningSoft => warningContainer;
@@ -164,17 +165,19 @@ class AppColors {
 
   /// Explicit error container from the scheme (soft error fills).
   static Color get errorContainer => scheme.errorContainer;
+  static Color get onErrorContainer => scheme.onErrorContainer;
   static Color get errorSoft =>
       Color.alphaBlend(error.withValues(alpha: 0.10), scheme.surface);
   static Color get info => primary;
   static Color get infoSoft =>
       Color.alphaBlend(primary.withValues(alpha: 0.10), scheme.surface);
   static Color get neutral => scheme.onSurfaceVariant;
-  static Color get neutralSoft => scheme.surfaceContainerHigh;  // Seat map
+  static Color get neutralSoft => scheme.surfaceContainerHigh;  // Seat map — aliases per spec §3.1 (yours = primary, selected = rust).
   static Color get seatAvailable => success;
   static Color get seatLimited => warning;
   static Color get seatOccupied => error;
   static Color get seatSelected => accent;
+  static Color get seatYours => primary;
 
   /// ARGB values, so they line up with `Book.coverColor`. Deterministic:
   /// index = `book.id.hashCode.abs() % 10`.
@@ -298,96 +301,47 @@ class AppShadows {
           offset: const Offset(0, 16),
         ),
       ];
-
-  /// Soft ambient bloom, for primary actions and selected states.
-  static List<BoxShadow> glow(Color tint) => [
-        BoxShadow(
-          color: tint.withValues(alpha: 0.25),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
-        ),
-        BoxShadow(
-          color: tint.withValues(alpha: 0.15),
-          blurRadius: 32,
-          offset: const Offset(0, 12),
-        ),
-      ];
-
-  static List<BoxShadow> get primary =>
-      glow(AppColors.primary.withValues(alpha: 0.85));
 }
 
-/// Brand gradients resolved from the seeded scheme, so they re-hue with
-/// light/dark mode instead of being fixed navy. (These were `const`
-/// before the M3 pass; they can no longer be.)
+/// Brand gradients — only two, per the design spec (§3.7): `hero` for
+/// the single hero panel a screen may have, `brand` for the mark and
+/// avatars. Everything else in the app is flat.
 class AppGradients {
   AppGradients._();
 
-  /// Primary → deep primary. The logo mark and small brand blocks.
-  static Gradient get brand => LinearGradient(
+  /// Mark/avatar gradient: primary → vivid lift, 135°.
+  static Gradient get brand => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          AppColors.primary,
-          Color.lerp(AppColors.primary, Colors.black, 0.30)!,
-        ],
+        colors: [Color(0xFF0B57D0), Color(0xFF2F6FDF)],
       );
 
-  /// Vertical primary ramp behind hero panels.
-  static Gradient get hero => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          AppColors.primary,
-          Color.lerp(AppColors.primary, Colors.black, 0.25)!,
-        ],
+  /// The one hero gradient: deep blue ramp at 135°, deeper again in dark
+  /// mode. White text stays ≥ 4.5:1 across both stops.
+  static Gradient get hero => AppColors.isDark
+      ? const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0842A0), Color(0xFF062E6F)],
+        )
+      : const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0B57D0), Color(0xFF0842A0)],
+        );
+
+  /// Legacy name kept so existing call sites restyle onto `hero`; the
+  /// aurora/mint/panel family was retired into it (§3.7).
+  static Gradient get aurora => hero;
+
+  /// Retired: mint heroes are now flat success-container panels.
+  static Gradient get mint => const LinearGradient(
+        colors: [Color(0xFFD8F0DE), Color(0xFFD8F0DE)],
       );
 
-  /// The signature sweep: vivid primary through its lift into the warm
-  /// terracotta, hand-picked so the blue-to-warm jump doesn't muddy into
-  /// purple the way a plain RGB blend would.
-  static Gradient get aurora {
-    if (AppColors.isDark) {
-      return const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF0B3A8F), Color(0xFF1254C4), Color(0xFF7A3517)],
-      );
-    }
-    return const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFF0B57D0), Color(0xFF3E6FD8), Color(0xFFC85A32)],
-    );
-  }
-
-  static Gradient get auroraSoft => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color.alphaBlend(
-              AppColors.primary.withValues(alpha: 0.10), AppColors.background),
-          Color.alphaBlend(
-              AppColors.accent.withValues(alpha: 0.08), AppColors.background),
-        ],
-      );
-
-  static Gradient get mint => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.success,
-          Color.lerp(AppColors.success, Colors.black, 0.25)!,
-        ],
-      );
-
-  /// Deep panel used behind stats and staff surfaces — deliberately a
-  /// fixed dark slate in both brightnesses, since its content is always
-  /// light-on-dark.
+  /// Retired: dark panels are now a flat surface step.
   static const Gradient panel = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF232E3D), Color(0xFF121826)],
+    colors: [Color(0xFF1C2026), Color(0xFF1C2026)],
   );
 
   static Gradient tint(Color color) => LinearGradient(

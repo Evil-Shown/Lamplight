@@ -18,51 +18,41 @@ class BookingConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time =
-        '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
+        '${DateFormat('HH:mm').format(booking.startTime)} – ${DateFormat('HH:mm').format(booking.endTime)}';
 
     return AppScaffold(
-      title: 'Booking Confirmed',
+      title: 'Booking confirmed',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
         children: [
-          GradientHero(
+          // Outcome panel: flat success container — mint gradients retired.
+          Container(
             padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            gradient: AppGradients.mint,
+            decoration: BoxDecoration(
+              color: AppColors.successContainer,
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+            ),
             child: Column(
               children: [
-                // SuccessCheck: scales in over the hero duration.
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.6, end: 1),
-                  duration: AppMotion.hero,
-                  curve: AppMotion.emphasis,
-                  builder: (context, value, child) =>
-                      Transform.scale(scale: value, child: child),
-                  child: Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.24),
-                    ),
-                    child: Icon(Icons.check_rounded,
-                        size: 46, color: AppColors.textInverse),
-                  ),
-                ),
+                const SuccessCheck(size: 84),
                 const SizedBox(height: 15),
                 Text(
-                  'Booking Confirmed!',
+                  'Booking confirmed',
                   textAlign: TextAlign.center,
-                  style: AppText.display(AppText.displayLg, w: FontWeight.w800,
-                      ls: -1.2,
-                      color: AppColors.textInverse),
+                  style: AppText.display(
+                    22,
+                    w: FontWeight.w800,
+                    ls: -0.9,
+                    color: AppColors.onSuccessContainer,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Your seat has been reserved successfully.',
+                  'Seat ${booking.seat.label} is yours.',
                   textAlign: TextAlign.center,
                   style: AppText.body(
                     14,
-                    color: AppColors.textInverse.withValues(alpha: 0.86),
+                    color: AppColors.onSuccessContainer.withValues(alpha: 0.86),
                     height: 1.5,
                   ),
                 ),
@@ -71,11 +61,8 @@ class BookingConfirmationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           StaggeredEntrance(
-            child: SurfaceCard(
-              tint: AppColors.success,
-              elevated: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Column(
+            child: TicketCard(
+              top: Column(
                 children: [
                   InfoRow(
                     label: 'Seat',
@@ -86,17 +73,16 @@ class BookingConfirmationScreen extends StatelessWidget {
                   const Divider(height: 1),
                   InfoRow(
                     label: 'Date',
-                    value: DateFormat('d MMM yyyy').format(booking.date),
+                    value: DateFormat('EEE d MMM yyyy').format(booking.date),
                   ),
                   const Divider(height: 1),
                   InfoRow(label: 'Time', value: time),
-                  const Divider(height: 1),
-                  InfoRow(
-                    label: 'Booking ID',
-                    value: booking.id,
-                    valueColor: AppColors.primary,
-                  ),
                 ],
+              ),
+              bottom: InfoRow(
+                label: 'Booking ID',
+                value: booking.id,
+                valueColor: AppColors.primary,
               ),
             ),
           ),
@@ -104,7 +90,7 @@ class BookingConfirmationScreen extends StatelessWidget {
           const Callout(
             icon: Icons.qr_code_rounded,
             message:
-                'Show your QR code at the library entrance for quick check-in.',
+                'Your QR pass is ready. Show it at the entrance.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(

@@ -7,6 +7,7 @@ import '../../data/firebase/firestore_service.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
 import '../../services/notification_service.dart';
+import 'test_env.dart';
 
 /// Single source of truth for everything the prototype shows across
 /// screens. Backed by Firebase Auth + Cloud Firestore: the catalog, seat
@@ -14,6 +15,12 @@ import '../../services/notification_service.dart';
 /// persisted through [FirestoreService].
 class AppState extends ChangeNotifier {
   AppState();
+
+  @override
+  void dispose() {
+    _hydrationTimer?.cancel();
+    super.dispose();
+  }
 
   final FirestoreService _service = FirestoreService.instance;
   final List<StreamSubscription> _subscriptions = [];
@@ -33,7 +40,22 @@ class AppState extends ChangeNotifier {
   final Set<String> _pendingLocalWrites = {};
   DateTime? _lastSyncedAt;
 
-  void _markSynced() => _lastSyncedAt = DateTime.now();
+  /// False until the first Firestore snapshot lands (or the offline
+  /// fallback gives up waiting). Screens show their skeletons while the
+  /// handshake is still in flight, then swap to content.
+  bool _hydrated = false;
+  bool get isHydrated => _hydrated;
+
+  Timer? _hydrationTimer;
+
+  void _markSynced() {
+    _lastSyncedAt = DateTime.now();
+    if (!_hydrated) {
+      _hydrated = true;
+      _hydrationTimer?.cancel();
+      _hydrationTimer = null;
+    }
+  }
 
   NotificationPreferences _preferences = const NotificationPreferences();
   ThemeMode _themeMode = ThemeMode.light;
@@ -112,6 +134,50 @@ class AppState extends ChangeNotifier {
     unawaited(NotificationService.instance.init());
   }
 
+  Future<void> signInWithGoogle({required UserRole role}) async {
+    _profile = await _service.signInWithGoogle(role);
+    _queue = MockData.buildQueue();
+    _startListeners();
+    notifyListeners();
+    unawaited(NotificationService.instance.init());
+  }
+
+  Future<void> signUpWithEmail({
+    required String email,
+    required String password,
+    required String fullName,
+    required UserRole role,
+    String? studentId,
+  }) async {
+    _profile = await _service.signUpWithEmail(
+      email: email,
+      password: password,
+      fullName: fullName,
+      role: role,
+      studentId: studentId,
+    );
+    _queue = MockData.buildQueue();
+    _startListeners();
+    notifyListeners();
+    unawaited(NotificationService.instance.init());
+  }
+
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    _profile = await _service.signInWithEmail(
+      email: email,
+      password: password,
+      role: role,
+    );
+    _queue = MockData.buildQueue();
+    _startListeners();
+    notifyListeners();
+    unawaited(NotificationService.instance.init());
+  }
+
   /// Restores the Firebase session on cold start.
   Future<void> restoreSession() async {
     if (_profile != null || !_service.isReady) return;
@@ -125,6 +191,8 @@ class AppState extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _service.signOut();
+    _hydrationTimer?.cancel();
+    _hydrationTimer = null;
     for (final s in _subscriptions) {
       await s.cancel();
     }
@@ -147,6 +215,20 @@ class AppState extends ChangeNotifier {
       s.cancel();
     }
     _subscriptions.clear();
+
+    // The offline promise: if nothing has streamed in within three
+    // seconds we stop skeleton-spinning and show cached content. The
+    // timer is cancellable (hydration or sign-out cancels it) and is
+    // skipped under `flutter test`, which forbids pending timers.
+    _hydrationTimer?.cancel();
+    if (!isRunningInTest) {
+      _hydrationTimer = Timer(const Duration(seconds: 3), () {
+        if (!_hydrated) {
+          _hydrated = true;
+          notifyListeners();
+        }
+      });
+    }
 
     void push() {
       if (_syncing) return;

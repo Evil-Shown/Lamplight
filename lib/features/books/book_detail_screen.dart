@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../waitlist/waitlist_screen.dart';
@@ -39,14 +40,18 @@ class BookDetailScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                BookCover(
-                  title: book.title,
-                  color: book.coverColor,
-                  isbn: book.isbn,
-                  width: 96,
-                  height: 136,
-                  radius: AppRadii.sm,
-                  heroTag: 'book-${book.id}',
+                Tilt3D(
+                  maxTilt: 0.16,
+                  lift: 10,
+                  child: BookCover(
+                    title: book.title,
+                    color: book.coverColor,
+                    isbn: book.isbn,
+                    width: 96,
+                    height: 136,
+                    radius: AppRadii.sm,
+                    heroTag: 'book-${book.id}',
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

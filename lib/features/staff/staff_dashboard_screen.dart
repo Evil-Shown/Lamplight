@@ -65,9 +65,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                     decoration: BoxDecoration(
-                      gradient: AppGradients.panel,
+                      gradient: AppGradients.hero,
                       borderRadius: BorderRadius.circular(AppRadii.md),
-                      boxShadow: AppShadows.glow(AppColors.primary),
                     ),
                     child: Row(
                       children: [
