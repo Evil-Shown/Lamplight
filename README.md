@@ -5,31 +5,33 @@ study seat, join waiting lists, and check in with a QR pass.
 
 **Library+** is the Flutter mobile client for the *Library Book Reservation & Reading
 Room Seat Booking System* at SLIIT. It is a Material 3 app backed by Firebase
-(Auth + Firestore + FCM), with a hand-built design system ("paper and ink" — one blue
-for actions, rust for what you've chosen) and an honest-UI policy: estimates are
-labelled, offline data says so, and no control exists without a real effect.
+(Auth + Firestore + FCM), with a hand-built warm design system ("warm wood and lamplight"
+— amber for actions, rust for what you've chosen, cream paper text) and an honest-UI
+policy: estimates are labelled, offline data says so, and no control exists without a
+real effect.
 
 ---
 
 ## Table of contents
 
 1. [Features](#features)
-2. [High-level architecture](#high-level-architecture)
-3. [Layer guide](#layer-guide)
+2. [Screenshots](#screenshots)
+3. [High-level architecture](#high-level-architecture)
+4. [Layer guide](#layer-guide)
    - [Presentation — widgets & screens](#1-presentation--widgets--screens)
    - [State — AppState (ChangeNotifier)](#2-state--appstate-changenotifier)
    - [Data — FirestoreService & mock data](#3-data--firestoreservice--mock-data)
    - [Models](#4-models)
-4. [Design system](#design-system)
-5. [Motion & 3D animation system](#motion--3d-animation-system)
-6. [Navigation model](#navigation-model)
-7. [Firebase layout](#firebase-layout)
-8. [Screen inventory](#screen-inventory)
-9. [Accessibility](#accessibility)
-10. [Getting started](#getting-started)
-11. [Testing](#testing)
-12. [Project structure](#project-structure)
-13. [Roadmap & known gaps](#roadmap--known-gaps)
+5. [Design system](#design-system)
+6. [Motion & 3D animation system](#motion--3d-animation-system)
+7. [Navigation model](#navigation-model)
+8. [Firebase layout](#firebase-layout)
+9. [Screen inventory](#screen-inventory)
+10. [Accessibility](#accessibility)
+11. [Getting started](#getting-started)
+12. [Testing](#testing)
+13. [Project structure](#project-structure)
+14. [Roadmap & known gaps](#roadmap--known-gaps)
 
 ---
 
@@ -45,6 +47,19 @@ labelled, offline data says so, and no control exists without a real effect.
 | **Notifications** | Grouped Today/Earlier feed, read state, badge on the Home bell, FCM push |
 | **Staff mode** | Staff desk with dispatch queue (approve/dismiss), QR scanner with manual-code fallback, seven-outcome verification screen, check-in / handover confirmation |
 | **Account & settings** | Profile + stats, theme picker (system/light/dark), notification preferences, sign out with confirmation |
+
+---
+
+## Screenshots
+
+The signed-out flow: a lamp-lit splash, two intro slides, then the sign-in and
+register sheet. (Images live in `docs/screenshots/`.)
+
+| Splash | Intro | Welcome | Sign in | Register |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/splash.png" width="150"> | <img src="docs/screenshots/intro-1.png" width="150"> | <img src="docs/screenshots/intro-2.png" width="150"> | <img src="docs/screenshots/sign-in.png" width="150"> | <img src="docs/screenshots/register.png" width="150"> |
+
+More screens (seat map, home, QR pass) can be added the same way.
 
 ---
 
@@ -98,7 +113,7 @@ down). Widgets never import Firebase.
   active brightness, and gates `Splash → Login | AppShell`.
 - `core/theme/app_theme.dart` — the entire token system (see
   [Design system](#design-system)): hand-built light/dark `ColorScheme`s
-  (never `fromSeed`), `AppColors`, `AppText` (Inter), `AppSpacing`, `AppRadii`,
+  (never `fromSeed`), `AppColors`, `AppText` (Fraunces display + Plus Jakarta Sans), `AppSpacing`, `AppRadii`,
   `AppGradients` (exactly two: `hero`, `brand`), `AppShadows`, `AppMotion`, and the
   M3 `ThemeData` with component themes.
 - `core/widgets/shared_widgets.dart` — the component library: `AppScaffold`,
@@ -111,8 +126,11 @@ down). Widgets never import Firebase.
   `ConfirmDialog`, and the central `Haptics` vocabulary.
 - `core/widgets/motion3d.dart` — the 3D depth-cue set (see
   [Motion & 3D animation](#motion--3d-animation-system)).
-- `core/widgets/ledger_widgets.dart` — brand pieces: animated `SplashScreen`
-  (brand-ring draw → mark landing → wordmark fade) and the `CampusMark` logo.
+- `features/auth/` — the signed-out flow. `splash_screen.dart` (lamp-lit bookcase
+  card, pulsing ring, tap to skip), `auth_flow.dart` (intro → choose → form),
+  `intro_screens.dart` (the two intro slides), `login_screen.dart` (sign-in and
+  register sheet), plus `library_scenes.dart` (painted bookcase and desk art, so the
+  app ships no image assets) and `auth_style.dart` (the `AuthPalette` tokens).
 - `features/*` — one folder per feature, screens only compose; no business logic.
 
 ### 2. State — AppState (ChangeNotifier)
@@ -169,25 +187,28 @@ queue, and the demo student identity.
 
 ## Design system
 
-**Nordic Modern Campus** — porcelain surfaces, sapphire actions, indigo selection,
-amber only for “yours / top pick / hold ready.”
+**Warm wood and lamplight** — dark walnut and espresso surfaces, amber for actions,
+rust for selection, sage and gold only for personal highlights. Light mode uses cream
+paper and copper, so the same brand reads in both themes.
 
-- **Colour.** Canvas `#F8FAFC` (light) / `#0F172A` (dark); primary sapphire
-  `#0D50E8`; selection indigo `#4F46E5`; amber `#F59E0B` for personal highlights only.
-  Hand-built light **and** dark `ColorScheme`s (no `fromSeed`).
-- **Surfaces (three tiers).** (1) Porcelain cards — white fill, r24, `AppShadows.ambient`.
-  (2) Frosted glass — floating nav dock and modal sheets only (`GlassDock`).
-  (3) Depth hero — one sapphire→indigo gradient per route (`DepthHero` / `AppGradients.hero`).
-- **Type:** Plus Jakarta Sans via `AppText`. Headlines w600, tracking ~−0.4; body 15 /
-  line-height 1.45. Uppercase stamp pills (`CHECKED IN`) only — not section headers.
+- **Colour.** Dark: espresso canvas `#16100C`, amber primary `#E0A050`, rust selection
+  `#9C4A2B`, gold “yours” `#E9B32E`. Light: cream paper `#FAF4EA`, copper primary
+  `#8A4E1A`, rust secondary `#8E3B2E`. Hand-built light **and** dark `ColorScheme`s
+  (no `fromSeed`). The signed-out flow uses a fixed `AuthPalette` so it looks the same
+  in both modes.
+- **Surfaces (three tiers).** (1) Warm cards — tonal fill, r24, `AppShadows.ambient`.
+  (2) Frosted glass — floating nav dock and modal sheets (`GlassDock`). (3) Depth hero —
+  one amber-to-copper gradient per route (`GradientHero` / `AppGradients.hero`).
+- **Type:** Fraunces (serif) for display headings and the wordmark; Plus Jakarta Sans
+  for everything else, via `AppText`. Uppercase stamp pills (`CHECKED IN`) only — not
+  section headers.
 - **Spacing / radius:** `AppSpacing` scale; cards r24 (`AppRadii.card`), heroes r28,
   inputs r16; min hit target 48×48.
-- **Signature details**: overline-above-title section headers, the notched
-  **TicketCard** (QR pass, receipts), outlined uppercase *stamp* pills
-  (`CHECKED IN`, `SEAT OPEN`), the `ShelfTag` (`B2-14`) in tabular figures, and the
-  **SeatNode** — 52 dp circles with flat container fills, status rings and glyph cues
-  (bolt = power, half-clock = limited, slash = occupied, check = yours). Status is
-  never colour alone.
+- **Signature details:** the painted bookcase and desk art, the amber book mark with
+  a pulsing lamp-light ring, the notched **TicketCard** (QR pass, receipts), outlined
+  uppercase *stamp* pills (`CHECKED IN`, `SEAT OPEN`), and the **SeatNode** — 52 dp
+  tiles with status rings and glyph cues (bolt = power, half-clock = limited, slash =
+  occupied, check = yours). Status is never colour alone.
 
 ---
 
@@ -227,8 +248,9 @@ feedback channel.
 ## Navigation model
 
 ```
-Splash ─┬─ (session) ──► AppShell ─────► 5 role-aware tabs (IndexedStack)
-        └─ (no session) ► Login ──► AppShell
+Splash ─┬─ (session) ──────────────► AppShell ─► 5 role-aware tabs (IndexedStack)
+        └─ (no session) ► Intro 1 ─► Intro 2 ─┬─► Sign in ─────┴─► AppShell
+                                              └─► Register ────┘
 ```
 
 | # | Student | Staff |
@@ -272,7 +294,7 @@ Real-time everything: screens subscribe; snapshots update the UI in place
 
 | Group | Screens |
 |-------|---------|
-| Entry | Splash (animated brand ring) · Login (inline field errors, student/staff role) |
+| Entry | Splash (lamp-lit bookcase card) · Intro slides (2) · Sign in / Register sheet (inline field errors, student/staff role, Google) |
 | Home | Student dashboard (Today hero, quick actions, ready-for-collection, live density) · Staff dashboard (scan hero, queue stats) |
 | Seats | Seat map (map/list, filters, Top pick) · Filter sheet · Seat details (date + slots + amenities, live conflict) · Booking confirmation · Waitlist · Waitlist joined |
 | Books | Catalog · Search results · Book details (real covers) · Reservation confirmation · Reservation details · Cancelled receipt |
@@ -342,14 +364,15 @@ lib/
 │   └── widgets/
 │       ├── shared_widgets.dart        # design-system component library
 │       ├── motion3d.dart              # Tilt3D · Flip3D · Float3D
-│       ├── ledger_widgets.dart        # splash animation, CampusMark
+│       ├── ledger_widgets.dart        # CampusMark and shared brand pieces
 │       └── app_frame.dart             # global frame wrapper
 ├── data/
 │   ├── firebase/firestore_service.dart # the only Firebase-aware class
 │   └── mock/mock_data.dart             # offline/first-paint seed content
 ├── models/models.dart             # plain value types + enums
 ├── features/
-│   ├── account/  auth/  books/  home/  notifications/  qr/
+│   ├── auth/                      # splash, intro slides, sign-in / register
+│   ├── account/  books/  home/  notifications/  qr/
 │   ├── reservations/  seats/  settings/  staff/  waitlist/
 └── services/notification_service.dart  # FCM + local notifications
 ```

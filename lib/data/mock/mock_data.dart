@@ -35,7 +35,7 @@ class MockData {
       availability: BookAvailability.available,
       shelfLocation: 'B2-14',
       copiesAvailable: 3,
-      coverColor: 0xFF1E40AF,
+      coverColor: 0xFF7A2E2B,
       description:
           'A practical guide to writing clean, readable and maintainable '
           'software. Clean the code, design the principles, and practices '
@@ -201,6 +201,44 @@ class MockData {
       }
     }
     return seats;
+  }
+
+  /// Generates sample seats for a given floor so multi-floor browsing
+  /// provides an interactive floor plan.
+  static List<Seat> seatsForFloor(int floor) {
+    if (floor == 2) return seats;
+    final isFloor1 = floor == 1;
+    final section = isFloor1 ? 'Collaborative Commons' : 'Silent Research Pods';
+    final category =
+        isFloor1 ? SeatCategory.collaborative : SeatCategory.individualPod;
+    final list = <Seat>[];
+    for (var row = 0; row < 4; row++) {
+      for (var col = 0; col < 4; col++) {
+        final label = '${row + 1}${String.fromCharCode(65 + col)}';
+        final status = (row * 4 + col) % 3 == 0
+            ? SeatStatus.occupied
+            : ((row + col) % 5 == 0
+                ? SeatStatus.limited
+                : SeatStatus.available);
+        list.add(
+          Seat(
+            id: 'f${floor}_s${row}_$col',
+            label: label,
+            floor: floor,
+            section: section,
+            status: status,
+            category: category,
+            hasPowerOutlet: col % 2 == 0 || row == 1,
+            hasMonitor: isFloor1 ? (col == 3) : (col >= 2),
+            nearWindow: row == 0 || col == 3,
+            standingDesk: row == 3 && col == 0,
+            row: row,
+            col: col,
+          ),
+        );
+      }
+    }
+    return list;
   }
 
   static const floors = ['Floor 1', 'Floor 2', 'Floor 3'];

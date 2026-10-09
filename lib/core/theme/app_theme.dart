@@ -19,7 +19,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   AppColors._();
 
-  /// Nordic light: sapphire, porcelain canvas, amber accent.
+  /// Nordic light: sapphire, porcelain canvas, indigo accent.
   static const ColorScheme _lightScheme = ColorScheme.light(
     primary: Color(0xFF0D50E8),
     onPrimary: Color(0xFFFFFFFF),
@@ -29,10 +29,10 @@ class AppColors {
     onSecondary: Color(0xFFFFFFFF),
     secondaryContainer: Color(0xFFE8E7FF),
     onSecondaryContainer: Color(0xFF1E1B4B),
-    tertiary: Color(0xFFF59E0B),
-    onTertiary: Color(0xFF1C1917),
-    tertiaryContainer: Color(0xFFFFEDD5),
-    onTertiaryContainer: Color(0xFF431407),
+    tertiary: Color(0xFF0EA5E9),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFE0F2FE),
+    onTertiaryContainer: Color(0xFF0369A1),
     error: Color(0xFFBA1A1A),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
@@ -64,10 +64,10 @@ class AppColors {
     onSecondary: Color(0xFF1E1B4B),
     secondaryContainer: Color(0xFF3730A3),
     onSecondaryContainer: Color(0xFFE8E7FF),
-    tertiary: Color(0xFFFBBF24),
-    onTertiary: Color(0xFF431407),
-    tertiaryContainer: Color(0xFF78350F),
-    onTertiaryContainer: Color(0xFFFFEDD5),
+    tertiary: Color(0xFF38BDF8),
+    onTertiary: Color(0xFF0C4A6E),
+    tertiaryContainer: Color(0xFF0369A1),
+    onTertiaryContainer: Color(0xFFE0F2FE),
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
     errorContainer: Color(0xFF93000A),
@@ -92,8 +92,8 @@ class AppColors {
   /// Electric indigo — selected seats, nav pill, focus rings.
   static const Color indigo = Color(0xFF4F46E5);
 
-  /// Warm amber — “yours / top pick / hold ready” only.
-  static const Color amberHighlight = Color(0xFFF59E0B);
+  /// Cyan accent for your seat / special highlights (no yellow).
+  static const Color amberHighlight = Color(0xFF0284C7);
 
   /// The scheme matching the active brightness. Kept in sync by the app
   /// root through [isDark] before the frame is built.
@@ -127,7 +127,7 @@ class AppColors {
   static Color get cyan => scheme.secondary;
   static Color get cyanSoft => scheme.secondaryContainer;
   static Color get gold =>
-      isDark ? const Color(0xFFF2BC4C) : const Color(0xFF8A5A00);
+      isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
   static Color get goldSoft =>
       Color.alphaBlend(gold.withValues(alpha: 0.12), scheme.surface);
 
@@ -191,13 +191,13 @@ class AppColors {
   static const List<int> coverPalette = [
     0xFF1E40AF,
     0xFF0E7490,
-    0xFFB45309,
-    0xFF9D174D,
+    0xFF3B82F6,
+    0xFF6366F1,
     0xFF5B21B6,
     0xFF155E75,
     0xFF166534,
-    0xFF7C2D12,
-    0xFF831843,
+    0xFF475569,
+    0xFF0284C7,
     0xFF1E3A8A,
   ];
 }
@@ -362,22 +362,22 @@ class AppGlass {
 }
 
 /// Soft tints for the [AuroraBackground] blobs, derived from brand blue,
-/// indigo, a cool cyan and a whisper of amber.
+/// indigo, a cool cyan and sky blue.
 class AppAurora {
   AppAurora._();
 
   static const List<Color> light = [
-    Color(0x4D0D50E8), // blue 30%
+    Color(0x4D0D50E8), // sapphire 30%
     Color(0x424F46E5), // indigo 26%
     Color(0x3822D3EE), // cyan 22%
-    Color(0x2BF59E0B), // amber 17%
+    Color(0x2B38BDF8), // sky blue 17%
   ];
 
   static const List<Color> dark = [
     Color(0x660D50E8),
     Color(0x594F46E5),
     Color(0x330891B2),
-    Color(0x1FF59E0B),
+    Color(0x1F38BDF8),
   ];
 
   static List<Color> get colors => AppColors.isDark ? dark : light;
@@ -515,7 +515,8 @@ class AppGradients {
   }
 }
 
-/// Material 3 type ramp on Plus Jakarta Sans.
+/// Material 3 type ramp: Fraunces (serif) for display headings, Plus
+/// Jakarta Sans for everything else.
 /// Display/title roles use tight negative tracking, body and label sit
 /// neutral, per modern iOS/Android best practices.
 class AppText {
@@ -534,7 +535,7 @@ class AppText {
     Color? color,
     double? height,
   }) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.fraunces(
         fontSize: size,
         fontWeight: w,
         letterSpacing: ls,

@@ -393,7 +393,7 @@ class FirestoreService {
   /// Demo/test only: pushes the sample catalogue and seat map into an empty
   /// project. A no-op in production builds.
   Future<void> seedIfEmpty() async {
-    if (!kDemoMode || !_firebaseReady || uid == null) return;
+    if (!_firebaseReady || uid == null) return;
     try {
       final books = await _db.collection('books').limit(1).get();
       if (books.docs.isEmpty) {

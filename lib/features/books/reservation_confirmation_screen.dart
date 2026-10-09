@@ -43,7 +43,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   Text(
                     'Book reserved',
                     textAlign: TextAlign.center,
-                    style: AppText.display(26, w: FontWeight.w800, ls: -0.9),
+                    style: AppText.title(26, w: FontWeight.w800, ls: -0.9),
                   ),
                   const SizedBox(height: 6),
                   Text(

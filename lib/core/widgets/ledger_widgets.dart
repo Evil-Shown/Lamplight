@@ -47,7 +47,7 @@ class CampusMark extends StatelessWidget {
         style: AppText.display(
           size * 0.42,
           w: FontWeight.w700,
-          color: Colors.white,
+          color: const Color(0xFF2A1503),
           ls: -0.5,
         ),
       ),

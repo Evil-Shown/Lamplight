@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app_shell.dart';
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../notifications/notifications_screen.dart';
@@ -137,6 +137,13 @@ class _HomeGreeting extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.success,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.success.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -157,14 +164,14 @@ class _HomeGreeting extends StatelessWidget {
                 Text(
                   _greeting(),
                   style: AppText.body(
-                    16,
+                    15,
                     w: FontWeight.w500,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 Text(
                   profile.firstName,
-                  style: AppText.display(34, w: FontWeight.w800, ls: -1),
+                  style: AppText.title(32, w: FontWeight.w800, ls: -0.8),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -179,10 +186,26 @@ class _HomeGreeting extends StatelessWidget {
                 : 'Notifications',
             excludeSemantics: true,
             child: PressScale(
-              onTap: () => AppRoute.push(context, const NotificationsScreen()),
-              child: FrostedCard(
-                radius: AppRadii.md,
-                padding: const EdgeInsets.all(AppSpacing.md),
+              onTap: () {
+                AppFeedback.tap();
+                AppRoute.push(context, const NotificationsScreen());
+              },
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppGlass.cardFill,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppGlass.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppGlass.shadow,
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
                 child: Badge(
                   isLabelVisible: state.unreadCount > 0,
                   label: Text(
@@ -190,7 +213,7 @@ class _HomeGreeting extends StatelessWidget {
                   backgroundColor: AppColors.error,
                   child: Icon(
                     Icons.notifications_none_rounded,
-                    size: 24,
+                    size: 23,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -339,14 +362,24 @@ class _HeroButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PressScale(
-      onTap: onTap,
+      onTap: () {
+        AppFeedback.tap();
+        onTap();
+      },
       child: Container(
         height: 52,
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.textInverse,
           borderRadius: BorderRadius.circular(AppRadii.md),
-          boxShadow: AppShadows.ambient,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -365,6 +398,9 @@ class _HeroButton extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_forward_rounded,
+                size: 16, color: AppColors.primary),
           ],
         ),
       ),
@@ -447,7 +483,7 @@ class _HomeBento extends StatelessWidget {
               child: BentoTile(
                 icon: Icons.confirmation_number_rounded,
                 label: 'Bookings',
-                tint: AppColors.amberHighlight,
+                tint: AppColors.cyan,
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
               ),
             ),
@@ -500,9 +536,39 @@ class _OccupancyMeter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Floor 2 occupancy',
-            style: AppText.title(18, w: FontWeight.w600),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Floor 2 occupancy',
+                style: AppText.title(17, w: FontWeight.w700),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (ratio < 0.5
+                          ? AppColors.success
+                          : ratio < 0.8
+                              ? AppColors.warning
+                              : AppColors.error)
+                      .withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                ),
+                child: Text(
+                  label,
+                  style: AppText.label(
+                    11.5,
+                    w: FontWeight.w700,
+                    color: ratio < 0.5
+                        ? AppColors.success
+                        : ratio < 0.8
+                            ? AppColors.warning
+                            : AppColors.error,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
           Row(
