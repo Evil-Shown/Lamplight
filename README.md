@@ -1,9 +1,9 @@
-# Library+ (SLIIT BookBench)
+# Lamplight (Seat Booking & Book reservation mobile app)
 
 A calm, well-run reading room in your pocket — browse the campus catalogue, reserve a
 study seat, join waiting lists, and check in with a QR pass.
 
-**Library+** is the Flutter mobile client for the *Library Book Reservation & Reading
+**Lamplight** is the Flutter mobile client for the *Library Book Reservation & Reading
 Room Seat Booking System* at SLIIT. It is a Material 3 app backed by Firebase
 (Auth + Firestore + FCM), with a hand-built warm design system ("warm wood and lamplight"
 — amber for actions, rust for what you've chosen, cream paper text) and an honest-UI
