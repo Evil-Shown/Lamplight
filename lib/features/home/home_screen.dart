@@ -80,7 +80,14 @@ class HomeScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenMargin,
                   ),
-                  child: StaggeredEntrance(index: 2, child: _HomeBento()),
+                  child: StaggeredEntrance(index: 2, child: _GlanceStrip()),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(index: 3, child: _QuickActions()),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
                 Padding(
@@ -88,8 +95,10 @@ class HomeScreen extends StatelessWidget {
                     horizontal: AppSpacing.screenMargin,
                   ),
                   child: StaggeredEntrance(
-                    index: 3,
-                    child: _OccupancyMeter(lastSyncedAt: state.lastSyncedAt),
+                    index: 4,
+                    child: _FloorAvailability(
+                      lastSyncedAt: state.lastSyncedAt,
+                    ),
                   ),
                 ),
               ],
@@ -97,6 +106,84 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Solid warm card used across Home so content stays crisp over the scene
+/// behind it (translucent glass let the dunes show through the text).
+class _HomeCard extends StatelessWidget {
+  const _HomeCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.onTap,
+    this.radius = AppRadii.card,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.97),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
+        ),
+        boxShadow: AppGlass.shadows,
+      ),
+      child: child,
+    );
+    return onTap == null ? card : PressScale(onTap: onTap!, child: card);
+  }
+}
+
+/// Small rounded icon on a soft tint.
+class _IconChip extends StatelessWidget {
+  const _IconChip({required this.icon, required this.tint, this.size = 40});
+
+  final IconData icon;
+  final Color tint;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: AppColors.isDark ? 0.22 : 0.16),
+        borderRadius: BorderRadius.circular(size * 0.36),
+      ),
+      child: Icon(icon, size: size * 0.52, color: tint),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title, {this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            header: true,
+            child: Text(title, style: AppText.display(22, w: FontWeight.w700)),
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
     );
   }
 }
@@ -115,6 +202,8 @@ class _HomeGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final profile = state.activeProfile;
+    final name = profile.firstName;
+    final initial = name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -123,101 +212,133 @@ class _HomeGreeting extends StatelessWidget {
         AppSpacing.screenMargin,
         0,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.success,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Campus library · open',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.body(
-                          12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _greeting(),
-                  style: AppText.body(
-                    15,
-                    w: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Text(
-                  profile.firstName,
-                  style: AppText.title(32, w: FontWeight.w800, ls: -0.8),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Semantics(
-            button: true,
-            label: state.unreadCount > 0
-                ? 'Notifications, ${state.unreadCount} unread'
-                : 'Notifications',
-            excludeSemantics: true,
-            child: PressScale(
-              onTap: () {
-                AppFeedback.tap();
-                AppRoute.push(context, const NotificationsScreen());
-              },
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppGlass.cardFill,
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  border: Border.all(color: AppGlass.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppGlass.shadow,
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
                 alignment: Alignment.center,
-                child: Badge(
-                  isLabelVisible: state.unreadCount > 0,
-                  label: Text(
-                      state.unreadCount > 9 ? '9+' : '${state.unreadCount}'),
-                  backgroundColor: AppColors.error,
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 23,
-                    color: AppColors.textPrimary,
+                decoration: BoxDecoration(
+                  gradient: AppGradients.brand,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppGlass.rim, width: 2),
+                  boxShadow: AppGlass.shadows,
+                ),
+                child: Text(
+                  initial,
+                  style: AppText.display(
+                    24,
+                    w: FontWeight.w800,
+                    color: const Color(0xFF2A1503),
                   ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _greeting(),
+                      style: AppText.body(
+                        13.5,
+                        w: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      name,
+                      style: AppText.display(28, w: FontWeight.w800),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Semantics(
+                button: true,
+                label: state.unreadCount > 0
+                    ? 'Notifications, ${state.unreadCount} unread'
+                    : 'Notifications',
+                excludeSemantics: true,
+                child: PressScale(
+                  onTap: () {
+                    AppFeedback.tap();
+                    AppRoute.push(context, const NotificationsScreen());
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.scheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: Border.all(
+                        color: AppColors.scheme.outlineVariant,
+                      ),
+                      boxShadow: AppGlass.shadows,
+                    ),
+                    alignment: Alignment.center,
+                    child: Badge(
+                      isLabelVisible: state.unreadCount > 0,
+                      label: Text(state.unreadCount > 9
+                          ? '9+'
+                          : '${state.unreadCount}'),
+                      backgroundColor: AppColors.error,
+                      child: Icon(
+                        Icons.notifications_none_rounded,
+                        size: 23,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(AppRadii.full),
+              border: Border.all(color: AppColors.scheme.outlineVariant),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.success,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.success.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    'Campus library · open',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.body(
+                      12,
+                      w: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -417,21 +538,46 @@ class _EmptySessionHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'No session today',
-            style: AppText.title(
-              20,
-              w: FontWeight.w600,
-              color: AppColors.textInverse,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Reserve a quiet seat on Floor 2 in under a minute.',
-            style: AppText.body(
-              14,
-              color: AppColors.textInverse.withValues(alpha: 0.88),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'READY WHEN YOU ARE',
+                      style: AppText.overline(
+                        10.5,
+                        ls: 1.2,
+                        color: AppColors.textInverse.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Find your quiet corner',
+                      style: AppText.display(
+                        25,
+                        w: FontWeight.w800,
+                        color: AppColors.textInverse,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Reserve a seat on Floor 2 in under a minute.',
+                      style: AppText.body(
+                        13.5,
+                        color: AppColors.textInverse.withValues(alpha: 0.88),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const ExcludeSemantics(
+                child: SizedBox(width: 92, height: 104, child: _NookArt()),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           _HeroButton(
@@ -445,32 +591,250 @@ class _EmptySessionHero extends StatelessWidget {
   }
 }
 
-class _HomeBento extends StatelessWidget {
-  const _HomeBento();
+/// A tiny reading nook: a stack of books under a glowing lamp.
+class _NookArt extends StatelessWidget {
+  const _NookArt();
+
+  @override
+  Widget build(BuildContext context) =>
+      const CustomPaint(painter: _NookPainter());
+}
+
+class _NookPainter extends CustomPainter {
+  const _NookPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Lamp glow.
+    final glowC = Offset(w * 0.68, h * 0.3);
+    canvas.drawCircle(
+      glowC,
+      w * 0.55,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFFFFC77A).withValues(alpha: 0.5),
+          const Color(0xFFFFC77A).withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: glowC, radius: w * 0.55)),
+    );
+
+    RRect book(double y, double inset, double bh) => RRect.fromRectAndRadius(
+          Rect.fromLTWH(inset, y, w - inset * 2, bh),
+          const Radius.circular(5),
+        );
+
+    // Three books, a little crooked.
+    final books = [
+      (h * 0.80, 2.0, h * 0.14, const Color(0xFFE6C48A)),
+      (h * 0.66, 8.0, h * 0.14, const Color(0xFFB5532C)),
+      (h * 0.52, 4.0, h * 0.14, const Color(0xFFF3E8D6)),
+    ];
+    for (final (y, inset, bh, color) in books) {
+      canvas.drawRRect(book(y, inset, bh), Paint()..color = color);
+      canvas.drawRect(
+        Rect.fromLTWH(inset + 8, y + bh * 0.4, w - inset * 2 - 24, 2),
+        Paint()..color = Colors.black.withValues(alpha: 0.18),
+      );
+    }
+
+    // Lamp: stem, base on the top book, and the shade.
+    final base = Offset(w * 0.68, h * 0.52);
+    final dark = Paint()..color = const Color(0xFF3A2314);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(base.dx - 9, base.dy - 5, 18, 5),
+        const Radius.circular(2.5),
+      ),
+      dark,
+    );
+    canvas.drawRect(Rect.fromLTWH(base.dx - 1.5, base.dy - 26, 3, 22), dark);
+    final shade = Path()
+      ..moveTo(base.dx - 9, base.dy - 48)
+      ..lineTo(base.dx + 9, base.dy - 48)
+      ..lineTo(base.dx + 17, base.dy - 25)
+      ..lineTo(base.dx - 17, base.dy - 25)
+      ..close();
+    canvas.drawPath(shade, Paint()..color = const Color(0xFFFFD58C));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+String _dueText(DateTime due) {
+  final days = due.difference(DateTime.now()).inDays;
+  if (days < 0) return 'Overdue';
+  if (days == 0) return 'Due today';
+  if (days == 1) return 'Due tomorrow';
+  return 'Due in $days days';
+}
+
+/// Three numbers worth a glance: free seats, books out, books waiting.
+class _GlanceStrip extends StatelessWidget {
+  const _GlanceStrip();
 
   @override
   Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final seats = state.seats;
+    final free = seats.where((s) => s.status == SeatStatus.available).length;
+    final loans = state.activeLoans;
+    final overdue = state.overdueLoans.length;
+    final waiting = state.activeReservations.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick actions', style: AppText.title(20, w: FontWeight.w700)),
+        const _SectionTitle('At a glance'),
+        const SizedBox(height: AppSpacing.md),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _GlanceCard(
+                  icon: Icons.event_seat_rounded,
+                  tint: AppColors.primary,
+                  value: '$free',
+                  label: 'Seats free',
+                  sub: 'of ${seats.length} today',
+                  onTap: () => AppShell.switchTab(context, AppTab.seats),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _GlanceCard(
+                  icon: Icons.auto_stories_rounded,
+                  tint: AppColors.indigo,
+                  value: '${loans.length}',
+                  label: 'On loan',
+                  sub: overdue > 0
+                      ? '$overdue overdue'
+                      : loans.isEmpty
+                          ? 'None out'
+                          : _dueText(loans.first.dueAt),
+                  subColor: overdue > 0 ? AppColors.error : null,
+                  onTap: () => AppShell.switchTab(context, AppTab.books),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _GlanceCard(
+                  icon: Icons.bookmark_added_rounded,
+                  tint: AppColors.gold,
+                  value: '$waiting',
+                  label: 'Reserved',
+                  sub: waiting == 0 ? 'Nothing waiting' : 'Ready to collect',
+                  onTap: () => AppShell.switchTab(context, AppTab.bookings),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlanceCard extends StatelessWidget {
+  const _GlanceCard({
+    required this.icon,
+    required this.tint,
+    required this.value,
+    required this.label,
+    required this.sub,
+    required this.onTap,
+    this.subColor,
+  });
+
+  final IconData icon;
+  final Color tint;
+  final String value;
+  final String label;
+  final String sub;
+  final Color? subColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$value $label, $sub',
+      excludeSemantics: true,
+      child: _HomeCard(
+        onTap: onTap,
+        radius: AppRadii.lg + 4,
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _IconChip(icon: icon, tint: tint, size: 34),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: AppText.display(28, w: FontWeight.w800, ls: -1),
+            ),
+            Text(
+              label,
+              style: AppText.body(12.5, w: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              sub,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.body(
+                11.5,
+                w: subColor == null ? FontWeight.w400 : FontWeight.w700,
+                color: subColor ?? AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final free =
+        state.seats.where((s) => s.status == SeatStatus.available).length;
+    final ready = state.activeReservations.length;
+    final upcoming = state.bookings.length;
+    final hasBooking = state.todayBooking != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle('Quick actions'),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
-              child: BentoTile(
+              child: _ActionTile(
                 icon: Icons.event_seat_rounded,
-                label: 'Seats',
                 tint: AppColors.primary,
+                label: 'Seats',
+                sub: '$free free now',
                 onTap: () => AppShell.switchTab(context, AppTab.seats),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: BentoTile(
+              child: _ActionTile(
                 icon: Icons.menu_book_rounded,
-                label: 'Books',
                 tint: AppColors.indigo,
+                label: 'Books',
+                sub: ready > 0
+                    ? '$ready ready to collect'
+                    : 'Browse the catalogue',
                 onTap: () => AppShell.switchTab(context, AppTab.books),
               ),
             ),
@@ -480,19 +844,21 @@ class _HomeBento extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: BentoTile(
+              child: _ActionTile(
                 icon: Icons.confirmation_number_rounded,
+                tint: AppColors.gold,
                 label: 'Bookings',
-                tint: AppColors.cyan,
+                sub: upcoming > 0 ? '$upcoming upcoming' : 'No bookings yet',
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: BentoTile(
+              child: _ActionTile(
                 icon: Icons.qr_code_2_rounded,
+                tint: AppColors.scheme.secondary,
                 label: 'QR pass',
-                tint: AppColors.textSecondary,
+                sub: hasBooking ? 'Show at the desk' : 'Needs a booking',
                 onTap: () => _openQr(context),
               ),
             ),
@@ -512,114 +878,160 @@ class _HomeBento extends StatelessWidget {
   }
 }
 
-class _OccupancyMeter extends StatelessWidget {
-  const _OccupancyMeter({required this.lastSyncedAt});
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.tint,
+    required this.label,
+    required this.sub,
+    required this.onTap,
+  });
 
-  final DateTime? lastSyncedAt;
+  final IconData icon;
+  final Color tint;
+  final String label;
+  final String sub;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final seats =
-        AppScope.of(context).seats.where((s) => s.floor == 2).toList();
-    final total = seats.length;
-    final occupied = seats.where((s) => s.status == SeatStatus.occupied).length;
-    final ratio = total == 0 ? 0.0 : occupied / total;
-
-    final label = switch (ratio) {
-      < 0.5 => 'Quiet',
-      < 0.8 => 'Busy',
-      _ => 'Full',
-    };
-
-    return SurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Floor 2 occupancy',
-                style: AppText.title(17, w: FontWeight.w700),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (ratio < 0.5
-                          ? AppColors.success
-                          : ratio < 0.8
-                              ? AppColors.warning
-                              : AppColors.error)
-                      .withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                ),
-                child: Text(
-                  label,
-                  style: AppText.label(
-                    11.5,
-                    w: FontWeight.w700,
-                    color: ratio < 0.5
-                        ? AppColors.success
-                        : ratio < 0.8
-                            ? AppColors.warning
-                            : AppColors.error,
+    return Semantics(
+      button: true,
+      label: '$label, $sub',
+      excludeSemantics: true,
+      child: _HomeCard(
+        onTap: () {
+          AppFeedback.tap();
+          onTap();
+        },
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            _IconChip(icon: icon, tint: tint, size: 44),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.title(15.5, w: FontWeight.w800),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.body(11.5, color: AppColors.textSecondary),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _Segment(active: ratio < 0.5, color: AppColors.success),
-              const SizedBox(width: 6),
-              _Segment(
-                  active: ratio >= 0.5 && ratio < 0.8,
-                  color: AppColors.warning),
-              const SizedBox(width: 6),
-              _Segment(active: ratio >= 0.8, color: AppColors.error),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(
-                label,
-                style: AppText.title(15, w: FontWeight.w600),
-              ),
-              const Spacer(),
-              Text(
-                '${(ratio * 100).round()}% seated',
-                style: AppText.body(13, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          LiveFreshness(lastSyncedAt: lastSyncedAt),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Segment extends StatelessWidget {
-  const _Segment({required this.active, required this.color});
+/// How busy each floor is right now, one row per floor.
+class _FloorAvailability extends StatelessWidget {
+  const _FloorAvailability({required this.lastSyncedAt});
 
-  final bool active;
-  final Color color;
+  final DateTime? lastSyncedAt;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: AnimatedContainer(
-        duration: AppMotion.fast,
-        height: 10,
-        decoration: BoxDecoration(
-          color: active ? color : AppColors.surfaceMuted,
-          borderRadius: BorderRadius.circular(AppRadii.full),
+    final seats = AppScope.of(context).seats;
+
+    final rows = <Widget>[];
+    for (final floor in const [1, 2, 3]) {
+      final onFloor = seats.where((s) => s.floor == floor).toList();
+      if (onFloor.isEmpty) continue;
+      final free = onFloor.where((s) => s.status == SeatStatus.available).length;
+      final taken =
+          onFloor.where((s) => s.status == SeatStatus.occupied).length;
+      final ratio = taken / onFloor.length;
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: AppSpacing.base));
+      rows.add(_FloorRow(floor: floor, free: free, ratio: ratio));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(
+          'Floors right now',
+          trailing: LiveFreshness(lastSyncedAt: lastSyncedAt),
         ),
+        const SizedBox(height: AppSpacing.md),
+        _HomeCard(
+          onTap: () => AppShell.switchTab(context, AppTab.seats),
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          child: rows.isEmpty
+              ? Text(
+                  'Seat availability will show up here once it loads.',
+                  style: AppText.body(13, color: AppColors.textSecondary),
+                )
+              : Column(children: rows),
+        ),
+      ],
+    );
+  }
+}
+
+class _FloorRow extends StatelessWidget {
+  const _FloorRow({
+    required this.floor,
+    required this.free,
+    required this.ratio,
+  });
+
+  final int floor;
+  final int free;
+  final double ratio;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (ratio) {
+      < 0.5 => ('Quiet', AppColors.success),
+      < 0.8 => ('Busy', AppColors.warning),
+      _ => ('Full', AppColors.error),
+    };
+    return Semantics(
+      label: 'Floor $floor, $label, $free seats free',
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text('Floor $floor',
+                  style: AppText.title(15, w: FontWeight.w800)),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                ),
+                child: Text(
+                  label,
+                  style: AppText.label(11, w: FontWeight.w800, color: color),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$free free',
+                style: AppText.body(12.5,
+                    w: FontWeight.w600, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          MeterBar(value: ratio, color: color),
+        ],
       ),
     );
   }

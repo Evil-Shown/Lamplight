@@ -221,23 +221,24 @@ class _DesertPainter extends CustomPainter {
     Color(0xFF6E3C22),
   ];
 
+  // Night: moonlit slopes in cool indigo, deep shadow on the lee side.
   static const _litDark = [
-    Color(0xFF7A5238),
-    Color(0xFF68442E),
-    Color(0xFF55372A),
-    Color(0xFF432B20),
+    Color(0xFF45476E),
+    Color(0xFF383A5E),
+    Color(0xFF2D2F4F),
+    Color(0xFF232540),
   ];
   static const _baseDark = [
-    Color(0xFF4A301F),
-    Color(0xFF3D2819),
-    Color(0xFF301F15),
-    Color(0xFF24170F),
+    Color(0xFF2B2E52),
+    Color(0xFF23264A),
+    Color(0xFF1B1D3A),
+    Color(0xFF13152E),
   ];
   static const _shadeDark = [
-    Color(0xFF1D120C),
-    Color(0xFF170E09),
-    Color(0xFF120A06),
-    Color(0xFF0C0604),
+    Color(0xFF0C0D22),
+    Color(0xFF0A0B1C),
+    Color(0xFF080917),
+    Color(0xFF05060F),
   ];
 
   // Per dune: left y, crest x, crest y, right y (all fractions).
@@ -256,7 +257,11 @@ class _DesertPainter extends CustomPainter {
     final base = dark ? _baseDark : _baseLight;
     final shade = dark ? _shadeDark : _shadeLight;
 
-    _sun(canvas, w, h);
+    if (dark) {
+      _night(canvas, w, h);
+    } else {
+      _sun(canvas, w, h);
+    }
     _buttes(canvas, w, h);
 
     for (var i = 0; i < _dunes.length; i++) {
@@ -275,11 +280,92 @@ class _DesertPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF2A1408).withValues(alpha: 0),
-            const Color(0xFF2A1408).withValues(alpha: dark ? 0.55 : 0.3),
+            (dark ? const Color(0xFF05060F) : const Color(0xFF2A1408))
+                .withValues(alpha: 0),
+            (dark ? const Color(0xFF05060F) : const Color(0xFF2A1408))
+                .withValues(alpha: dark ? 0.6 : 0.3),
           ],
         ).createShader(foot),
     );
+  }
+
+  /// Night sky: a warm afterglow on the horizon, scattered stars and a full
+  /// moon low over the dunes.
+  void _night(Canvas canvas, double w, double h) {
+    final glow = Rect.fromLTWH(0, h * 0.5, w, h * 0.22);
+    canvas.drawRect(
+      glow,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFB0605A).withValues(alpha: 0),
+            const Color(0xFFB0605A).withValues(alpha: 0.28),
+          ],
+        ).createShader(glow),
+    );
+
+    // Stars: deterministic, thinning out toward the horizon.
+    var seed = 29;
+    double next() {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x80000000;
+    }
+
+    final starPaint = Paint();
+    for (var i = 0; i < 90; i++) {
+      final x = next() * w;
+      final y = next() * h * 0.6;
+      final fade = 1 - (y / (h * 0.6)) * 0.6;
+      final r = 0.5 + next() * 1.1;
+      starPaint.color = const Color(0xFFF3EEDC)
+          .withValues(alpha: (0.3 + next() * 0.6) * fade);
+      canvas.drawCircle(Offset(x, y), r, starPaint);
+    }
+    // A few brighter stars with a faint cross.
+    final bright = Paint()
+      ..color = const Color(0xFFFFF6E0).withValues(alpha: 0.8)
+      ..strokeWidth = 0.8;
+    for (final (x, y) in const [
+      (0.14, 0.12),
+      (0.4, 0.2),
+      (0.86, 0.1),
+      (0.62, 0.3)
+    ]) {
+      final c = Offset(w * x, h * y);
+      canvas.drawCircle(c, 1.5, bright);
+      canvas.drawLine(c.translate(-5, 0), c.translate(5, 0), bright);
+      canvas.drawLine(c.translate(0, -5), c.translate(0, 5), bright);
+    }
+
+    // The moon and its cool halo.
+    final c = Offset(w * 0.7, h * 0.6);
+    final haloR = w * 0.42;
+    canvas.drawCircle(
+      c,
+      haloR,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFFBFD0FF).withValues(alpha: 0.3),
+          const Color(0xFFBFD0FF).withValues(alpha: 0.08),
+          const Color(0xFFBFD0FF).withValues(alpha: 0),
+        ], stops: const [
+          0,
+          0.4,
+          1
+        ]).createShader(Rect.fromCircle(center: c, radius: haloR)),
+    );
+    final moonR = w * 0.066;
+    canvas.drawCircle(c, moonR, Paint()..color = const Color(0xFFF6F1DE));
+    final crater = Paint()
+      ..color = const Color(0xFFCFC8B0).withValues(alpha: 0.55);
+    canvas.drawCircle(
+        c.translate(-moonR * 0.35, -moonR * 0.25), moonR * 0.22, crater);
+    canvas.drawCircle(
+        c.translate(moonR * 0.3, moonR * 0.2), moonR * 0.28, crater);
+    canvas.drawCircle(
+        c.translate(-moonR * 0.1, moonR * 0.5), moonR * 0.14, crater);
   }
 
   void _sun(Canvas canvas, double w, double h) {
@@ -322,8 +408,8 @@ class _DesertPainter extends CustomPainter {
       return path..close();
     }
 
-    final body = dark ? const Color(0xFF2E1D14) : const Color(0xFFC98A58);
-    final side = dark ? const Color(0xFF1A0F0A) : const Color(0xFFA56A3E);
+    final body = dark ? const Color(0xFF1C1E3A) : const Color(0xFFC98A58);
+    final side = dark ? const Color(0xFF0E1024) : const Color(0xFFA56A3E);
 
     final big = [
       (0.02, 0.73),
@@ -402,10 +488,11 @@ class _DesertPainter extends CustomPainter {
       ..cubicTo(crest.dx + fall * 0.05, crest.dy + (right.dy - crest.dy) * 0.55,
           right.dx - fall * 0.45, right.dy, right.dx, right.dy)
       ..lineTo(right.dx, right.dy + h * 0.1)
-      ..cubicTo(right.dx - fall * 0.35, right.dy + h * 0.1, crest.dx + fall * 0.1,
-          crest.dy + h * 0.1, crest.dx, crest.dy)
+      ..cubicTo(right.dx - fall * 0.35, right.dy + h * 0.1,
+          crest.dx + fall * 0.1, crest.dy + h * 0.1, crest.dx, crest.dy)
       ..close();
-    final leeBox = Rect.fromLTRB(crest.dx, crest.dy, right.dx, right.dy + h * 0.1);
+    final leeBox =
+        Rect.fromLTRB(crest.dx, crest.dy, right.dx, right.dy + h * 0.1);
     canvas.drawPath(
       lee,
       Paint()
@@ -430,8 +517,8 @@ class _DesertPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.4
         ..strokeCap = StrokeCap.round
-        ..color = (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFE9C4))
-            .withValues(alpha: dark ? 0.22 : 0.55),
+        ..color = (dark ? const Color(0xFFB8C4F0) : const Color(0xFFFFE9C4))
+            .withValues(alpha: dark ? 0.32 : 0.55),
     );
   }
 
@@ -440,9 +527,9 @@ class _DesertPainter extends CustomPainter {
     final x = w * 0.86;
     final base = h * 0.915;
     final ht = h * 0.1;
-    final body = dark ? const Color(0xFF0C0604) : const Color(0xFF3D2314);
-    final edge = (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD9A8))
-        .withValues(alpha: dark ? 0.35 : 0.5);
+    final body = dark ? const Color(0xFF05060F) : const Color(0xFF3D2314);
+    final edge = (dark ? const Color(0xFFB8C4F0) : const Color(0xFFFFD9A8))
+        .withValues(alpha: dark ? 0.45 : 0.5);
 
     void shape(Paint paint, double dx) {
       final trunk = w * 0.026;
@@ -518,9 +605,10 @@ class _GlassBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var fillColor = fill ?? (blur != null && blur! >= AppGlass.blurChrome
-        ? AppGlass.chromeFill
-        : AppGlass.cardFill);
+    var fillColor = fill ??
+        (blur != null && blur! >= AppGlass.blurChrome
+            ? AppGlass.chromeFill
+            : AppGlass.cardFill);
     if (tint != null) {
       fillColor = Color.alphaBlend(tint!, fillColor);
     }
@@ -663,9 +751,8 @@ class FrostedCard extends StatelessWidget {
       border: border,
       child: Material(
         type: MaterialType.transparency,
-        child: padding == null
-            ? child
-            : Padding(padding: padding!, child: child),
+        child:
+            padding == null ? child : Padding(padding: padding!, child: child),
       ),
     );
   }
