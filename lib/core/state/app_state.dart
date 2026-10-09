@@ -220,6 +220,14 @@ class AppState extends ChangeNotifier {
         (b) => b.seat.id == seatId && b.status == ReservationStatus.active,
       );
 
+  /// Populates sample seats if the inventory is empty.
+  void seedSampleSeats() {
+    _seats = MockData.seats;
+    _demoFallbackActive = true;
+    _hydrated = true;
+    notifyListeners();
+  }
+
   // --------------------------------------------------------- notifications
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
@@ -504,7 +512,7 @@ class AppState extends ChangeNotifier {
     switch (key) {
       case 'books':
         final live = [for (final d in snap.docs) _service.bookFromDocPublic(d)];
-        if (live.isEmpty && mockDataAllowed) {
+        if (live.isEmpty) {
           _demoFallbackActive = true;
           _books = MockData.books;
         } else {
@@ -514,7 +522,7 @@ class AppState extends ChangeNotifier {
         _rejoin();
       case 'seats':
         final live = [for (final d in snap.docs) _service.seatFromDocPublic(d)];
-        if (live.isEmpty && mockDataAllowed) {
+        if (live.isEmpty) {
           _demoFallbackActive = true;
           _seats = MockData.seats;
         } else {

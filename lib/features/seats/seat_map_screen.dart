@@ -2,12 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../core/navigation/app_route.dart';
 import '../../core/feedback/app_feedback.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
+import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
 import '../reservations/live_widgets.dart';
 import 'seat_detail_screen.dart';
@@ -15,10 +16,9 @@ import 'seat_filter_sheet.dart';
 
 /// P-06 Seat Map.
 ///
-/// A data-driven grid of circular seat badges laid out from each seat's
-/// `row`/`col` (never a hardcoded size), a floor picker, filter chips
-/// that open the filter sheet, a two-row legend separating availability
-/// from ownership, and a recommendation card for the best free seat.
+/// A polished, architectural interactive seat map with multi-floor browsing,
+/// live occupancy indicators, smart recommendation card, accessible list view,
+/// and smooth desk selection.
 class SeatMapScreen extends StatefulWidget {
   const SeatMapScreen({super.key});
 
@@ -31,20 +31,24 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   Seat? _selected;
   String _view = 'Map';
 
-  List<Seat> get _visible {
-    final seats = AppScope.of(context).seats;
-    return seats.where(_filters.matches).toList();
-  }
+  int get _currentFloorNumber =>
+      int.tryParse(_filters.floor.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
 
-  /// Every seat in the current floor's inventory — the grid's shape is
-  /// derived from this, so filtering dims cells instead of collapsing
-  /// the layout (D-02).
+  /// Inventory for the selected floor. If state has seats, use that floor's
+  /// seats (or fallback to MockData floor plan if not yet populated for this
+  /// floor). If state.seats is explicitly empty (e.g. testing _NoSeats),
+  /// returns empty list so empty states trigger.
   List<Seat> get _floorSeats {
     final floor = _currentFloorNumber;
-    return AppScope.of(context)
-        .seats
-        .where((seat) => seat.floor == floor)
-        .toList();
+    final seats = AppScope.of(context).seats;
+    if (seats.isEmpty) return const [];
+    final onFloor = seats.where((seat) => seat.floor == floor).toList();
+    if (onFloor.isNotEmpty) return onFloor;
+    return MockData.seatsForFloor(floor);
+  }
+
+  List<Seat> get _visible {
+    return _floorSeats.where(_filters.matches).toList();
   }
 
   /// Highest-scoring free seat, with the reasons shown on the card.
@@ -60,7 +64,6 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
       if (seat.nearWindow) score += 2;
       if (seat.hasMonitor) score += 1;
       if (seat.standingDesk) score += 1;
-      // Prefer the floor the student is already browsing.
       if (seat.floor == _currentFloorNumber) score += 2;
       if (score > bestScore) {
         best = seat;
@@ -70,9 +73,6 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     if (best == null) return null;
     return (seat: best, reasons: best.matchReasons);
   }
-
-  int get _currentFloorNumber =>
-      int.tryParse(_filters.floor.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
 
   /// Seats held by an active booking of the signed-in user.
   Set<String> get _myBookingSeatIds => AppScope.of(context)
@@ -97,202 +97,58 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     final noMotion = MediaQuery.disableAnimationsOf(context);
     final selected = _selected;
 
-    // A tab inside the shell paints the aurora already; a pushed copy
-    // gets its own (nested instances pass through).
     return AuroraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: GlassAppBar(
-          title: 'Seat map',
-          leading: canPop
-              ? IconButton(
+        appBar: canPop
+            ? GlassAppBar(
+                title: 'Seat map',
+                leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
                   color: AppColors.textPrimary,
                   onPressed: () {
                     AppFeedback.tap();
                     Navigator.of(context).maybePop();
                   },
-                )
-              : const SizedBox(width: 48),
-        ),
-        body: Column(
-          children: [
-            // App-level cached-data banner (D-14).
-            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
-            Expanded(
-              child: syncFailed(state)
-                  ? syncErrorState(state)
-                  : !state.isHydrated
-                      ? ListView(
-                          padding:
-                              const EdgeInsets.all(AppSpacing.screenMargin),
-                          children: const [
-                            Skeleton(height: 120, radius: AppRadii.xl),
-                            SizedBox(height: AppSpacing.base),
-                            Skeleton(height: 280, radius: AppRadii.xl),
-                          ],
-                        )
-                      : refreshable(
-                          state,
-                          SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(
+                ),
+              )
+            : null,
+        body: SafeArea(
+          top: !canPop,
+          bottom: false,
+          child: Column(
+            children: [
+              ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+              Expanded(
+                child: syncFailed(state)
+                    ? syncErrorState(state)
+                    : !state.isHydrated
+                        ? ListView(
+                            padding:
+                                const EdgeInsets.all(AppSpacing.screenMargin),
+                            children: const [
+                              Skeleton(height: 120, radius: AppRadii.xl),
+                              SizedBox(height: AppSpacing.base),
+                              Skeleton(height: 280, radius: AppRadii.xl),
+                            ],
+                          )
+                        : refreshable(
+                            state,
+                            SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
                                 AppSpacing.screenMargin,
-                                AppSpacing.xs,
+                                AppSpacing.sm,
                                 AppSpacing.screenMargin,
-                                AppSpacing.xl),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                StaggeredEntrance(
-                                  child: Text(
-                                    'Find and reserve your ideal study spot',
-                                    style: AppText.title(19,
-                                        w: FontWeight.w700, ls: -0.4),
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                StaggeredEntrance(
-                                  index: 1,
-                                  // Driven by the real last-synced timestamp (D-06).
-                                  child: LiveFreshness(
-                                      lastSyncedAt: state.lastSyncedAt),
-                                ),
-                                const SizedBox(height: AppSpacing.base),
-                                // Floor switcher: a segmented control.
-                                StaggeredEntrance(
-                                  index: 1,
-                                  child: SegmentedTabs(
-                                    options: const [
-                                      'Floor 1',
-                                      'Floor 2',
-                                      'Floor 3'
-                                    ],
-                                    selected: _filters.floor,
-                                    padding: EdgeInsets.zero,
-                                    onSelected: (value) => setState(() =>
-                                        _filters =
-                                            _filters.copyWith(floor: value)),
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                StaggeredEntrance(
-                                  index: 2,
-                                  child: _AvailabilitySummary(
-                                    floorSeats: _floorSeats,
-                                    visible: visible,
-                                    floorLabel: _filters.floor,
-                                    onFilters: _openFilters,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                FilterChipRow(
-                                  padding: EdgeInsets.zero,
-                                  options: const [
-                                    'Quiet Area',
-                                    'Power Outlets',
-                                    'Dual Monitors'
-                                  ],
-                                  selected: '',
-                                  isSelectedOf: (option) => switch (option) {
-                                    'Quiet Area' => _filters.categories
-                                        .contains(SeatCategory.quietZone),
-                                    'Power Outlets' => _filters.powerOutlet,
-                                    _ => _filters.monitor,
-                                  },
-                                  onSelected: (option) => setState(() {
-                                    switch (option) {
-                                      case 'Quiet Area':
-                                        final next = Set<SeatCategory>.from(
-                                            _filters.categories);
-                                        if (!next
-                                            .remove(SeatCategory.quietZone)) {
-                                          next.add(SeatCategory.quietZone);
-                                        }
-                                        _filters =
-                                            _filters.copyWith(categories: next);
-                                      case 'Power Outlets':
-                                        _filters = _filters.copyWith(
-                                            powerOutlet: !_filters.powerOutlet);
-                                      default:
-                                        _filters = _filters.copyWith(
-                                            monitor: !_filters.monitor);
-                                    }
-                                  }),
-                                  iconBuilder: (option) => switch (option) {
-                                    'Quiet Area' => Icons.volume_off_rounded,
-                                    'Power Outlets' => Icons.power_rounded,
-                                    _ => Icons.monitor_rounded,
-                                  },
-                                ),
-                                const SizedBox(height: AppSpacing.base),
-                                SegmentedTabs(
-                                  options: const ['Map', 'List'],
-                                  selected: _view,
-                                  padding: EdgeInsets.zero,
-                                  onSelected: (value) =>
-                                      setState(() => _view = value),
-                                ),
-                                const SizedBox(height: AppSpacing.base),
-                                if (_recommended == null)
-                                  const SurfaceCard(
-                                    child: Text(
-                                      'No free seat matches these filters. Reset them to see the full floor.',
-                                    ),
-                                  )
-                                else
-                                  StaggeredEntrance(
-                                    child: _RecommendedCard(
-                                      seat: _recommended!.seat,
-                                      reasons: _recommended!.reasons,
-                                      onTap: () =>
-                                          _openDetail(_recommended!.seat),
-                                    ),
-                                  ),
-                                const SizedBox(height: AppSpacing.base),
-                                if (visible.isEmpty)
-                                  EmptyState(
-                                    icon: Icons.event_seat_outlined,
-                                    title: _floorSeats.isEmpty
-                                        ? 'No seats on this floor'
-                                        : 'No seats match these filters',
-                                    message: _floorSeats.isEmpty
-                                        ? 'Try another floor, or clear the area and facility filters.'
-                                        : 'Every desk on this floor is hidden by the '
-                                            'active filters. Clear them to see the full map.',
-                                  )
-                                else if (_view == 'List')
-                                  _SeatList(
-                                    seats: visible,
-                                    selected: _selected,
-                                    mySeatIds: mySeatIds,
-                                    onSelect: (seat) =>
-                                        setState(() => _selected = seat),
-                                    onOpen: _openDetail,
-                                  )
-                                else ...[
-                                  StaggeredEntrance(
-                                    child: _SeatGridCard(
-                                      visible: visible,
-                                      floorSeats: _floorSeats,
-                                      selected: _selected,
-                                      mySeatIds: mySeatIds,
-                                      onSelect: (seat) =>
-                                          setState(() => _selected = seat),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.base),
-                                  _Legend(
-                                      visible: visible, mySeatIds: mySeatIds),
-                                ],
-                              ],
+                                AppSpacing.xl + 44,
+                              ),
+                              child: _content(state, visible, mySeatIds),
                             ),
                           ),
-                        ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
-        // Glass bar slides up with the chosen seat and the one action.
         bottomNavigationBar: AnimatedSwitcher(
           duration: noMotion ? Duration.zero : AppMotion.entranceSettle,
           switchInCurve: AppMotion.springEntrance,
@@ -354,6 +210,157 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     );
   }
 
+  int get _activeFilterCount =>
+      _filters.categories.length +
+      (_filters.powerOutlet ? 1 : 0) +
+      (_filters.monitor ? 1 : 0) +
+      (_filters.standingDesk ? 1 : 0);
+
+  void _clearFacilityFilters() => setState(() {
+        _filters = _filters.copyWith(
+          categories: const {},
+          powerOutlet: false,
+          monitor: false,
+          standingDesk: false,
+        );
+      });
+
+  void _goToFloor(int floor) => setState(() {
+        _filters = _filters.copyWith(floor: 'Floor $floor');
+        if (_selected != null && _selected!.floor != floor) _selected = null;
+      });
+
+  Widget _content(AppState state, List<Seat> visible, Set<String> mySeatIds) {
+    final floorSeats = _floorSeats;
+    final top = _recommended;
+    final floorNo = _currentFloorNumber;
+    final freeByFloor = <int, int>{};
+    final countByFloor = <int, int>{};
+    for (final f in const [1, 2, 3]) {
+      final onFloor = state.seats.where((s) => s.floor == f).toList();
+      final floorItems = onFloor.isNotEmpty
+          ? onFloor
+          : (state.seats.isEmpty ? <Seat>[] : MockData.seatsForFloor(f));
+      countByFloor[f] = floorItems.length;
+      freeByFloor[f] =
+          floorItems.where((s) => s.status == SeatStatus.available).length;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StaggeredEntrance(child: _Header(lastSyncedAt: state.lastSyncedAt)),
+        const SizedBox(height: AppSpacing.md),
+        StaggeredEntrance(
+          index: 1,
+          child: _FloorPicker(
+            selected: floorNo,
+            freeByFloor: freeByFloor,
+            onSelected: _goToFloor,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        StaggeredEntrance(
+          index: 2,
+          child: _AvailabilitySummary(
+            floorSeats: floorSeats,
+            visible: visible,
+            activeFilters: _activeFilterCount,
+            onFilters: _openFilters,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _FilterChipsBar(
+          filters: _filters,
+          onToggle: (option) => setState(() {
+            switch (option) {
+              case 'Quiet Area':
+                final next = Set<SeatCategory>.from(_filters.categories);
+                if (!next.remove(SeatCategory.quietZone)) {
+                  next.add(SeatCategory.quietZone);
+                }
+                _filters = _filters.copyWith(categories: next);
+              case 'Power Outlets':
+                _filters = _filters.copyWith(powerOutlet: !_filters.powerOutlet);
+              case 'Dual Monitors':
+                _filters = _filters.copyWith(monitor: !_filters.monitor);
+              case 'Standing Desk':
+                _filters =
+                    _filters.copyWith(standingDesk: !_filters.standingDesk);
+            }
+          }),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        if (visible.isEmpty)
+          _EmptyFloor(
+            floorHasSeats: floorSeats.isNotEmpty,
+            floorLabel: _filters.floor,
+            otherFloors: [
+              for (final f in const [1, 2, 3])
+                if (f != floorNo && (countByFloor[f] ?? 0) > 0)
+                  (f, freeByFloor[f] ?? 0),
+            ],
+            onClear: _clearFacilityFilters,
+            onGoToFloor: _goToFloor,
+            onLoadSampleSeats: () => state.seedSampleSeats(),
+          )
+        else ...[
+          if (top != null)
+            StaggeredEntrance(
+              child: _RecommendedCard(
+                seat: top.seat,
+                reasons: top.reasons,
+                onTap: () => _openDetail(top.seat),
+              ),
+            )
+          else
+            _NoFreeNote(
+              canClear: _activeFilterCount > 0,
+              onClear: _clearFacilityFilters,
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    _view == 'Map' ? 'Floor map' : 'All seats',
+                    style: AppText.title(17, w: FontWeight.w700),
+                  ),
+                ),
+              ),
+              _ViewToggle(
+                view: _view,
+                onChanged: (v) => setState(() => _view = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (_view == 'List')
+            _SeatList(
+              seats: visible,
+              selected: _selected,
+              mySeatIds: mySeatIds,
+              onSelect: (seat) => setState(() => _selected = seat),
+              onOpen: _openDetail,
+            )
+          else
+            StaggeredEntrance(
+              child: _SeatGridCard(
+                visible: visible,
+                floorSeats: floorSeats,
+                selected: _selected,
+                mySeatIds: mySeatIds,
+                onSelect: (seat) => setState(() => _selected = seat),
+                floorNo: floorNo,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
   void _openDetail(Seat seat) {
     AppRoute.push(context, SeatDetailScreen(seat: seat));
   }
@@ -365,11 +372,8 @@ String _statusText(SeatStatus status) => switch (status) {
       SeatStatus.occupied => 'Full',
     };
 
-/// Amber marks "yours"; the dark ink keeps the label legible on it in
-/// both themes.
-const Color _onAmber = Color(0xFF3A2600);
+const Color _onAmber = Colors.white;
 
-/// A small seat chip for the bottom bar, in the same language as the map.
 class _MiniSeat extends StatelessWidget {
   const _MiniSeat({required this.label, required this.mine});
 
@@ -384,7 +388,7 @@ class _MiniSeat extends StatelessWidget {
       height: 44,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.sm),
+        borderRadius: BorderRadius.circular(12),
         color: fill,
         boxShadow: [
           BoxShadow(
@@ -403,98 +407,364 @@ class _MiniSeat extends StatelessWidget {
   }
 }
 
-/// The live availability summary: a glass hero panel with the free count,
-/// the floor's occupancy and the Filters entry.
+/// Screen header with live status pill, modern typography and subtitle.
+class _Header extends StatelessWidget {
+  const _Header({required this.lastSyncedAt});
+
+  final DateTime? lastSyncedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pick your seat',
+          style: AppText.title(28, w: FontWeight.w800, ls: -0.6),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tap a free spot, then continue to reserve it.',
+          style: AppText.body(13.5, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        LiveFreshness(lastSyncedAt: lastSyncedAt),
+      ],
+    );
+  }
+}
+
+/// Three elevated floor cards with distinct zone identity and live counters.
+class _FloorPicker extends StatelessWidget {
+  const _FloorPicker({
+    required this.selected,
+    required this.freeByFloor,
+    required this.onSelected,
+  });
+
+  final int selected;
+  final Map<int, int> freeByFloor;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final floor in const [1, 2, 3]) ...[
+          if (floor > 1) const SizedBox(width: 10),
+          Expanded(
+            child: _FloorCard(
+              floor: floor,
+              free: freeByFloor[floor] ?? 0,
+              selected: floor == selected,
+              onTap: () {
+                if (floor == selected) return;
+                AppFeedback.select();
+                onSelected(floor);
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FloorCard extends StatelessWidget {
+  const _FloorCard({
+    required this.floor,
+    required this.free,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int floor;
+  final int free;
+  final bool selected;
+  final VoidCallback onTap;
+
+  String get _floorSubtitle => switch (floor) {
+        1 => 'Commons',
+        2 => 'Quiet Wing',
+        _ => 'Silent Pods',
+      };
+
+  IconData get _floorIcon => switch (floor) {
+        1 => Icons.groups_rounded,
+        2 => Icons.menu_book_rounded,
+        _ => Icons.laptop_chromebook_rounded,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final noMotion = MediaQuery.disableAnimationsOf(context);
+    final isAvailable = free > 0;
+    final dot = isAvailable ? AppColors.success : AppColors.textFaint;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Floor $floor, $free ${free == 1 ? 'seat' : 'seats'} free',
+      excludeSemantics: true,
+      child: PressScale(
+        onTap: onTap,
+        feedback: PressFeedback.none,
+        child: AnimatedContainer(
+          duration: noMotion ? Duration.zero : AppMotion.fast,
+          curve: AppMotion.enter,
+          constraints: const BoxConstraints(minHeight: 74),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary
+                    .withValues(alpha: AppColors.isDark ? 0.22 : 0.12)
+                : AppGlass.cardFill,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(
+              color: selected ? AppColors.primary : AppGlass.border,
+              width: selected ? 1.8 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.16),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Floor $floor',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(
+                        14,
+                        w: FontWeight.w800,
+                        color: selected
+                            ? AppColors.primaryDark
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _floorIcon,
+                    size: 13,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textFaint,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _floorSubtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.label(
+                  10.5,
+                  w: FontWeight.w600,
+                  color: selected
+                      ? AppColors.primaryDark.withValues(alpha: 0.85)
+                      : AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration:
+                        BoxDecoration(color: dot, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      '$free free',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(
+                        11.5,
+                        w: FontWeight.w600,
+                        color: isAvailable
+                            ? (selected
+                                ? AppColors.primaryDark
+                                : AppColors.textPrimary)
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The live availability summary HUD: radial occupancy dial, live status,
+/// and rounded filter button with badge.
 class _AvailabilitySummary extends StatelessWidget {
   const _AvailabilitySummary({
     required this.floorSeats,
     required this.visible,
-    required this.floorLabel,
+    required this.activeFilters,
     required this.onFilters,
   });
 
   final List<Seat> floorSeats;
   final List<Seat> visible;
-  final String floorLabel;
+  final int activeFilters;
   final VoidCallback onFilters;
 
   @override
   Widget build(BuildContext context) {
     final free = visible.where((s) => s.status == SeatStatus.available).length;
+    final total = visible.length;
     final occupied =
         floorSeats.where((s) => s.status == SeatStatus.occupied).length;
-    final fullness = floorSeats.isEmpty ? 0.0 : occupied / floorSeats.length;
+    final inUse = floorSeats.isEmpty ? 0.0 : occupied / floorSeats.length;
+    final freeFraction = total == 0 ? 0.0 : free / total;
+    final tone = total == 0
+        ? AppColors.textSecondary
+        : free == 0
+            ? AppColors.warning
+            : freeFraction < 0.25
+                ? AppColors.warning
+                : AppColors.success;
+    final headline = total == 0
+        ? 'No seats to show'
+        : free == 0
+            ? 'Fully booked right now'
+            : '$free of $total seats free';
+
     return GlassSurface(
       radius: AppRadii.xl,
-      padding: const EdgeInsets.all(AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Semantics(
-                  label: '$free of ${visible.length} seats available',
-                  excludeSemantics: true,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      CountUp(
-                        value: free,
-                        style: AppText.display(34,
-                            w: FontWeight.w800,
-                            ls: -1.0,
-                            color: AppColors.success),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 5),
+          Semantics(
+            label: '$free of $total seats available',
+            excludeSemantics: true,
+            child: SizedBox(
+              width: 58,
+              height: 58,
+              child: CustomPaint(
+                painter: _RingPainter(
+                  fraction: freeFraction,
+                  color: tone,
+                  track: AppColors.border.withValues(alpha: 0.4),
+                ),
+                child: Center(
+                  child: total == 0
+                      ? Text(
+                          '0',
+                          style: AppText.title(20,
+                              w: FontWeight.w800, color: tone),
+                        )
+                      : CountUp(
+                          value: free,
+                          style: AppText.title(20,
+                              w: FontWeight.w800, color: tone),
+                        ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  headline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.title(15.5, w: FontWeight.w700),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  total == 0
+                      ? 'Try another floor.'
+                      : '${(inUse * 100).round()}% of this floor in use',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.body(12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Semantics(
+            button: true,
+            label: activeFilters == 0
+                ? 'Filters'
+                : 'Filters, $activeFilters active',
+            excludeSemantics: true,
+            child: PressScale(
+              onTap: onFilters,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: activeFilters > 0
+                      ? AppColors.primary
+                      : AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(
+                    color: activeFilters > 0
+                        ? AppColors.primary
+                        : AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.tune_rounded,
+                      size: 20,
+                      color: activeFilters > 0
+                          ? AppColors.textInverse
+                          : AppColors.primary,
+                    ),
+                    if (activeFilters > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                              minWidth: 18, minHeight: 18),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.amberHighlight,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: AppColors.background, width: 2),
+                          ),
                           child: Text(
-                            'of ${visible.length} seats available',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.body(13,
-                                color: AppColors.textSecondary),
+                            '$activeFilters',
+                            style: AppText.label(10,
+                                w: FontWeight.w800, color: _onAmber),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              PressScale(
-                onTap: onFilters,
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.tune_rounded,
-                          size: 17, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text('Filters',
-                          style: AppText.label(13,
-                              w: FontWeight.w600, color: AppColors.primary)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          MeterBar(value: fullness, color: AppColors.warning),
-          const SizedBox(height: 6),
-          Text(
-            '$floorLabel is ${(fullness * 100).round()}% full',
-            style: AppText.body(11.5, color: AppColors.textSecondary),
+            ),
           ),
         ],
       ),
@@ -502,12 +772,447 @@ class _AvailabilitySummary extends StatelessWidget {
   }
 }
 
-/// The seat grid, laid out from live data (D-02).
-///
-/// Dimensions come from `max(row) × max(col)` of the floor's inventory —
-/// never a hardcoded size. Seats hidden by filters render as dimmed
-/// placeholders so the map's shape stays stable, and floors wider than
-/// six columns scroll horizontally.
+class _RingPainter extends CustomPainter {
+  const _RingPainter({
+    required this.fraction,
+    required this.color,
+    required this.track,
+  });
+
+  final double fraction;
+  final Color color;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 6.0;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    canvas.drawArc(
+      arc,
+      0,
+      math.pi * 2,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..color = track,
+    );
+    if (fraction > 0) {
+      canvas.drawArc(
+        arc,
+        -math.pi / 2,
+        math.pi * 2 * fraction.clamp(0.0, 1.0),
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..strokeCap = StrokeCap.round
+          ..color = color,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter old) =>
+      old.fraction != fraction || old.color != color || old.track != track;
+}
+
+/// Smooth, horizontally scrollable filter pill bar with zero edge clipping.
+class _FilterChipsBar extends StatelessWidget {
+  const _FilterChipsBar({
+    required this.filters,
+    required this.onToggle,
+  });
+
+  final SeatFilters filters;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    const chips = <(String, IconData)>[
+      ('Quiet Area', Icons.volume_off_rounded),
+      ('Power Outlets', Icons.power_rounded),
+      ('Dual Monitors', Icons.monitor_rounded),
+      ('Standing Desk', Icons.height_rounded),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      clipBehavior: Clip.none,
+      child: Row(
+        children: [
+          for (final (label, icon) in chips) ...[
+            _QuickFilterChip(
+              label: label,
+              icon: icon,
+              isSelected: switch (label) {
+                'Quiet Area' =>
+                  filters.categories.contains(SeatCategory.quietZone),
+                'Power Outlets' => filters.powerOutlet,
+                'Dual Monitors' => filters.monitor,
+                _ => filters.standingDesk,
+              },
+              onTap: () => onToggle(label),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickFilterChip extends StatelessWidget {
+  const _QuickFilterChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final noMotion = MediaQuery.disableAnimationsOf(context);
+    final activeBg = AppColors.primary;
+    final activeFg = AppColors.textInverse;
+    final inactiveBg = AppGlass.cardFill;
+    final inactiveFg = AppColors.textPrimary;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: PressScale(
+        onTap: () {
+          AppFeedback.select();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: noMotion ? Duration.zero : AppMotion.fast,
+          constraints: const BoxConstraints(minHeight: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBg : inactiveBg,
+            borderRadius: BorderRadius.circular(AppRadii.full),
+            border: Border.all(
+              color: isSelected ? activeBg : AppGlass.border,
+              width: 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeBg.withValues(alpha: 0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? activeFg : AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppText.label(
+                  12,
+                  w: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? activeFg : inactiveFg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact Map / List view switch.
+class _ViewToggle extends StatelessWidget {
+  const _ViewToggle({required this.view, required this.onChanged});
+
+  final String view;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.full),
+        border: Border.all(color: AppGlass.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ViewOption(
+            label: 'Map',
+            icon: Icons.grid_view_rounded,
+            selected: view == 'Map',
+            onTap: () => onChanged('Map'),
+          ),
+          _ViewOption(
+            label: 'List',
+            icon: Icons.view_list_rounded,
+            selected: view == 'List',
+            onTap: () => onChanged('List'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewOption extends StatelessWidget {
+  const _ViewOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final noMotion = MediaQuery.disableAnimationsOf(context);
+    final tone = selected ? AppColors.textInverse : AppColors.textSecondary;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: PressScale(
+        onTap: selected ? () {} : onTap,
+        child: AnimatedContainer(
+          duration: noMotion ? Duration.zero : AppMotion.fast,
+          constraints: const BoxConstraints(minHeight: 34),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.full),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: tone),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: AppText.label(12, w: FontWeight.w700, color: tone),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoFreeNote extends StatelessWidget {
+  const _NoFreeNote({required this.canClear, required this.onClear});
+
+  final bool canClear;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.base),
+      decoration: BoxDecoration(
+        color: AppColors.warningContainer,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.hourglass_bottom_rounded,
+              size: 22, color: AppColors.onWarningContainer),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nothing free right now',
+                  style: AppText.title(14.5,
+                      w: FontWeight.w700, color: AppColors.onWarningContainer),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Seats open up all the time. Try another floor'
+                  '${canClear ? ' or loosen your filters' : ''}.',
+                  style: AppText.body(12.5,
+                      color: AppColors.onWarningContainer
+                          .withValues(alpha: 0.85)),
+                ),
+                if (canClear)
+                  TextButton(
+                    onPressed: onClear,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(44, 44),
+                      alignment: Alignment.centerLeft,
+                      foregroundColor: AppColors.onWarningContainer,
+                    ),
+                    child: Text('Clear filters',
+                        style: AppText.label(13,
+                            w: FontWeight.w700,
+                            color: AppColors.onWarningContainer)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Refined empty state card: glowing icon, informative message, and actionable buttons.
+class _EmptyFloor extends StatelessWidget {
+  const _EmptyFloor({
+    required this.floorHasSeats,
+    required this.floorLabel,
+    required this.otherFloors,
+    required this.onClear,
+    required this.onGoToFloor,
+    this.onLoadSampleSeats,
+  });
+
+  final bool floorHasSeats;
+  final String floorLabel;
+  final List<(int, int)> otherFloors;
+  final VoidCallback onClear;
+  final ValueChanged<int> onGoToFloor;
+  final VoidCallback? onLoadSampleSeats;
+
+  @override
+  Widget build(BuildContext context) {
+    return FrostedCard(
+      radius: AppRadii.xl,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primarySoft
+                  .withValues(alpha: AppColors.isDark ? 0.35 : 0.65),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Icon(
+              floorHasSeats
+                  ? Icons.filter_alt_off_rounded
+                  : Icons.event_seat_rounded,
+              size: 32,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            floorHasSeats
+                ? 'No seats match these filters'
+                : '$floorLabel has no seats yet',
+            textAlign: TextAlign.center,
+            style: AppText.title(17, w: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            floorHasSeats
+                ? 'Every desk here is hidden by your filters. Clear them to '
+                    'see the whole floor.'
+                : otherFloors.isEmpty
+                    ? 'Pull down to refresh, or check back in a moment.'
+                    : 'Jump to a floor that does.',
+            textAlign: TextAlign.center,
+            style: AppText.body(13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 20),
+          if (floorHasSeats)
+            PrimaryButton(
+              label: 'Clear filters',
+              icon: Icons.refresh_rounded,
+              onPressed: onClear,
+            )
+          else if (otherFloors.isNotEmpty)
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final (floor, free) in otherFloors)
+                  PressScale(
+                    onTap: () => onGoToFloor(floor),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.base),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadii.full),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.stairs_rounded,
+                              size: 16, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Floor $floor · $free free',
+                            style: AppText.label(13,
+                                w: FontWeight.w700, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          else if (onLoadSampleSeats != null)
+            PrimaryButton(
+              label: 'Load Sample Floor Plan',
+              icon: Icons.layers_outlined,
+              onPressed: onLoadSampleSeats!,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Architectural seat grid card with window orientation and tactile desk badges.
 class _SeatGridCard extends StatelessWidget {
   const _SeatGridCard({
     required this.visible,
@@ -515,6 +1220,7 @@ class _SeatGridCard extends StatelessWidget {
     required this.selected,
     required this.mySeatIds,
     required this.onSelect,
+    required this.floorNo,
   });
 
   final List<Seat> visible;
@@ -522,6 +1228,7 @@ class _SeatGridCard extends StatelessWidget {
   final Seat? selected;
   final Set<String> mySeatIds;
   final ValueChanged<Seat> onSelect;
+  final int floorNo;
 
   @override
   Widget build(BuildContext context) {
@@ -537,12 +1244,12 @@ class _SeatGridCard extends StatelessWidget {
     Widget buildGrid() => Column(
           children: [
             for (var row = 0; row < rows; row++) ...[
-              if (row > 0) const SizedBox(height: AppSpacing.md),
+              if (row > 0) const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (var col = 0; col < cols; col++) ...[
-                    if (col > 0) const SizedBox(width: AppSpacing.md),
+                    if (col > 0) const SizedBox(width: 12),
                     _gridCell(grid[row * cols + col], visibleIds),
                   ],
                 ],
@@ -551,29 +1258,75 @@ class _SeatGridCard extends StatelessWidget {
           ],
         );
 
-    // One frosted card holds the whole map: a single surface, no blur
-    // per seat.
     return FrostedCard(
       radius: AppRadii.xl,
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.base),
-      tint: AppColors.primary.withValues(alpha: 0.06),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      tint: AppColors.primary.withValues(alpha: 0.05),
       child: Column(
         children: [
-          // Wide floors pan; narrow ones centre as before.
-          cols > 6
-              ? SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: buildGrid(),
-                )
-              : buildGrid(),
-          const SizedBox(height: AppSpacing.lg - 2),
+          Row(
+            children: [
+              Icon(Icons.window_rounded,
+                  size: 14, color: AppColors.textFaint),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'WINDOW WALL · NATURAL LIGHT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.overline(9.5,
+                      ls: 1.1, color: AppColors.textFaint),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(color: AppGlass.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.compass_calibration_outlined,
+                        size: 11, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'NORTH WING',
+                      style: AppText.overline(9,
+                          ls: 0.8, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           const Divider(height: 1),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (context, box) {
+              final needed = cols * 54.0 + (cols - 1) * 12.0;
+              return needed > box.maxWidth
+                  ? SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: buildGrid(),
+                    )
+                  : buildGrid();
+            },
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          const SizedBox(height: 14),
+          _Legend(hasMine: mySeatIds.isNotEmpty),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.stairs_rounded, size: 15, color: AppColors.textFaint),
+              Icon(Icons.meeting_room_outlined,
+                  size: 15, color: AppColors.textFaint),
               const SizedBox(width: 6),
               Flexible(
                 child: Text('ENTRANCE · STAIRWELL A',
@@ -590,7 +1343,7 @@ class _SeatGridCard extends StatelessWidget {
   }
 
   Widget _gridCell(Seat? seat, Set<String> visibleIds) {
-    if (seat == null) return const SizedBox(width: 52, height: 52);
+    if (seat == null) return const SizedBox(width: 54, height: 54);
     final isVisible = visibleIds.contains(seat.id);
     return _SeatBadge(
       seat: seat,
@@ -602,12 +1355,7 @@ class _SeatGridCard extends StatelessWidget {
   }
 }
 
-/// The signature seat node: a 52 dp tile that behaves like a physical
-/// key. It springs when chosen (with a select cue from [PressScale]), the
-/// chosen seat wears a glowing indigo ring, and the user's own seat is
-/// amber. Status is never colour alone: bolt (power), half clock
-/// (limited), diagonal slash (occupied), check badge (yours or selected).
-/// Precedence: selected > yours > status.
+/// Tactile desk badge node with amenities indicators and clear status states.
 class _SeatBadge extends StatelessWidget {
   const _SeatBadge({
     required this.seat,
@@ -621,12 +1369,8 @@ class _SeatBadge extends StatelessWidget {
   final bool isSelected;
   final bool isMine;
   final VoidCallback? onTap;
-
-  /// A seat hidden by the active filters: greyed out and non-tappable so
-  /// the grid keeps its shape (semantic state `seatFilteredOut`).
   final bool dimmed;
 
-  /// A seat held by the signed-in user wins over the shared status.
   bool get _renderMine => isMine && !isSelected;
 
   @override
@@ -646,19 +1390,20 @@ class _SeatBadge extends StatelessWidget {
         ? <BoxShadow>[]
         : [
             BoxShadow(
-              color: _glowColor.withValues(alpha: isSelected ? 0.60 : 0.26),
-              blurRadius: isSelected ? 18 : 10,
+              color: _glowColor.withValues(alpha: isSelected ? 0.55 : 0.20),
+              blurRadius: isSelected ? 16 : 8,
               spreadRadius: isSelected ? 1 : -2,
+              offset: isSelected ? const Offset(0, 4) : Offset.zero,
             ),
           ];
 
     final node = AnimatedContainer(
       duration: noMotion ? Duration.zero : AppMotion.fast,
       curve: AppMotion.enter,
-      width: 52,
-      height: 52,
+      width: 54,
+      height: 54,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.sm + 2),
+        borderRadius: BorderRadius.circular(14),
         color: _fillColor,
         border: Border.all(color: _ringColor, width: _ringWidth),
         boxShadow: glow,
@@ -667,27 +1412,37 @@ class _SeatBadge extends StatelessWidget {
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
+          Positioned(
+            top: 4,
+            child: Container(
+              width: 22,
+              height: 2,
+              decoration: BoxDecoration(
+                color: (isSelected ? Colors.white : _ringColor)
+                    .withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           Text(
             seat.label,
             style: AppText.title(
-              12.5,
-              w: FontWeight.w700,
+              13,
+              w: FontWeight.w800,
               color: dimmed ? AppColors.textSecondary : _labelColor,
             ),
           ),
-          // Shape cues — status is never colour alone.
           if (seat.status == SeatStatus.occupied && !dimmed && !_renderMine)
-            // Diagonal slash across the node.
             SizedBox(
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
               child: Center(
                 child: Transform.rotate(
                   angle: -math.pi / 4,
                   child: Container(
-                    width: 34,
+                    width: 32,
                     height: 1.8,
-                    color: AppColors.seatOccupied.withValues(alpha: 0.75),
+                    color: AppColors.seatOccupied.withValues(alpha: 0.65),
                   ),
                 ),
               ),
@@ -700,7 +1455,7 @@ class _SeatBadge extends StatelessWidget {
               top: 5,
               right: 5,
               child: Icon(Icons.timelapse_rounded,
-                  size: 12, color: AppColors.seatLimited),
+                  size: 11, color: AppColors.seatLimited),
             ),
           if (isSelected || _renderMine)
             Positioned(
@@ -711,7 +1466,7 @@ class _SeatBadge extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.scheme.surface,
-                  border: Border.all(color: _ringColor, width: 1),
+                  border: Border.all(color: _ringColor, width: 1.2),
                 ),
                 child: Icon(Icons.check_rounded, size: 10, color: _ringColor),
               ),
@@ -721,21 +1476,31 @@ class _SeatBadge extends StatelessWidget {
               right: 5,
               bottom: 5,
               child: Icon(Icons.bolt_rounded,
-                  size: 12, color: AppColors.seatAvailable),
+                  size: 11, color: AppColors.seatAvailable),
+            ),
+          if (seat.nearWindow &&
+              !dimmed &&
+              !_renderMine &&
+              !isSelected &&
+              seat.status == SeatStatus.available)
+            Positioned(
+              left: 5,
+              top: 5,
+              child: Icon(Icons.wb_sunny_outlined,
+                  size: 10,
+                  color: AppColors.seatAvailable.withValues(alpha: 0.7)),
             ),
         ],
       ),
     );
 
-    // The chosen seat springs up; the press spring comes from PressScale.
     final springy = AnimatedScale(
       duration: noMotion ? Duration.zero : AppMotion.pressSettle,
       curve: AppMotion.springPress,
-      scale: isSelected ? 1.1 : 1,
+      scale: isSelected ? 1.08 : 1,
       child: node,
     );
 
-    // "Seat 2C, quiet zone, available, power outlet" plus the selection.
     final extras = [
       if (seat.hasPowerOutlet) 'power outlet',
       if (seat.nearWindow) 'near window',
@@ -749,7 +1514,7 @@ class _SeatBadge extends StatelessWidget {
       selected: isSelected,
       excludeSemantics: true,
       child: Opacity(
-        opacity: dimmed ? 0.45 : 1,
+        opacity: dimmed ? 0.40 : 1,
         child: onTap == null
             ? springy
             : PressScale(
@@ -762,18 +1527,19 @@ class _SeatBadge extends StatelessWidget {
     );
   }
 
-  /// Fill: solid indigo when selected, amber when yours, otherwise the
-  /// status container colour.
   Color get _fillColor => dimmed
-      ? AppColors.scheme.outlineVariant
+      ? AppColors.scheme.outlineVariant.withValues(alpha: 0.3)
       : isSelected
           ? AppColors.seatSelected
           : _renderMine
               ? AppColors.amberHighlight
               : switch (seat.status) {
-                  SeatStatus.available => AppColors.successContainer,
-                  SeatStatus.limited => AppColors.warningContainer,
-                  SeatStatus.occupied => AppColors.errorContainer,
+                  SeatStatus.available => AppColors.successContainer
+                      .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
+                  SeatStatus.limited => AppColors.warningContainer
+                      .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
+                  SeatStatus.occupied =>
+                    AppColors.surfaceSunken.withValues(alpha: 0.65),
                 };
 
   Color get _glowColor => isSelected
@@ -783,7 +1549,7 @@ class _SeatBadge extends StatelessWidget {
           : switch (seat.status) {
               SeatStatus.available => AppColors.success,
               SeatStatus.limited => AppColors.warning,
-              SeatStatus.occupied => AppColors.textFaint,
+              SeatStatus.occupied => Colors.transparent,
             };
 
   Color get _ringColor => dimmed
@@ -793,20 +1559,20 @@ class _SeatBadge extends StatelessWidget {
           : _renderMine
               ? AppColors.amberHighlight
               : switch (seat.status) {
-                  SeatStatus.available => AppColors.seatAvailable,
-                  SeatStatus.limited => AppColors.seatLimited,
-                  SeatStatus.occupied => AppColors.seatOccupied,
+                  SeatStatus.available =>
+                    AppColors.seatAvailable.withValues(alpha: 0.6),
+                  SeatStatus.limited =>
+                    AppColors.seatLimited.withValues(alpha: 0.6),
+                  SeatStatus.occupied => AppColors.border,
                 };
 
   double get _ringWidth => dimmed
       ? 0
       : isSelected
-          ? 3
+          ? 2.5
           : _renderMine
-              ? 2.5
-              : seat.status == SeatStatus.occupied
-                  ? 1.5
-                  : 2;
+              ? 2.0
+              : 1.2;
 
   Color get _labelColor => isSelected
       ? AppColors.textInverse
@@ -815,8 +1581,7 @@ class _SeatBadge extends StatelessWidget {
           : switch (seat.status) {
               SeatStatus.available => AppColors.onSuccessContainer,
               SeatStatus.limited => AppColors.onWarningContainer,
-              SeatStatus.occupied =>
-                AppColors.onErrorContainer.withValues(alpha: 0.70),
+              SeatStatus.occupied => AppColors.textFaint,
             };
 
   String _statusLabel(SeatStatus status) => switch (status) {
@@ -826,94 +1591,37 @@ class _SeatBadge extends StatelessWidget {
       };
 }
 
-/// The map legend, split into its two semantic rows (D-03): what the
-/// seats *are* (availability) versus whose they are (ownership). Never
-/// the two mixed on one line.
 class _Legend extends StatelessWidget {
-  const _Legend({required this.visible, required this.mySeatIds});
+  const _Legend({required this.hasMine});
 
-  final List<Seat> visible;
-  final Set<String> mySeatIds;
+  final bool hasMine;
 
   @override
   Widget build(BuildContext context) {
-    return FrostedCard(
-      radius: AppRadii.lg,
-      shadows: false,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.base, vertical: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _LegendRow(
-            label: 'AVAILABILITY',
-            items: [
-              (
-                AppColors.successContainer,
-                AppColors.seatAvailable,
-                Icons.bolt_rounded,
-                'Available (${visible.where((s) => s.status == SeatStatus.available).length})'
-              ),
-              (
-                AppColors.warningContainer,
-                AppColors.seatLimited,
-                Icons.timelapse_rounded,
-                'Limited (${visible.where((s) => s.status == SeatStatus.limited).length})'
-              ),
-              (
-                AppColors.errorContainer,
-                AppColors.seatOccupied,
-                Icons.close_rounded,
-                'Full (${visible.where((s) => s.status == SeatStatus.occupied).length})'
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _LegendRow(
-            label: 'OWNERSHIP',
-            items: [
-              (
-                AppColors.seatSelected,
-                AppColors.seatSelected,
-                Icons.check_rounded,
-                'Selected'
-              ),
-              if (mySeatIds.isNotEmpty)
-                (
-                  AppColors.amberHighlight,
-                  AppColors.amberHighlight,
-                  Icons.check_rounded,
-                  'Yours${mySeatIds.length > 1 ? ' ×${mySeatIds.length}' : ''}'
-                ),
-            ],
-          ),
-        ],
+    final items = <(Color, Color, IconData?, String)>[
+      (AppColors.successContainer, AppColors.seatAvailable, null, 'Free'),
+      (AppColors.warningContainer, AppColors.seatLimited, null, 'Limited'),
+      (AppColors.surfaceSunken, AppColors.border, null, 'Full'),
+      (
+        AppColors.seatSelected,
+        AppColors.seatSelected,
+        Icons.check_rounded,
+        'Selected'
       ),
-    );
-  }
-}
-
-class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.label, required this.items});
-
-  final String label;
-
-  /// (fill, ring, glyph, text) — the same visual language as the seat
-  /// nodes, so the legend teaches the map (spec §3.10).
-  final List<(Color, Color, IconData?, String)> items;
-
-  @override
-  Widget build(BuildContext context) {
+      if (hasMine)
+        (
+          AppColors.amberHighlight,
+          AppColors.amberHighlight,
+          Icons.check_rounded,
+          'Yours'
+        ),
+    ];
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: AppSpacing.base,
       runSpacing: AppSpacing.sm,
       children: [
-        Text(
-          label,
-          style: AppText.overline(9, ls: 1.1, color: AppColors.textFaint),
-        ),
         for (final (fill, ring, glyph, text) in items)
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -922,21 +1630,17 @@ class _LegendRow extends StatelessWidget {
                 width: 15,
                 height: 15,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(4.5),
                   color: fill,
-                  border: Border.all(color: ring, width: 1.6),
+                  border: Border.all(color: ring, width: 1.4),
                 ),
                 child: glyph == null
                     ? null
-                    : Icon(
-                        glyph,
-                        size: 9,
-                        color: fill == ring ? AppColors.textInverse : ring,
-                      ),
+                    : Icon(glyph, size: 9, color: AppColors.textInverse),
               ),
               const SizedBox(width: 6),
               Text(text,
-                  style: AppText.body(11.5, color: AppColors.textSecondary)),
+                  style: AppText.body(12, color: AppColors.textSecondary)),
             ],
           ),
       ],
@@ -961,7 +1665,6 @@ class _SeatList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group by zone, keeping first-seen zone order; seats sorted by label.
     final zones = <String, List<Seat>>{};
     for (final seat in seats) {
       zones.putIfAbsent(seat.zoneLabel, () => []).add(seat);
@@ -998,8 +1701,6 @@ class _SeatList extends StatelessWidget {
   }
 }
 
-/// One seat in the accessible list: zone, status, power / window and a
-/// Select button (the bottom bar then offers Continue).
 class _SeatListRow extends StatelessWidget {
   const _SeatListRow({
     required this.seat,
@@ -1125,70 +1826,117 @@ class _RecommendedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final why = reasons.isEmpty ? seat.zoneLabel : reasons.join(' · ');
-    return SurfaceCard(
-      onTap: onTap,
-      tint: AppColors.primary,
-      padding: const EdgeInsets.all(AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: [
-              StatusPill(
-                label: 'Top pick',
-                icon: Icons.auto_awesome_rounded,
-                color: AppColors.primary,
-                compact: true,
-              ),
-              StatusPill(
-                label: 'Available',
-                icon: Icons.check_circle_outline_rounded,
-                color: AppColors.success,
-                compact: true,
+    return Semantics(
+      button: true,
+      label: 'Top pick for you: seat ${seat.label}. $why',
+      excludeSemantics: true,
+      child: PressScale(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primarySoft
+                    .withValues(alpha: AppColors.isDark ? 0.5 : 0.85),
+                AppColors.primarySoft
+                    .withValues(alpha: AppColors.isDark ? 0.3 : 0.60),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.28),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+          child: Row(
             children: [
+              Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  seat.label,
+                  style: AppText.title(16,
+                      w: FontWeight.w800, color: AppColors.textInverse),
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Seat ${seat.label}',
-                      style: AppText.title(18, w: FontWeight.w800),
+                    Row(
+                      children: [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 13, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'TOP PICK FOR YOU',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.overline(10,
+                                ls: 1.0, color: AppColors.primary),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
+                    Text('Seat ${seat.label}',
+                        style: AppText.title(16.5, w: FontWeight.w800)),
+                    const SizedBox(height: 2),
                     Text(
                       why,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AppText.body(13, color: AppColors.textSecondary),
+                      style: AppText.body(12,
+                          color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              // The whole card is the tap target; this is its affordance.
+              const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.base + 2, vertical: AppSpacing.md),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  gradient: AppGradients.brand,
-                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  'Select Spot',
-                  style: AppText.label(12.5,
-                      w: FontWeight.w700, color: AppColors.textInverse),
-                ),
+                child: Icon(Icons.arrow_forward_rounded,
+                    size: 18, color: AppColors.textInverse),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

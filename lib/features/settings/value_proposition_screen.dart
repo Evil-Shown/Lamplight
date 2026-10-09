@@ -39,10 +39,11 @@ class ValuePropositionScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'One app for your seat, your books and your check-in.',
-                    style: AppText.display(
-                      26,
+                    style: AppText.title(
+                      24,
+                      w: FontWeight.w800,
                       color: AppColors.textInverse,
-                      height: 1.15,
+                      height: 1.2,
                     ),
                   ),
                 ],

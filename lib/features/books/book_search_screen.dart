@@ -8,7 +8,6 @@ import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/glass.dart';
 import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
@@ -303,16 +302,26 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                   StaggeredEntrance(
                     child: Text(
                       'Find your next read',
-                      style: AppText.display(32, w: FontWeight.w800, ls: -1),
+                      style: AppText.title(30, w: FontWeight.w800, ls: -0.6),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.base),
                   Row(
                     children: [
                       Expanded(
-                        child: GlassSurface(
-                          radius: AppRadii.full,
-                          padding: EdgeInsets.zero,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppGlass.cardFill,
+                            borderRadius: BorderRadius.circular(AppRadii.full),
+                            border: Border.all(color: AppGlass.border),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppGlass.shadow,
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
                           child: TextField(
                             controller: _controller,
                             textInputAction: TextInputAction.search,
@@ -325,7 +334,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                               hintText: AppStrings.searchBooksHint,
                               filled: false,
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.base, vertical: 16),
+                                  horizontal: AppSpacing.base, vertical: 14),
                               prefixIcon: Icon(Icons.search_rounded,
                                   size: 22, color: AppColors.primary),
                               suffixIcon: _controller.text.isEmpty
@@ -353,14 +362,31 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                       Badge(
                         isLabelVisible: _filters.activeCount > 0,
                         label: Text('${_filters.activeCount}'),
-                        child: IconButton.filledTonal(
-                          tooltip: 'Filter and sort',
-                          constraints: const BoxConstraints(
-                            minWidth: AppTouchTarget.minSize,
-                            minHeight: AppTouchTarget.minSize,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _filters.activeCount > 0
+                                ? AppColors.primary
+                                : AppGlass.cardFill,
+                            borderRadius: BorderRadius.circular(AppRadii.md),
+                            border: Border.all(
+                              color: _filters.activeCount > 0
+                                  ? AppColors.primary
+                                  : AppGlass.border,
+                            ),
                           ),
-                          icon: const Icon(Icons.tune_rounded),
-                          onPressed: _openFilters,
+                          child: IconButton(
+                            tooltip: 'Filter and sort',
+                            icon: Icon(
+                              Icons.tune_rounded,
+                              size: 21,
+                              color: _filters.activeCount > 0
+                                  ? AppColors.textInverse
+                                  : AppColors.primary,
+                            ),
+                            onPressed: _openFilters,
+                          ),
                         ),
                       ),
                     ],
@@ -677,7 +703,14 @@ class _CatalogCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 PressScale(
-                  onTap: canReserve ? onReserve : onOpen,
+                  onTap: () {
+                    AppFeedback.tap();
+                    if (canReserve) {
+                      onReserve();
+                    } else {
+                      onOpen();
+                    }
+                  },
                   child: Container(
                     height: 38,
                     alignment: Alignment.center,
@@ -687,18 +720,43 @@ class _CatalogCard extends StatelessWidget {
                           ? AppColors.primary
                           : AppColors.surfaceMuted,
                       borderRadius: BorderRadius.circular(AppRadii.full),
+                      boxShadow: canReserve
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
                     ),
-                    child: Text(
-                      canReserve ? 'Reserve copy' : 'Join waitlist',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.label(
-                        12.5,
-                        w: FontWeight.w700,
-                        color: canReserve
-                            ? AppColors.textInverse
-                            : AppColors.textSecondary,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            canReserve ? 'Reserve copy' : 'Join waitlist',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.label(
+                              12.5,
+                              w: FontWeight.w700,
+                              color: canReserve
+                                  ? AppColors.textInverse
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: canReserve
+                              ? AppColors.textInverse
+                              : AppColors.textSecondary,
+                        ),
+                      ],
                     ),
                   ),
                 ),
