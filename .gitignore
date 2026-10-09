@@ -41,3 +41,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node / Firebase Cloud Functions / Test dependencies
+**/node_modules/
+**/npm-debug.log*
+functions/lib/
+
