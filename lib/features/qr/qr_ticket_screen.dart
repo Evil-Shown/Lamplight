@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/app_constants.dart' show AppPolicy;
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion3d.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../reservations/live_widgets.dart';
 import 'active_session_screen.dart';
 
 /// S18 · QR Ticket — the student's scannable pass, built on the
@@ -75,6 +77,11 @@ class QrTicketScreen extends StatelessWidget {
                             : Icons.event_available_rounded,
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  CountdownBadge(
+                    prefix: 'Check in within',
+                    remaining: (now) => state.graceRemaining(live, now: now),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -160,11 +167,13 @@ class QrTicketScreen extends StatelessWidget {
                           Icon(Icons.flip_rounded,
                               size: 13, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
-                          Text(
-                            'Tap pass to flip',
-                            style: AppText.body(
-                              12,
-                              color: AppColors.textSecondary,
+                          Flexible(
+                            child: Text(
+                              'Tap pass to flip',
+                              style: AppText.body(
+                                12,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                         ],
@@ -175,11 +184,13 @@ class QrTicketScreen extends StatelessWidget {
                           Icon(Icons.wifi_off_rounded,
                               size: 13, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
-                          Text(
-                            'Works offline',
-                            style: AppText.body(
-                              12,
-                              color: AppColors.textSecondary,
+                          Flexible(
+                            child: Text(
+                              'Works offline',
+                              style: AppText.body(
+                                12,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                         ],
@@ -191,14 +202,28 @@ class QrTicketScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          if (!checkedIn)
-            PrimaryButton(
-              label: "I've arrived",
-              icon: Icons.how_to_reg_rounded,
-              tone: ButtonTone.secondary,
-              onPressed: state.checkIn,
-            )
-          else
+          if (!checkedIn) ...[
+            const Callout(
+              icon: Icons.timer_outlined,
+              message: "Your seat is released if you don't check in within "
+                  '${AppPolicy.checkInGraceMinutes} minutes of the start time.',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Students cannot check themselves in on a live build: staff
+            // scan this QR. Demo/test builds keep the self check-in.
+            if (state.dataSource == DataSource.demo)
+              PrimaryButton(
+                label: "I've arrived",
+                icon: Icons.how_to_reg_rounded,
+                tone: ButtonTone.secondary,
+                onPressed: state.checkIn,
+              )
+            else
+              const Callout(
+                icon: Icons.qr_code_scanner_rounded,
+                message: 'Show this QR at the desk to check in.',
+              ),
+          ] else
             Column(
               children: [
                 Padding(

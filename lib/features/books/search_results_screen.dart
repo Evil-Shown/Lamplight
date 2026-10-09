@@ -97,47 +97,51 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.base, AppSpacing.base, AppSpacing.base, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.base,
+                AppSpacing.base, AppSpacing.md),
             child: Align(
               alignment: Alignment.centerLeft,
               child: _loading
-                  ? const Skeleton(width: 110, height: 12, radius: AppRadii.full)
+                  ? const Skeleton(
+                      width: 110, height: 12, radius: AppRadii.full)
                   : Text(
                       '${books.length} ${books.length == 1 ? 'book' : 'books'} found',
-                      style:
-                          AppText.body(13, color: AppColors.textSecondary),
+                      style: AppText.body(13, color: AppColors.textSecondary),
                     ),
             ),
           ),
           Expanded(
             child: _loading
                 ? ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
                     itemCount: 4,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, i) => StaggeredEntrance(
                       index: i,
                       child: const SkeletonCard(height: 98),
                     ),
                   )
                 : books.isEmpty
-                ? const EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'No matches',
-                    message:
-                        'Nothing in the catalog matches that search. Try a '
-                        'different term, or check the spelling.',
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
-                    itemCount: books.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (context, i) => StaggeredEntrance(
-                      index: i,
-                      child: _ResultRow(book: books[i]),
-                    ),
-                  ),
+                    ? const EmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: 'No matches',
+                        message:
+                            'Nothing in the catalog matches that search. Try a '
+                            'different term, or check the spelling.',
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
+                        itemCount: books.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, i) => StaggeredEntrance(
+                          index: i,
+                          child: _ResultRow(book: books[i]),
+                        ),
+                      ),
           ),
         ],
       ),

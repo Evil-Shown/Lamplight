@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app_shell.dart';
 import '../../core/navigation/app_route.dart';
@@ -8,6 +8,7 @@ import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../notifications/notifications_screen.dart';
+import '../reservations/live_widgets.dart';
 import '../qr/qr_ticket_screen.dart';
 
 /// Nordic Modern Campus home — greeting, session hero, bento, occupancy.
@@ -23,9 +24,14 @@ class HomeScreen extends StatelessWidget {
         value: AppColors.isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        child: const Scaffold(
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: SafeArea(bottom: false, child: _HomeSkeleton()),
+          body: SafeArea(
+            bottom: false,
+            child: syncFailed(state)
+                ? syncErrorState(state)
+                : const _HomeSkeleton(),
+          ),
         ),
       );
     }
@@ -40,43 +46,54 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         body: SafeArea(
           bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.only(
-              bottom: AppSpacing.scrollBottomInset,
+          child: refreshable(
+            state,
+            ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(
+                bottom: AppSpacing.scrollBottomInset,
+              ),
+              children: [
+                ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+                const StaggeredEntrance(child: _HomeGreeting()),
+                const SizedBox(height: AppSpacing.lg),
+                if (state.pendingOffers.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenMargin,
+                    ),
+                    child: OfferStack(offers: state.pendingOffers),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(
+                    index: 1,
+                    child: booking != null
+                        ? _SessionHero(booking: booking)
+                        : const _EmptySessionHero(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(index: 2, child: _HomeBento()),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(
+                    index: 3,
+                    child: _OccupancyMeter(lastSyncedAt: state.lastSyncedAt),
+                  ),
+                ),
+              ],
             ),
-            children: [
-              ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
-              const StaggeredEntrance(child: _HomeGreeting()),
-              const SizedBox(height: AppSpacing.lg),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenMargin,
-                ),
-                child: StaggeredEntrance(
-                  index: 1,
-                  child: booking != null
-                      ? _SessionHero(booking: booking)
-                      : const _EmptySessionHero(),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sectionGap),
-              const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenMargin,
-                ),
-                child: StaggeredEntrance(index: 2, child: _HomeBento()),
-              ),
-              const SizedBox(height: AppSpacing.sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenMargin,
-                ),
-                child: StaggeredEntrance(
-                  index: 3,
-                  child: _OccupancyMeter(lastSyncedAt: state.lastSyncedAt),
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -155,18 +172,27 @@ class _HomeGreeting extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.md),
-          PressScale(
-            onTap: () => AppRoute.push(context, const NotificationsScreen()),
-            child: FrostedCard(
-              radius: AppRadii.md,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Badge(
-                isLabelVisible: state.unreadNotifications > 0,
-                backgroundColor: AppColors.error,
-                child: Icon(
-                  Icons.notifications_none_rounded,
-                  size: 24,
-                  color: AppColors.textPrimary,
+          Semantics(
+            button: true,
+            label: state.unreadCount > 0
+                ? 'Notifications, ${state.unreadCount} unread'
+                : 'Notifications',
+            excludeSemantics: true,
+            child: PressScale(
+              onTap: () => AppRoute.push(context, const NotificationsScreen()),
+              child: FrostedCard(
+                radius: AppRadii.md,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Badge(
+                  isLabelVisible: state.unreadCount > 0,
+                  label: Text(
+                      state.unreadCount > 9 ? '9+' : '${state.unreadCount}'),
+                  backgroundColor: AppColors.error,
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 24,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ),
@@ -184,12 +210,8 @@ class _SessionHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final endsIn = booking.endTime.difference(DateTime.now());
-    final countdown = endsIn.isNegative
-        ? 'Session ended'
-        : endsIn.inHours > 0
-            ? '${endsIn.inHours}h ${endsIn.inMinutes % 60}m left'
-            : '${endsIn.inMinutes}m left';
+    final state = AppScope.of(context);
+    final demo = state.dataSource == DataSource.demo;
 
     return DepthHero(
       child: Column(
@@ -213,13 +235,21 @@ class _SessionHero extends StatelessWidget {
                   color: AppColors.textInverse.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                 ),
-                child: Text(
-                  countdown,
-                  style: AppText.label(
-                    12,
-                    w: FontWeight.w700,
-                    color: AppColors.textInverse,
-                  ),
+                child: LiveClock(
+                  period: const Duration(seconds: 15),
+                  builder: (context, now) {
+                    final endsIn = booking.endTime.difference(now);
+                    return Text(
+                      endsIn.isNegative
+                          ? 'Session ended'
+                          : '${formatRemaining(endsIn)} left',
+                      style: AppText.label(
+                        12,
+                        w: FontWeight.w700,
+                        color: AppColors.textInverse,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -260,6 +290,25 @@ class _SessionHero extends StatelessWidget {
               color: AppColors.textInverse.withValues(alpha: 0.85),
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: CountdownBadge(
+              prefix: 'Check in within',
+              onGradient: true,
+              remaining: (now) => state.graceRemaining(booking, now: now),
+            ),
+          ),
+          if (!demo && booking.checkedInAt == null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Show this QR at the desk to check in.',
+              style: AppText.body(
+                12.5,
+                color: AppColors.textInverse.withValues(alpha: 0.88),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           _HeroButton(
             label: 'View QR ticket',
@@ -437,8 +486,7 @@ class _OccupancyMeter extends StatelessWidget {
     final seats =
         AppScope.of(context).seats.where((s) => s.floor == 2).toList();
     final total = seats.length;
-    final occupied =
-        seats.where((s) => s.status == SeatStatus.occupied).length;
+    final occupied = seats.where((s) => s.status == SeatStatus.occupied).length;
     final ratio = total == 0 ? 0.0 : occupied / total;
 
     final label = switch (ratio) {
@@ -461,7 +509,9 @@ class _OccupancyMeter extends StatelessWidget {
             children: [
               _Segment(active: ratio < 0.5, color: AppColors.success),
               const SizedBox(width: 6),
-              _Segment(active: ratio >= 0.5 && ratio < 0.8, color: AppColors.warning),
+              _Segment(
+                  active: ratio >= 0.5 && ratio < 0.8,
+                  color: AppColors.warning),
               const SizedBox(width: 6),
               _Segment(active: ratio >= 0.8, color: AppColors.error),
             ],

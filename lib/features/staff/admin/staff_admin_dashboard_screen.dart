@@ -3,37 +3,44 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart'
     show AppNavInset, AppStrings;
 import '../../../core/navigation/app_route.dart';
+import '../../../core/state/app_state.dart';
+import '../../../models/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import 'staff_books_screen.dart';
-import 'staff_mock_data.dart';
 import 'staff_reservations_screen.dart';
 import 'staff_seats_screen.dart';
 import 'staff_waitlist_screen.dart';
 import 'widgets/staff_quick_action.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_stat_card.dart';
 import 'widgets/staff_status_badge.dart';
 
 /// Staff admin module home: today's summary, quick navigation and the
 /// pickups that need attention next.
 ///
-/// Sits alongside the Firestore-backed staff dashboard in the parent
-/// folder; wire it into navigation once the team decides how the two
-/// implementations integrate.
+/// Every figure comes from [AppState]; sample data is never shown here.
 class StaffAdminDashboardScreen extends StatelessWidget {
   const StaffAdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final today = DateFormat('EEEE, d MMMM yyyy').format(DateTime.now());
-    final expired = StaffMockData.expiredReservationCount;
+    final state = AppScope.of(context);
+    final counts = _Counts.of(state);
+    final expired = counts.expired;
+    final loading = staffLoading(state);
+    final failed = staffFailed(state) && state.adminReservations.isEmpty;
 
     return AppScaffold(
       title: 'Staff Admin',
       showBack: false,
       contentUnderBar: true,
-      body: ListView(
+      body: StaffRefreshable(
+        state: state,
+        child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           AppSpacing.base,
           GlassAppBar.contentTopPadding(context),
@@ -41,8 +48,17 @@ class StaffAdminDashboardScreen extends StatelessWidget {
           AppNavInset.bottom,
         ),
         children: [
-          _StaffHeader(date: today),
+          _StaffHeader(date: today, counts: counts, loading: loading),
           const SizedBox(height: AppSpacing.base),
+          if (failed) ...[
+            Callout(
+              tone: CalloutTone.danger,
+              icon: Icons.cloud_off_rounded,
+              message: state.lastError?.message ??
+                  'We could not load the latest figures. Pull down to retry.',
+            ),
+            const SizedBox(height: AppSpacing.base),
+          ],
           if (expired > 0) ...[
             Callout(
               tone: CalloutTone.danger,
@@ -52,22 +68,76 @@ class StaffAdminDashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.base),
           ],
-          const _StatsSection(),
+          _StatsSection(counts: counts, loading: loading),
           const SizedBox(height: AppSpacing.xl),
           Text('Quick actions', style: AppText.title(17, w: FontWeight.w800)),
           const SizedBox(height: AppSpacing.md),
-          const _QuickActions(),
+          _QuickActions(counts: counts),
           const SizedBox(height: AppSpacing.xl),
-          const _DueNextSection(),
+          _DueNextSection(
+              reservations: state.adminReservations, loading: loading),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// Counts derived once per build from live [AppState] lists.
+class _Counts {
+  const _Counts({
+    required this.active,
+    required this.expired,
+    required this.waiting,
+    required this.freeSeats,
+    required this.staffName,
+    required this.staffId,
+    required this.sessions,
+  });
+
+  final int active;
+  final int expired;
+  final int waiting;
+  final int freeSeats;
+  final int sessions;
+  final String staffName;
+  final String staffId;
+
+  factory _Counts.of(AppState state) {
+    final now = DateTime.now();
+    var active = 0;
+    var expired = 0;
+    for (final r in state.adminReservations) {
+      switch (staffReservationStatusLabel(r, now)) {
+        case 'Active':
+          active++;
+        case 'Expired':
+          expired++;
+      }
+    }
+    return _Counts(
+      active: active,
+      expired: expired,
+      waiting: state.dashboardStats.waitingCount,
+      freeSeats:
+          state.adminSeats.where((s) => s.status == SeatStatus.available).length,
+      sessions: state.dashboardStats.activeSessions,
+      staffName: state.staffName,
+      staffId: state.staffId,
     );
   }
 }
 
 /// Glass hero: brand, date, who is on shift and the key live figure.
 class _StaffHeader extends StatelessWidget {
-  const _StaffHeader({required this.date});
+  const _StaffHeader({
+    required this.date,
+    required this.counts,
+    required this.loading,
+  });
+
+  final _Counts counts;
+  final bool loading;
 
   String get _brandLabel => '${AppStrings.appName} · Staff';
 
@@ -116,12 +186,14 @@ class _StaffHeader extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(StaffMockData.staffName,
+                          Text(counts.staffName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppText.title(15, w: FontWeight.w700)),
                           Text(
-                            '${StaffMockData.staffRole} · ${StaffMockData.staffId}',
+                            counts.staffId.isEmpty
+                                ? 'Library staff'
+                                : 'Library staff · ${counts.staffId}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppText.body(12.5,
@@ -137,12 +209,15 @@ class _StaffHeader extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  CountUp(
-                    value: StaffMockData.activeReservationCount,
-                    style: AppText.display(AppText.displayLg,
-                        w: FontWeight.w800, color: AppColors.primary),
-                  ),
-                  Text('active now',
+                  if (loading)
+                    const Skeleton(width: 48, height: 40)
+                  else
+                    CountUp(
+                      value: counts.sessions,
+                      style: AppText.display(AppText.displayLg,
+                          w: FontWeight.w800, color: AppColors.primary),
+                    ),
+                  Text('seated now',
                       style: AppText.label(12, w: FontWeight.w600)),
                 ],
               ),
@@ -155,7 +230,12 @@ class _StaffHeader extends StatelessWidget {
 }
 
 class _StatsSection extends StatelessWidget {
-  const _StatsSection();
+  const _StatsSection({required this.counts, required this.loading});
+
+  final _Counts counts;
+  final bool loading;
+
+  String _v(int n) => loading ? '—' : '$n';
 
   @override
   Widget build(BuildContext context) {
@@ -178,21 +258,21 @@ class _StatsSection extends StatelessWidget {
         children: [
           StaffStatCard(
             icon: Icons.bookmark_rounded,
-            value: '${StaffMockData.activeReservationCount}',
+            value: _v(counts.active),
             label: 'Active Reservations',
             color: AppColors.success,
             onTap: () => openReservations('Active'),
           ),
           StaffStatCard(
             icon: Icons.event_busy_rounded,
-            value: '${StaffMockData.expiredReservationCount}',
+            value: _v(counts.expired),
             label: 'Expired Reservations',
             color: AppColors.error,
             onTap: () => openReservations('Expired'),
           ),
           StaffStatCard(
             icon: Icons.hourglass_top_rounded,
-            value: '${StaffMockData.waitlistCount}',
+            value: _v(counts.waiting),
             label: 'Waiting List',
             color: AppColors.warning,
             onTap: () => AppRoute.push(
@@ -202,7 +282,7 @@ class _StatsSection extends StatelessWidget {
           ),
           StaffStatCard(
             icon: Icons.event_seat_rounded,
-            value: '${StaffMockData.availableSeatCount}',
+            value: _v(counts.freeSeats),
             label: 'Available Seats',
             color: AppColors.info,
             onTap: () => AppRoute.push(
@@ -218,7 +298,9 @@ class _StatsSection extends StatelessWidget {
 
 /// Bento grid of the four admin destinations.
 class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+  const _QuickActions({required this.counts});
+
+  final _Counts counts;
 
   @override
   Widget build(BuildContext context) {
@@ -228,14 +310,14 @@ class _QuickActions extends StatelessWidget {
         icon: Icons.bookmark_rounded,
         label: 'Reservations',
         color: AppColors.primary,
-        badge: StaffMockData.activeReservationCount,
+        badge: counts.active,
         onTap: () => open(const StaffReservationsScreen()),
       ),
       StaffQuickAction(
         icon: Icons.hourglass_top_rounded,
         label: 'Waiting list',
         color: AppColors.warning,
-        badge: StaffMockData.waitlistCount,
+        badge: counts.waiting,
         onTap: () => open(const StaffWaitlistScreen()),
       ),
       StaffQuickAction(
@@ -271,13 +353,16 @@ class _QuickActions extends StatelessWidget {
 
 /// Active reservations closest to their pickup deadline / booking end.
 class _DueNextSection extends StatelessWidget {
-  const _DueNextSection();
+  const _DueNextSection({required this.reservations, required this.loading});
+
+  final List<AdminReservation> reservations;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final dueNext = StaffMockData.reservations
+    final dueNext = reservations
         .where((r) =>
-            r.status == StaffReservationStatus.active && r.dueAt != null)
+            staffReservationStatusLabel(r) == 'Active' && r.dueAt != null)
         .toList()
       ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
 
@@ -294,7 +379,9 @@ class _DueNextSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        if (dueNext.isEmpty)
+        if (loading)
+          const SkeletonCard(height: 60)
+        else if (dueNext.isEmpty)
           SurfaceCard(
             child: Text(
               'No active reservations right now.',
@@ -312,9 +399,9 @@ class _DueNextSection extends StatelessWidget {
                   child: Row(
                     children: [
                       IconBadge(
-                        icon: r.type == StaffReservationType.book
-                            ? Icons.menu_book_rounded
-                            : Icons.event_seat_rounded,
+                        icon: r.isSeat
+                            ? Icons.event_seat_rounded
+                            : Icons.menu_book_rounded,
                         color: AppColors.primary,
                       ),
                       const SizedBox(width: AppSpacing.md),
