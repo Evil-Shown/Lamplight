@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../qr/qr_ticket_screen.dart';
+import 'pickup_countdown.dart';
 import 'reservation_cancelled_screen.dart';
 
 /// container-3 Reservation Details.
@@ -43,7 +44,10 @@ class ReservationDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final book = reservation.book;
     final cancelled = reservation.status == ReservationStatus.cancelled;
+    final expired =
+        AppScope.of(context).pickupRemaining(reservation) == Duration.zero;
     final (statusLabel, statusColor) = switch (reservation.status) {
+      _ when expired => ('Expired', AppColors.error),
       ReservationStatus.ready => ('Ready for pickup', AppColors.success),
       ReservationStatus.cancelled => ('Cancelled', AppColors.error),
       _ => ('Active', AppColors.primary),
@@ -55,20 +59,28 @@ class ReservationDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.xl),
         children: [
+          if (!cancelled) ...[
+            PickupCountdownBanner(reservation: reservation),
+            const SizedBox(height: AppSpacing.md),
+          ],
           StaggeredEntrance(
             child: TicketCard(
-              dimmed: cancelled,
+              dimmed: cancelled || expired,
               top: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BookCover(
-                    title: book.title,
-                    color: book.coverColor,
-                    isbn: book.isbn,
-                    width: 64,
-                    height: 90,
-                    heroTag: 'book-${book.id}',
-                  ),
+                  Semantics(
+                      image: true,
+                      label: 'Cover of ${book.title}',
+                      excludeSemantics: true,
+                      child: BookCover(
+                        title: book.title,
+                        color: book.coverColor,
+                        isbn: book.isbn,
+                        width: 64,
+                        height: 90,
+                        heroTag: 'book-${book.id}',
+                      )),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -79,8 +91,8 @@ class ReservationDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           book.author,
-                          style: AppText.body(13,
-                              color: AppColors.textSecondary),
+                          style:
+                              AppText.body(13, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         // Wrap so the pills reflow on narrow screens.
@@ -91,7 +103,7 @@ class ReservationDetailScreen extends StatelessWidget {
                             StatusPill(
                               label: statusLabel,
                               color: statusColor,
-                              icon: cancelled
+                              icon: cancelled || expired
                                   ? Icons.close_rounded
                                   : Icons.check_rounded,
                               compact: true,
@@ -112,7 +124,8 @@ class ReservationDetailScreen extends StatelessWidget {
                       dense: true),
                   InfoRow(
                     label: 'Pickup by',
-                    value: DateFormat('yyyy-MM-dd').format(reservation.pickupBy),
+                    value:
+                        DateFormat('yyyy-MM-dd').format(reservation.pickupBy),
                     dense: true,
                   ),
                   InfoRow(
@@ -133,7 +146,7 @@ class ReservationDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          if (!cancelled)
+          if (!cancelled && !expired)
             StaggeredEntrance(
               index: 2,
               child: PrimaryButton(
@@ -207,9 +220,7 @@ class _StatusTimeline extends StatelessWidget {
         _Step(
           ready ? 'Ready for pickup' : 'Preparing your copy',
           'Pick up by ${DateFormat('d MMM').format(reservation.pickupBy)}',
-          completed
-              ? _StepState.done
-              : _StepState.current,
+          completed ? _StepState.done : _StepState.current,
         ),
         _Step(
           'Collected',
@@ -248,11 +259,15 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color) = switch (step.state) {
       _StepState.done => (Icons.check_circle_rounded, AppColors.success),
-      _StepState.current =>
-        (Icons.radio_button_checked_rounded, AppColors.primary),
+      _StepState.current => (
+          Icons.radio_button_checked_rounded,
+          AppColors.primary
+        ),
       _StepState.failed => (Icons.cancel_rounded, AppColors.error),
-      _StepState.pending =>
-        (Icons.radio_button_unchecked_rounded, AppColors.textFaint),
+      _StepState.pending => (
+          Icons.radio_button_unchecked_rounded,
+          AppColors.textFaint
+        ),
     };
     final muted = step.state == _StepState.pending;
 

@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../reservations/live_widgets.dart';
 import 'seat_detail_screen.dart';
 import 'seat_filter_sheet.dart';
 
@@ -119,142 +120,175 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             // App-level cached-data banner (D-14).
             ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenMargin,
-                    AppSpacing.xs, AppSpacing.screenMargin, AppSpacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    StaggeredEntrance(
-                      child: Text(
-                        'Find and reserve your ideal study spot',
-                        style: AppText.title(19, w: FontWeight.w700, ls: -0.4),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    StaggeredEntrance(
-                      index: 1,
-                      // Driven by the real last-synced timestamp (D-06).
-                      child: LiveFreshness(lastSyncedAt: state.lastSyncedAt),
-                    ),
-                    const SizedBox(height: AppSpacing.base),
-                    // Floor switcher: a segmented control.
-                    StaggeredEntrance(
-                      index: 1,
-                      child: SegmentedTabs(
-                        options: const ['Floor 1', 'Floor 2', 'Floor 3'],
-                        selected: _filters.floor,
-                        padding: EdgeInsets.zero,
-                        onSelected: (value) => setState(
-                            () => _filters = _filters.copyWith(floor: value)),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    StaggeredEntrance(
-                      index: 2,
-                      child: _AvailabilitySummary(
-                        floorSeats: _floorSeats,
-                        visible: visible,
-                        floorLabel: _filters.floor,
-                        onFilters: _openFilters,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FilterChipRow(
-                      padding: EdgeInsets.zero,
-                      options: const [
-                        'Quiet Area',
-                        'Power Outlets',
-                        'Dual Monitors'
-                      ],
-                      selected: '',
-                      isSelectedOf: (option) => switch (option) {
-                        'Quiet Area' =>
-                          _filters.categories.contains(SeatCategory.quietZone),
-                        'Power Outlets' => _filters.powerOutlet,
-                        _ => _filters.monitor,
-                      },
-                      onSelected: (option) => setState(() {
-                        switch (option) {
-                          case 'Quiet Area':
-                            final next =
-                                Set<SeatCategory>.from(_filters.categories);
-                            if (!next.remove(SeatCategory.quietZone)) {
-                              next.add(SeatCategory.quietZone);
-                            }
-                            _filters = _filters.copyWith(categories: next);
-                          case 'Power Outlets':
-                            _filters = _filters.copyWith(
-                                powerOutlet: !_filters.powerOutlet);
-                          default:
-                            _filters =
-                                _filters.copyWith(monitor: !_filters.monitor);
-                        }
-                      }),
-                      iconBuilder: (option) => switch (option) {
-                        'Quiet Area' => Icons.volume_off_rounded,
-                        'Power Outlets' => Icons.power_rounded,
-                        _ => Icons.monitor_rounded,
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.base),
-                    SegmentedTabs(
-                      options: const ['Map', 'List'],
-                      selected: _view,
-                      padding: EdgeInsets.zero,
-                      onSelected: (value) => setState(() => _view = value),
-                    ),
-                    const SizedBox(height: AppSpacing.base),
-                    if (_recommended == null)
-                      const SurfaceCard(
-                        child: Text(
-                          'No free seat matches these filters. Reset them to see the full floor.',
+              child: syncFailed(state)
+                  ? syncErrorState(state)
+                  : !state.isHydrated
+                      ? ListView(
+                          padding:
+                              const EdgeInsets.all(AppSpacing.screenMargin),
+                          children: const [
+                            Skeleton(height: 120, radius: AppRadii.xl),
+                            SizedBox(height: AppSpacing.base),
+                            Skeleton(height: 280, radius: AppRadii.xl),
+                          ],
+                        )
+                      : refreshable(
+                          state,
+                          SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.screenMargin,
+                                AppSpacing.xs,
+                                AppSpacing.screenMargin,
+                                AppSpacing.xl),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                StaggeredEntrance(
+                                  child: Text(
+                                    'Find and reserve your ideal study spot',
+                                    style: AppText.title(19,
+                                        w: FontWeight.w700, ls: -0.4),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                StaggeredEntrance(
+                                  index: 1,
+                                  // Driven by the real last-synced timestamp (D-06).
+                                  child: LiveFreshness(
+                                      lastSyncedAt: state.lastSyncedAt),
+                                ),
+                                const SizedBox(height: AppSpacing.base),
+                                // Floor switcher: a segmented control.
+                                StaggeredEntrance(
+                                  index: 1,
+                                  child: SegmentedTabs(
+                                    options: const [
+                                      'Floor 1',
+                                      'Floor 2',
+                                      'Floor 3'
+                                    ],
+                                    selected: _filters.floor,
+                                    padding: EdgeInsets.zero,
+                                    onSelected: (value) => setState(() =>
+                                        _filters =
+                                            _filters.copyWith(floor: value)),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                StaggeredEntrance(
+                                  index: 2,
+                                  child: _AvailabilitySummary(
+                                    floorSeats: _floorSeats,
+                                    visible: visible,
+                                    floorLabel: _filters.floor,
+                                    onFilters: _openFilters,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                FilterChipRow(
+                                  padding: EdgeInsets.zero,
+                                  options: const [
+                                    'Quiet Area',
+                                    'Power Outlets',
+                                    'Dual Monitors'
+                                  ],
+                                  selected: '',
+                                  isSelectedOf: (option) => switch (option) {
+                                    'Quiet Area' => _filters.categories
+                                        .contains(SeatCategory.quietZone),
+                                    'Power Outlets' => _filters.powerOutlet,
+                                    _ => _filters.monitor,
+                                  },
+                                  onSelected: (option) => setState(() {
+                                    switch (option) {
+                                      case 'Quiet Area':
+                                        final next = Set<SeatCategory>.from(
+                                            _filters.categories);
+                                        if (!next
+                                            .remove(SeatCategory.quietZone)) {
+                                          next.add(SeatCategory.quietZone);
+                                        }
+                                        _filters =
+                                            _filters.copyWith(categories: next);
+                                      case 'Power Outlets':
+                                        _filters = _filters.copyWith(
+                                            powerOutlet: !_filters.powerOutlet);
+                                      default:
+                                        _filters = _filters.copyWith(
+                                            monitor: !_filters.monitor);
+                                    }
+                                  }),
+                                  iconBuilder: (option) => switch (option) {
+                                    'Quiet Area' => Icons.volume_off_rounded,
+                                    'Power Outlets' => Icons.power_rounded,
+                                    _ => Icons.monitor_rounded,
+                                  },
+                                ),
+                                const SizedBox(height: AppSpacing.base),
+                                SegmentedTabs(
+                                  options: const ['Map', 'List'],
+                                  selected: _view,
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (value) =>
+                                      setState(() => _view = value),
+                                ),
+                                const SizedBox(height: AppSpacing.base),
+                                if (_recommended == null)
+                                  const SurfaceCard(
+                                    child: Text(
+                                      'No free seat matches these filters. Reset them to see the full floor.',
+                                    ),
+                                  )
+                                else
+                                  StaggeredEntrance(
+                                    child: _RecommendedCard(
+                                      seat: _recommended!.seat,
+                                      reasons: _recommended!.reasons,
+                                      onTap: () =>
+                                          _openDetail(_recommended!.seat),
+                                    ),
+                                  ),
+                                const SizedBox(height: AppSpacing.base),
+                                if (visible.isEmpty)
+                                  EmptyState(
+                                    icon: Icons.event_seat_outlined,
+                                    title: _floorSeats.isEmpty
+                                        ? 'No seats on this floor'
+                                        : 'No seats match these filters',
+                                    message: _floorSeats.isEmpty
+                                        ? 'Try another floor, or clear the area and facility filters.'
+                                        : 'Every desk on this floor is hidden by the '
+                                            'active filters. Clear them to see the full map.',
+                                  )
+                                else if (_view == 'List')
+                                  _SeatList(
+                                    seats: visible,
+                                    selected: _selected,
+                                    mySeatIds: mySeatIds,
+                                    onSelect: (seat) =>
+                                        setState(() => _selected = seat),
+                                    onOpen: _openDetail,
+                                  )
+                                else ...[
+                                  StaggeredEntrance(
+                                    child: _SeatGridCard(
+                                      visible: visible,
+                                      floorSeats: _floorSeats,
+                                      selected: _selected,
+                                      mySeatIds: mySeatIds,
+                                      onSelect: (seat) =>
+                                          setState(() => _selected = seat),
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.base),
+                                  _Legend(
+                                      visible: visible, mySeatIds: mySeatIds),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
-                      )
-                    else
-                      StaggeredEntrance(
-                        child: _RecommendedCard(
-                          seat: _recommended!.seat,
-                          reasons: _recommended!.reasons,
-                          onTap: () => _openDetail(_recommended!.seat),
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.base),
-                    if (visible.isEmpty)
-                      EmptyState(
-                        icon: Icons.event_seat_outlined,
-                        title: _floorSeats.isEmpty
-                            ? 'No seats on this floor'
-                            : 'No seats match these filters',
-                        message: _floorSeats.isEmpty
-                            ? 'Try another floor, or clear the area and facility filters.'
-                            : 'Every desk on this floor is hidden by the '
-                                'active filters. Clear them to see the full map.',
-                      )
-                    else if (_view == 'List')
-                      _SeatList(
-                        seats: visible,
-                        selected: _selected,
-                        mySeatIds: mySeatIds,
-                        onSelect: (seat) => setState(() => _selected = seat),
-                        onOpen: _openDetail,
-                      )
-                    else ...[
-                      StaggeredEntrance(
-                        child: _SeatGridCard(
-                          visible: visible,
-                          floorSeats: _floorSeats,
-                          selected: _selected,
-                          mySeatIds: mySeatIds,
-                          onSelect: (seat) => setState(() => _selected = seat),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.base),
-                      _Legend(visible: visible, mySeatIds: mySeatIds),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -701,8 +735,16 @@ class _SeatBadge extends StatelessWidget {
       child: node,
     );
 
+    // "Seat 2C, quiet zone, available, power outlet" plus the selection.
+    final extras = [
+      if (seat.hasPowerOutlet) 'power outlet',
+      if (seat.nearWindow) 'near window',
+    ];
     return Semantics(
-      label: 'Seat ${seat.label}, $statusLabel',
+      label: 'Seat ${seat.label}, ${seat.zoneLabel.toLowerCase()}, '
+          '$statusLabel'
+          '${extras.isEmpty ? '' : ', ${extras.join(', ')}'}'
+          '${isSelected ? ', selected' : ''}',
       button: onTap != null,
       selected: isSelected,
       excludeSemantics: true,
@@ -919,58 +961,152 @@ class _SeatList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Group by zone, keeping first-seen zone order; seats sorted by label.
+    final zones = <String, List<Seat>>{};
+    for (final seat in seats) {
+      zones.putIfAbsent(seat.zoneLabel, () => []).add(seat);
+    }
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final seat in seats) ...[
-          SurfaceCard(
-            onTap: () {
-              onSelect(seat);
-              onOpen(seat);
-            },
-            borderColor: selected?.id == seat.id
-                ? AppColors.primary
-                : mySeatIds.contains(seat.id)
-                    ? AppColors.amberHighlight
-                    : null,
-            child: Row(
-              children: [
-                Text(seat.label, style: AppText.title(16, w: FontWeight.w700)),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    '${seat.zoneLabel} · Floor ${seat.floor}',
-                    style: AppText.body(13, color: AppColors.textSecondary),
-                  ),
-                ),
-                if (mySeatIds.contains(seat.id)) ...[
-                  StatusPill(
-                    label: 'Yours',
-                    icon: Icons.check_rounded,
-                    color: AppColors.gold,
-                    compact: true,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                StatusPill(
-                  label: _statusText(seat.status),
-                  icon: switch (seat.status) {
-                    SeatStatus.available => Icons.check_circle_outline_rounded,
-                    SeatStatus.limited => Icons.timelapse_rounded,
-                    SeatStatus.occupied => Icons.block_rounded,
-                  },
-                  color: switch (seat.status) {
-                    SeatStatus.available => AppColors.success,
-                    SeatStatus.limited => AppColors.warning,
-                    SeatStatus.occupied => AppColors.error,
-                  },
-                  compact: true,
-                ),
-              ],
+        for (final zone in zones.entries) ...[
+          Semantics(
+            header: true,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  left: AppSpacing.xs, bottom: AppSpacing.sm),
+              child: Text(
+                '${zone.key.toUpperCase()} · ${zone.value.length} SEATS',
+                style: AppText.overline(11, color: AppColors.textFaint),
+              ),
             ),
           ),
-          const SizedBox(height: 10),
+          for (final seat in ([...zone.value]
+            ..sort((a, b) => a.label.compareTo(b.label)))) ...[
+            _SeatListRow(
+              seat: seat,
+              isSelected: selected?.id == seat.id,
+              isMine: mySeatIds.contains(seat.id),
+              onSelect: () => onSelect(seat),
+            ),
+            const SizedBox(height: 10),
+          ],
+          const SizedBox(height: AppSpacing.sm),
         ],
       ],
+    );
+  }
+}
+
+/// One seat in the accessible list: zone, status, power / window and a
+/// Select button (the bottom bar then offers Continue).
+class _SeatListRow extends StatelessWidget {
+  const _SeatListRow({
+    required this.seat,
+    required this.isSelected,
+    required this.isMine,
+    required this.onSelect,
+  });
+
+  final Seat seat;
+  final bool isSelected;
+  final bool isMine;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final extras = [
+      if (seat.hasPowerOutlet) 'power outlet',
+      if (seat.nearWindow) 'near window',
+    ];
+    return Semantics(
+      container: true,
+      selected: isSelected,
+      label: 'Seat ${seat.label}, ${seat.zoneLabel.toLowerCase()}, '
+          '${_statusText(seat.status).toLowerCase()}'
+          '${extras.isEmpty ? '' : ', ${extras.join(', ')}'}'
+          '${isMine ? ', reserved by you' : ''}'
+          '${isSelected ? ', selected' : ''}',
+      child: SurfaceCard(
+        borderColor: isSelected
+            ? AppColors.primary
+            : isMine
+                ? AppColors.amberHighlight
+                : null,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Seat ${seat.label}',
+                      style: AppText.title(16, w: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Floor ${seat.floor}',
+                    style: AppText.body(12.5, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      if (isMine)
+                        StatusPill(
+                          label: 'Yours',
+                          icon: Icons.check_rounded,
+                          color: AppColors.gold,
+                          compact: true,
+                        ),
+                      StatusPill(
+                        label: _statusText(seat.status),
+                        icon: switch (seat.status) {
+                          SeatStatus.available =>
+                            Icons.check_circle_outline_rounded,
+                          SeatStatus.limited => Icons.timelapse_rounded,
+                          SeatStatus.occupied => Icons.block_rounded,
+                        },
+                        color: switch (seat.status) {
+                          SeatStatus.available => AppColors.success,
+                          SeatStatus.limited => AppColors.warning,
+                          SeatStatus.occupied => AppColors.error,
+                        },
+                        compact: true,
+                      ),
+                      if (seat.hasPowerOutlet)
+                        StatusPill(
+                          label: 'Power',
+                          icon: Icons.power_rounded,
+                          color: AppColors.primary,
+                          compact: true,
+                        ),
+                      if (seat.nearWindow)
+                        StatusPill(
+                          label: 'Window',
+                          icon: Icons.wb_sunny_outlined,
+                          color: AppColors.primary,
+                          compact: true,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            OutlinedButton(
+              onPressed: () {
+                AppFeedback.select();
+                onSelect();
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(72, 44),
+                shape: const StadiumBorder(),
+              ),
+              child: Text(isSelected ? 'Selected' : 'Select'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

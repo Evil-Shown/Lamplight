@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../state/app_state.dart';
 import '../feedback/app_feedback.dart';
 
 import '../theme/app_theme.dart';
@@ -1868,7 +1869,8 @@ class LiveFreshness extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, label, pulsing) = _resolve();
+    final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
+    final (color, label, pulsing) = _resolve(scope?.notifier);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1886,7 +1888,29 @@ class LiveFreshness extends StatelessWidget {
     );
   }
 
-  (Color, String, bool) _resolve() {
+  (Color, String, bool) _resolve(AppState? state) {
+    if (state != null) {
+      // Truthful states first: the data source and connection health win
+      // over the age of the last snapshot.
+      if (state.dataSource == DataSource.demo) {
+        return (AppColors.neutral, 'Demo data', false);
+      }
+      switch (state.syncStatus) {
+        case SyncStatus.syncing:
+          return (AppColors.neutral, 'Syncing…', false);
+        case SyncStatus.offline:
+          return (AppColors.warning, 'Offline · saved data', false);
+        case SyncStatus.signedOut:
+          return (AppColors.warning, 'Not signed in', false);
+        case SyncStatus.permissionDenied:
+          return (AppColors.error, 'No permission to load data', false);
+        case SyncStatus.error:
+          return (AppColors.error, 'Sync problem · saved data', false);
+        case SyncStatus.stale:
+        case SyncStatus.live:
+          break;
+      }
+    }
     if (lastSyncedAt == null) {
       return (AppColors.warning, 'Offline — showing cached data', false);
     }
@@ -2202,67 +2226,170 @@ class ShelfTag extends StatelessWidget {
   }
 }
 
-/// App-level strip shown under the chrome on root tabs when the live
-/// streams have gone quiet: never synced, or the last sync is older than
-/// five minutes. Slides in and out so it never jolts the layout.
+/// App-level strip under the chrome that tells the truth about the data on
+/// screen. It reads [AppState.syncStatus]: hidden when live and fresh, a
+/// quiet "Demo data" chip for sample data, and a warning strip with a Retry
+/// action for offline, stale, permission and other sync problems.
 class ConnectivityBanner extends StatelessWidget {
   const ConnectivityBanner({super.key, required this.lastSyncedAt});
 
+  /// Kept for existing callers; falls back to the state's own value.
   final DateTime? lastSyncedAt;
 
-  /// Null sync = cold cache; anything older than five minutes is treated
-  /// as a connection problem, matching [LiveFreshness]'s stale threshold.
-  bool get _shouldShow {
-    if (lastSyncedAt == null) return true;
-    return DateTime.now().difference(lastSyncedAt!).inMinutes >= 5;
-  }
-
-  String get _message {
-    if (lastSyncedAt == null) return 'Offline — showing cached data';
-    final minutes = DateTime.now().difference(lastSyncedAt!).inMinutes;
-    return 'Connection issue — data is $minutes min old';
+  static String _ago(DateTime at) {
+    final d = DateTime.now().difference(at);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours} h ago';
+    return '${d.inDays} d ago';
   }
 
   @override
   Widget build(BuildContext context) {
-    final show = _shouldShow;
+    final state = AppScope.of(context);
+    final synced = lastSyncedAt ?? state.lastSyncedAt;
+    final status = state.syncStatus;
+
+    Widget? content;
+    if (state.dataSource == DataSource.demo) {
+      content = _chip();
+    } else {
+      final savedNote = synced == null
+          ? 'No sync yet'
+          : 'Last synced ${_ago(synced)}';
+      content = switch (status) {
+        SyncStatus.live => null,
+        SyncStatus.syncing => _strip(
+            icon: Icons.sync_rounded,
+            message: 'Syncing…',
+            showRetry: false,
+            state: state,
+          ),
+        SyncStatus.offline || SyncStatus.stale => _strip(
+            icon: Icons.cloud_off_rounded,
+            message: "You're offline — showing saved data",
+            detail: savedNote,
+            state: state,
+          ),
+        SyncStatus.signedOut => _strip(
+            icon: Icons.lock_outline_rounded,
+            message: 'Not signed in',
+            showRetry: false,
+            state: state,
+          ),
+        SyncStatus.permissionDenied => _strip(
+            icon: Icons.block_rounded,
+            message: "Can't load data: you don't have permission",
+            state: state,
+          ),
+        SyncStatus.error => _strip(
+            icon: Icons.error_outline_rounded,
+            message: state.lastError?.message ??
+                'Something went wrong while syncing.',
+            detail: savedNote,
+            state: state,
+          ),
+      };
+    }
+
     return Semantics(
       liveRegion: true,
-      child: AnimatedSlide(
-        offset: show ? Offset.zero : const Offset(0, -1),
+      child: AnimatedSize(
         duration: AppMotion.base,
         curve: AppMotion.enter,
-        child: AnimatedOpacity(
-          opacity: show ? 1 : 0,
-          duration: AppMotion.base,
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.warningContainer,
-              borderRadius: BorderRadius.circular(AppRadii.sm),
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: double.infinity,
+          child: content ?? const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip() {
+    return Container(
+      alignment: Alignment.centerLeft,
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.neutralSoft,
+          borderRadius: BorderRadius.circular(AppRadii.full),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.science_outlined, size: 14, color: AppColors.neutral),
+            const SizedBox(width: 6),
+            Text(
+              'Demo data',
+              style: AppText.label(
+                11.5,
+                w: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
-            child: Row(
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _strip({
+    required IconData icon,
+    required String message,
+    required AppState state,
+    String? detail,
+    bool showRetry = true,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: AppColors.warningContainer,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.onWarningContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.cloud_off_rounded,
-                    size: 15, color: AppColors.onWarningContainer),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _message,
-                    style: AppText.label(
-                      12,
-                      w: FontWeight.w600,
+                Text(
+                  message,
+                  style: AppText.label(
+                    12,
+                    w: FontWeight.w600,
+                    color: AppColors.onWarningContainer,
+                  ),
+                ),
+                if (detail != null)
+                  Text(
+                    detail,
+                    style: AppText.body(
+                      11,
                       color: AppColors.onWarningContainer,
                     ),
                   ),
-                ),
               ],
             ),
           ),
-        ),
+          if (showRetry)
+            TextButton(
+              onPressed: () => state.refresh(),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(44, 44),
+                foregroundColor: AppColors.onWarningContainer,
+              ),
+              child: Text(
+                'Retry',
+                style: AppText.label(12, w: FontWeight.w700),
+              ),
+            ),
+        ],
       ),
     );
   }

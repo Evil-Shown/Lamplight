@@ -5,6 +5,7 @@ class AppStrings {
   static const seatSearchHint = 'Filter by floor or section…';
 }
 
+@Deprecated('Use AppSpacing from app_theme.dart')
 class AppSpacing {
   static const xs = 4.0;
   static const sm = 8.0;
@@ -22,4 +23,13 @@ class AppTouchTarget {
 /// Extra bottom inset so scroll content clears the navigation bar.
 class AppNavInset {
   static const bottom = 96.0;
+}
+
+/// Library policy numbers shared by countdowns and reminders. The server
+/// enforces the real values; these only drive on-screen timers.
+class AppPolicy {
+  static const checkInGraceMinutes = 15;
+  static const seatReminderLeadMinutes = 30;
+  static const pickupReminderLeadHours = 2;
+  static const loanReminderLeadDays = 2;
 }

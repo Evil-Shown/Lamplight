@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/app_constants.dart' show AppPolicy;
 import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
@@ -89,6 +90,13 @@ class BookingConfirmationScreen extends StatelessWidget {
           const Callout(
             icon: Icons.qr_code_rounded,
             message: 'Your QR pass is ready. Show it at the entrance.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Callout(
+            icon: Icons.timer_outlined,
+            tone: CalloutTone.warning,
+            message: "Your seat is released if you don't check in within "
+                '${AppPolicy.checkInGraceMinutes} minutes of the start time.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(

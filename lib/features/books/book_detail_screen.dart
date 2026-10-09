@@ -22,15 +22,22 @@ class BookDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canReserve = book.availability == BookAvailability.available;
-    final glow = book.coverColor == null
-        ? AppColors.primary
-        : Color(book.coverColor!);
+    // Prefer the live catalogue copy so counts stay current while open.
+    final book = AppScope.of(context)
+            .books
+            .where((b) => b.id == this.book.id)
+            .firstOrNull ??
+        this.book;
+    final canReserve = book.availability == BookAvailability.available &&
+        book.copiesAvailable > 0;
+    final glow =
+        book.coverColor == null ? AppColors.primary : Color(book.coverColor!);
 
     return AppScaffold(
       title: 'Book Details',
       actions: [
         IconButton(
+          tooltip: 'Share',
           icon: const Icon(Icons.ios_share_rounded, size: 19),
           onPressed: () {
             AppFeedback.tap();
@@ -65,15 +72,19 @@ class BookDetailScreen extends StatelessWidget {
                     child: Tilt3D(
                       maxTilt: 0.16,
                       lift: 12,
-                      child: BookCover(
-                        title: book.title,
-                        color: book.coverColor,
-                        isbn: book.isbn,
-                        width: 132,
-                        height: 188,
-                        radius: AppRadii.sm,
-                        heroTag: 'book-${book.id}',
-                      ),
+                      child: Semantics(
+                          image: true,
+                          label: 'Cover of ${book.title}',
+                          excludeSemantics: true,
+                          child: BookCover(
+                            title: book.title,
+                            color: book.coverColor,
+                            isbn: book.isbn,
+                            width: 132,
+                            height: 188,
+                            radius: AppRadii.sm,
+                            heroTag: 'book-${book.id}',
+                          )),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.base),
@@ -107,8 +118,7 @@ class BookDetailScreen extends StatelessWidget {
                           BookAvailability.onLoan => 'Currently on loan',
                           BookAvailability.waitlisted => 'All copies out',
                         },
-                        color:
-                            canReserve ? AppColors.success : AppColors.error,
+                        color: canReserve ? AppColors.success : AppColors.error,
                         icon: canReserve
                             ? Icons.check_circle_outline_rounded
                             : Icons.info_outline_rounded,
@@ -185,8 +195,7 @@ class BookDetailScreen extends StatelessWidget {
                 label: 'RESERVE BOOK',
                 icon: Icons.bookmark_add_outlined,
                 onPressed: () {
-                  final reservation =
-                      AppScope.read(context).reserveBook(book);
+                  final reservation = AppScope.read(context).reserveBook(book);
                   AppRoute.push(
                     context,
                     ReservationConfirmationScreen(

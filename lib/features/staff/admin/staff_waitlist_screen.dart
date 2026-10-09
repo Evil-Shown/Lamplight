@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart' show AppNavInset;
-import '../../../core/feedback/app_feedback.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../../../models/models.dart';
-import 'staff_mock_data.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_status_badge.dart';
 
-/// Staff-side view of the shared book/seat waitlist queues with simple
-/// desk actions (notify, mark ready, remove) on mock data.
+String _statusLabel(WaitlistStatus s) => switch (s) {
+      WaitlistStatus.waiting => 'Waiting',
+      WaitlistStatus.offered => 'Offered',
+      WaitlistStatus.accepted => 'Accepted',
+      WaitlistStatus.declined => 'Declined',
+      WaitlistStatus.expired => 'Expired',
+    };
+
+/// Staff-side view of the shared book/seat waitlist (live, read-only).
+///
+/// The server promotes the queue and sends offers on its own, and AppState
+/// has no staff method for notify / mark ready / remove, so those desk
+/// actions are not offered rather than faked.
 class StaffWaitlistScreen extends StatefulWidget {
   const StaffWaitlistScreen({super.key});
 
@@ -19,56 +30,99 @@ class StaffWaitlistScreen extends StatefulWidget {
 }
 
 class _StaffWaitlistScreenState extends State<StaffWaitlistScreen> {
+  static const _filters = [
+    'All',
+    'Waiting',
+    'Offered',
+    'Accepted',
+    'Declined',
+    'Expired',
+  ];
+
+  String _filter = 'All';
+
   @override
   Widget build(BuildContext context) {
-    final entries = List<StaffWaitlistItem>.from(StaffMockData.waitlist);
+    final state = AppScope.of(context);
+    final all = state.adminWaitlist;
+    final entries = all
+        .where((w) =>
+            _filter == 'All' || _statusLabel(w.entry.status) == _filter)
+        .toList();
 
     return AppScaffold(
       title: 'Waiting List',
       contentUnderBar: true,
-      body: entries.isEmpty
-          ? const EmptyState(
-              icon: Icons.hourglass_top_outlined,
-              title: 'Queue is empty',
-              message: 'No students are waiting for books or seats right now.',
-            )
-          : ListView.separated(
-              padding: EdgeInsets.fromLTRB(
-                  AppSpacing.base,
-                  GlassAppBar.contentTopPadding(context),
-                  AppSpacing.base,
-                  AppNavInset.bottom),
-              itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (context, index) => _WaitlistCard(
-                entry: entries[index],
-                onChanged: () => setState(() {}),
-              ),
+      body: Column(
+        children: [
+          SizedBox(height: GlassAppBar.contentTopPadding(context)),
+          FilterChipRow(
+            options: _filters,
+            selected: _filter,
+            onSelected: (f) => setState(() => _filter = f),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Expanded(
+            child: StaffLiveGate(
+              state: state,
+              hasData: all.isNotEmpty,
+              builder: (context) => entries.isEmpty
+                  ? StaffScrollable(
+                      state: state,
+                      child: EmptyState(
+                        icon: Icons.hourglass_top_outlined,
+                        title: all.isEmpty ? 'Queue is empty' : 'Nothing here',
+                        message: all.isEmpty
+                            ? 'No students are waiting for books or seats right now.'
+                            : 'No waitlist entries match this filter.',
+                      ),
+                    )
+                  : StaffRefreshable(
+                      state: state,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                            AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                        itemCount: entries.length + 1,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (context, index) => index == 0
+                            ? const Callout(
+                                tone: CalloutTone.info,
+                                icon: Icons.info_outline_rounded,
+                                message:
+                                    'Offers are sent automatically when a copy or seat frees up. '
+                                    'Manual notify, mark ready and remove are not available yet.',
+                              )
+                            : _WaitlistCard(item: entries[index - 1]),
+                      ),
+                    ),
             ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _WaitlistCard extends StatelessWidget {
-  const _WaitlistCard({required this.entry, required this.onChanged});
+  const _WaitlistCard({required this.item});
 
-  final StaffWaitlistItem entry;
-  final VoidCallback onChanged;
+  final AdminWaitlistItem item;
 
-  String get _statusLabel => switch (entry.status) {
-        StaffWaitlistStatus.waiting => 'Waiting',
-        StaffWaitlistStatus.notified => 'Notified',
-        StaffWaitlistStatus.ready => 'Ready',
-      };
+  WaitlistEntry get _entry => item.entry;
 
-  StaffBadgeTone get _tone => switch (entry.status) {
-        StaffWaitlistStatus.waiting => StaffBadgeTone.neutral,
-        StaffWaitlistStatus.notified => StaffBadgeTone.info,
-        StaffWaitlistStatus.ready => StaffBadgeTone.success,
+  StaffBadgeTone get _tone => switch (_entry.status) {
+        WaitlistStatus.waiting => StaffBadgeTone.neutral,
+        WaitlistStatus.offered => StaffBadgeTone.info,
+        WaitlistStatus.accepted => StaffBadgeTone.success,
+        WaitlistStatus.declined => StaffBadgeTone.warning,
+        WaitlistStatus.expired => StaffBadgeTone.danger,
       };
 
   @override
   Widget build(BuildContext context) {
+    final entry = _entry;
     return SurfaceCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,27 +144,30 @@ class _WaitlistCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        entry.studentName,
+                        item.studentName,
                         style: AppText.title(15, w: FontWeight.w800),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
                     StaffStatusBadge(
-                        label: _statusLabel, tone: _tone, compact: true),
+                        label: _statusLabel(entry.status),
+                        tone: _tone,
+                        compact: true),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  entry.studentId,
+                  item.studentId,
                   style: AppText.body(13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${entry.itemTitle} · Position #${entry.position}',
+                  '${entry.title} · Position #${entry.position}',
                   style: AppText.label(13,
                       w: FontWeight.w700, color: AppColors.textPrimary),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
@@ -121,122 +178,8 @@ class _WaitlistCard extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuButton<String>(
-            tooltip: 'Desk actions',
-            icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
-            onOpened: AppFeedback.tap,
-            onSelected: (action) => _handleAction(context, action),
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'notify',
-                child: ListTile(
-                  leading: Icon(Icons.notifications_outlined),
-                  title: Text('Notify student'),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'ready',
-                child: ListTile(
-                  leading: Icon(Icons.check_circle_outline_rounded),
-                  title: Text('Mark as ready'),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'remove',
-                child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded),
-                  title: Text('Remove from waitlist'),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
-  }
-
-  void _handleAction(BuildContext context, String action) {
-    switch (action) {
-      case 'notify':
-        AppFeedback.success();
-        _updateStatus(StaffWaitlistStatus.notified);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${entry.studentName} notified by app alert')),
-        );
-      case 'ready':
-        AppFeedback.success();
-        _updateStatus(StaffWaitlistStatus.ready);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('${entry.itemTitle} marked ready for ${entry.studentName}')),
-        );
-      case 'remove':
-        _confirmRemove(context);
-    }
-  }
-
-  void _updateStatus(StaffWaitlistStatus status) {
-    final index = StaffMockData.waitlist.indexOf(entry);
-    if (index != -1) {
-      StaffMockData.waitlist[index] = entry.copyWith(status: status);
-    }
-    onChanged();
-  }
-
-  void _confirmRemove(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove from waitlist?'),
-        content: Text(
-            '${entry.studentName} will lose position #${entry.position} for ${entry.itemTitle}.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              minimumSize: const Size(0, 40),
-            ),
-            onPressed: () {
-              AppFeedback.warning();
-              Navigator.pop(dialogContext);
-              StaffMockData.waitlist.remove(entry);
-              _renumberQueues();
-              onChanged();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content:
-                        Text('${entry.studentName} removed from the waitlist')),
-              );
-            },
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Keep queue positions contiguous after a removal.
-  void _renumberQueues() {
-    for (final type in WaitlistType.values) {
-      final ofType = StaffMockData.waitlist
-          .where((w) => w.type == type)
-          .toList()
-        ..sort((a, b) => a.position.compareTo(b.position));
-      for (var i = 0; i < ofType.length; i++) {
-        final index = StaffMockData.waitlist.indexOf(ofType[i]);
-        StaffMockData.waitlist[index] = ofType[i].copyWith(position: i + 1);
-      }
-    }
   }
 }

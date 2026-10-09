@@ -83,13 +83,12 @@ class ReservationCancelledScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(last.book.title,
-                                  style:
-                                      AppText.title(15, w: FontWeight.w700)),
+                                  style: AppText.title(15, w: FontWeight.w700)),
                               const SizedBox(height: 2),
                               Text(
                                 last.book.author,
-                                style: AppText.body(
-                                    12.5, color: AppColors.textSecondary),
+                                style: AppText.body(12.5,
+                                    color: AppColors.textSecondary),
                               ),
                             ],
                           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/constants/app_constants.dart' show AppNavInset;
 import '../../core/feedback/app_feedback.dart';
@@ -8,8 +9,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
-import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
+import 'admin/widgets/staff_live_states.dart';
 import 'staff_scanner_screen.dart';
 
 /// P-13 Staff Dashboard.
@@ -51,7 +52,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    const stats = MockData.dashboardStats;
+    final stats = state.dashboardStats;
+    final loading = staffLoading(state);
+    final failed = staffFailed(state) && state.queue.isEmpty;
     final queue = _filtered(state.queue);
     final waiting =
         state.queue.where((e) => e.status != QueueStatus.expired).length;
@@ -61,7 +64,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
-        child: ListView(
+        child: RefreshIndicator(
+          onRefresh: state.refresh,
+          child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
               AppSpacing.base, AppSpacing.base, AppSpacing.base, AppNavInset.bottom),
           children: [
@@ -151,9 +157,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'Reservations',
-                    value: stats['reservations']!,
-                    caption: '+4 today',
+                    label: 'Due today',
+                    value: stats.reservationsDueToday,
+                    caption: 'Book pickups',
                     color: AppColors.primary,
                     icon: Icons.confirmation_num_outlined,
                   ),
@@ -162,8 +168,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 Expanded(
                   child: StatTile(
                     label: 'Waitlisted',
-                    value: stats['waitlisted']!,
-                    caption: '3 expired',
+                    value: stats.waitingCount,
+                    caption: 'Books and seats',
                     color: AppColors.warning,
                     icon: Icons.hourglass_top_rounded,
                   ),
@@ -175,10 +181,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'On-time',
-                    value: stats['onTime']!,
-                    suffix: '%',
-                    caption: 'Excellent',
+                    label: 'In session',
+                    value: stats.activeSessions,
+                    caption: 'Seated now',
                     color: AppColors.success,
                     icon: Icons.schedule_rounded,
                   ),
@@ -187,9 +192,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 Expanded(
                   child: StatTile(
                     label: 'Seat fill',
-                    value: stats['seatFill']!,
+                    value: stats.seatFillPercent,
                     suffix: '%',
-                    caption: 'Moderate',
+                    caption:
+                        '${stats.seatsOccupied} of ${stats.seatsTotal} seats',
                     color: AppColors.accent,
                     icon: Icons.event_seat_outlined,
                   ),
@@ -223,7 +229,21 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               padding: EdgeInsets.zero,
             ),
             const SizedBox(height: AppSpacing.base),
-            if (queue.isEmpty)
+            if (loading)
+              const Column(
+                children: [
+                  SkeletonCard(height: 100),
+                  SizedBox(height: AppSpacing.md),
+                  SkeletonCard(height: 100),
+                ],
+              )
+            else if (failed)
+              ErrorState(
+                message: state.lastError?.message ??
+                    'We could not load the dispatch queue.',
+                onRetry: state.refresh,
+              )
+            else if (queue.isEmpty)
               const EmptyState(
                 icon: Icons.inbox_rounded,
                 title: 'Queue is clear',
@@ -239,17 +259,11 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                     entry: queue[i],
                     onApprove: () => state.approveQueueEntry(queue[i].id),
                     onDismiss: () => state.dismissQueueEntry(queue[i].id),
-                    onWarn: () {
-                      AppFeedback.warning();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('${queue[i].studentName} warned')),
-                      );
-                    },
                   ),
                 ),
               ],
           ],
+        ),
         ),
       ),
     );
@@ -261,13 +275,11 @@ class _QueueRow extends StatelessWidget {
     required this.entry,
     required this.onApprove,
     required this.onDismiss,
-    required this.onWarn,
   });
 
   final QueueEntry entry;
   final VoidCallback onApprove;
   final VoidCallback onDismiss;
-  final VoidCallback onWarn;
 
   (Color, String) get _status => switch (entry.status) {
         QueueStatus.active => (AppColors.success, 'Active'),
@@ -296,7 +308,9 @@ class _QueueRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadii.xs),
                 ),
                 child: Text(
-                  entry.studentName.substring(0, 1).toUpperCase(),
+                  entry.studentName.isEmpty
+                      ? '?'
+                      : entry.studentName.substring(0, 1).toUpperCase(),
                   style:
                       AppText.title(14, w: FontWeight.w700, color: color),
                 ),
@@ -333,7 +347,7 @@ class _QueueRow extends StatelessWidget {
                 child: _RowAction(
                   label: 'Contact',
                   icon: Icons.phone_outlined,
-                  onTap: () {},
+                  onTap: () => _showContact(context, entry),
                 ),
               ),
               const SizedBox(width: 8),
@@ -360,6 +374,62 @@ class _QueueRow extends StatelessWidget {
   }
 }
 
+/// Glass sheet with the student's identity and what can be done from the
+/// device. A queue entry only carries name, ID and location (no phone or
+/// email), and `url_launcher` is not a dependency, so copying the ID is the
+/// working action.
+void _showContact(BuildContext context, QueueEntry entry) {
+  showGlassSheet<void>(
+    context,
+    builder: (sheetContext) => Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Contact student',
+              style: AppText.title(20, w: FontWeight.w800)),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+              entry.studentName.isEmpty ? 'Unknown student' : entry.studentName,
+              style: AppText.title(17, w: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            entry.studentId.isEmpty ? 'No student ID on file' : entry.studentId,
+            style: AppText.body(13.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 2),
+          Text(entry.location,
+              style: AppText.body(13, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+            'No phone number or email is on file for this request. '
+            'Use the student ID to look them up at the desk.',
+            style: AppText.body(12.5, color: AppColors.textFaint),
+          ),
+          const SizedBox(height: AppSpacing.base),
+          PrimaryButton(
+            label: 'Copy student ID',
+            icon: Icons.copy_rounded,
+            onPressed: entry.studentId.isEmpty
+                ? null
+                : () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await Clipboard.setData(
+                        ClipboardData(text: entry.studentId));
+                    AppFeedback.success();
+                    if (sheetContext.mounted) Navigator.pop(sheetContext);
+                    messenger.showSnackBar(
+                        const SnackBar(content: Text('Student ID copied')));
+                  },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.label,
@@ -376,9 +446,14 @@ class _RowAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveTone = tone ?? AppColors.primary;
-    return PressScale(
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: PressScale(
       onTap: onTap,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(vertical: 13),
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -400,6 +475,7 @@ class _RowAction extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

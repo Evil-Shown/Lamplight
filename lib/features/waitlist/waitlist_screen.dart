@@ -7,6 +7,7 @@ import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
+import '../reservations/live_widgets.dart';
 import 'waitlist_joined_screen.dart';
 
 /// P-09 Waiting List.
@@ -58,10 +59,19 @@ class WaitlistScreen extends StatelessWidget {
         ? <String>['Any edition', book!.subject]
         : _preferences(current!);
 
+    // Entries that ended (expired / declined) no longer block rejoining.
     final mine = state.waitlist.where(
-      (entry) => entry.title == resourceTitle,
+      (entry) =>
+          entry.title == resourceTitle &&
+          (entry.status == WaitlistStatus.waiting || entry.isOffered),
+    );
+    final past = state.waitlist.where(
+      (entry) =>
+          entry.title == resourceTitle &&
+          entry.status == WaitlistStatus.expired,
     );
     final alreadyWaiting = mine.isNotEmpty;
+    final offer = mine.where((e) => e.isOffered).firstOrNull;
     final position =
         alreadyWaiting ? mine.first.position : state.waitlist.length + 1;
 
@@ -80,6 +90,24 @@ class WaitlistScreen extends StatelessWidget {
                 : 'Seat ${current!.label} is currently unavailable. Join the '
                     'queue and we will tell you when it frees up.',
           ),
+          if (offer != null) ...[
+            const SizedBox(height: AppSpacing.base),
+            OfferCard(entry: offer),
+          ],
+          if (alreadyWaiting || past.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.base),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Semantics(
+                label: 'Waitlist status',
+                child: WaitlistStatusPill(
+                  status: alreadyWaiting
+                      ? mine.first.status
+                      : WaitlistStatus.expired,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 22),
           const SectionLabel('Your preferences'),
           const SizedBox(height: 10),

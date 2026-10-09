@@ -6,6 +6,7 @@ import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../reservations/live_widgets.dart';
 
 /// HF-S05 Active Session.
 ///
@@ -26,18 +27,21 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
       widget.booking.checkedInAt ?? DateTime.now();
   int _extendedMinutes = 0;
 
+  // Ticks every second so the remaining time and elapsed timer stay live.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LiveClock(builder: _content);
+
+  Widget _content(BuildContext context, DateTime now) {
     final booking = widget.booking;
-    final elapsed = DateTime.now().difference(_checkedInAt);
+    final elapsed = now.difference(_checkedInAt);
     final endsAt = booking.endTime.add(Duration(minutes: _extendedMinutes));
     final total = endsAt.difference(booking.startTime).inMinutes;
-    final used = DateTime.now().difference(booking.startTime).inMinutes;
+    final used = now.difference(booking.startTime).inMinutes;
     final progress = total <= 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
-    final remaining = endsAt.difference(DateTime.now());
+    final remaining = endsAt.difference(now);
     final remainingLabel = remaining.isNegative
         ? 'Session window ended'
-        : '${remaining.inHours} h ${remaining.inMinutes.remainder(60)} m left';
+        : '${formatRemaining(remaining)} left';
     final window = '${DateFormat('h:mm a').format(booking.startTime)} – '
         '${DateFormat('h:mm a').format(endsAt)}';
 
@@ -135,10 +139,12 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
             child: SurfaceCard(
               child: Row(
                 children: [
-                  StatusPill(
-                    label: 'Active Session',
-                    color: AppColors.success,
-                    pulse: true,
+                  Flexible(
+                    child: StatusPill(
+                      label: 'Active Session',
+                      color: AppColors.success,
+                      pulse: true,
+                    ),
                   ),
                   const Spacer(),
                   Icon(Icons.timer_outlined,

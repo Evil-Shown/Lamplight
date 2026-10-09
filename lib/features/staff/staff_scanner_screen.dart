@@ -51,7 +51,12 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
     _handling = true;
     if (mounted) setState(() {});
     FocusScope.of(context).unfocus();
-    final result = await FirestoreService.instance.verifyCode(code);
+    Map<String, dynamic>? result;
+    try {
+      result = await FirestoreService.instance.verifyCode(code);
+    } catch (_) {
+      // Treated like an unrecognised code; the result screen says so.
+    }
     if (!mounted) return;
     AppRoute.push(
       context,
