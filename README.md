@@ -378,7 +378,7 @@ lib/
 
 ## Figma
 
-Design file: [Library UI](https://www.figma.com/design/UwmGSbPjOtHRDai9KnA02V/Library-UI)
+Design file: [Library UI](https://www.figma.com/design/b1hfznI1s4L4WN3RDkPnLQ/Library-Book-Reservation-and-Reading-Room-Seat-Booking-System?t=Jn14tTbW41QfXzG6-0)
 
 ---
 
