@@ -24,14 +24,14 @@ Future<AppState> _signIn(WidgetTester tester, {UserRole role = UserRole.student}
 }
 
 void main() {
-  testWidgets('splash hands over to the login screen', (tester) async {
+  testWidgets('splash hands over to the intro slide', (tester) async {
     await tester.pumpWidget(const LibraryApp());
     for (var i = 0; i < 12; i++) {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
-    expect(find.text('Welcome back to Library+'), findsOneWidget);
-    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('STUDY\nBEYOND\nTHE SHELF'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
   });
 
   testWidgets('student shell shows the prototype navigation', (tester) async {
