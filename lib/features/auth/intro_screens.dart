@@ -30,7 +30,7 @@ class _IntroFrame extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AuthPalette.deep,
+        backgroundColor: AuthPalette.walnut,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -77,7 +77,7 @@ class _IntroFrame extends StatelessWidget {
 TextStyle _sub() => GoogleFonts.plusJakartaSans(
       fontSize: 13.5,
       height: 1.5,
-      color: Colors.white.withValues(alpha: 0.82),
+      color: AuthPalette.cream.withValues(alpha: 0.85),
     );
 
 /// Slide 1: the pitch, with Continue and Skip.
