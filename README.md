@@ -52,12 +52,11 @@ real effect.
 
 ## Screenshots
 
-The signed-out flow: a lamp-lit splash, two intro slides, then the sign-in and
-register sheet. (Images live in `docs/screenshots/`.)
+The signed-out flow: two intro slides, then the sign-in and register sheet. (Images live in `docs/screenshots/`.)
 
-| Splash | Intro | Welcome | Sign in | Register |
-|:---:|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/splash.png" width="150"> | <img src="docs/screenshots/intro-1.png" width="150"> | <img src="docs/screenshots/intro-2.png" width="150"> | <img src="docs/screenshots/sign-in.png" width="150"> | <img src="docs/screenshots/register.png" width="150"> |
+| Intro | Welcome | Sign in |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/intro-1.png" width="200"> | <img src="docs/screenshots/intro-2.png" width="200"> | <img src="docs/screenshots/sign-in.png" width="200"> |
 
 More screens (seat map, home, QR pass) can be added the same way.
 
