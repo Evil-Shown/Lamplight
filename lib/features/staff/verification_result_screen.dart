@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/firebase/firestore_service.dart';
 import '../../models/models.dart';
@@ -32,6 +34,13 @@ class VerificationResultScreen extends StatefulWidget {
 
 class _VerificationResultScreenState extends State<VerificationResultScreen> {
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // One error cue when a scan is rejected (success fires from SuccessCheck).
+    if (!_isValid) AppFeedback.error();
+  }
 
   bool get _isSeat => widget.result?['kind'] == 'seat';
 
@@ -162,39 +171,38 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
     return AppScaffold(
       title: 'Verification Result',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl),
         children: [
           StaggeredEntrance(
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: notFound || !valid
-                    ? AppColors.errorSoft
-                    : AppColors.successSoft,
-                borderRadius: BorderRadius.circular(AppRadii.md),
-              ),
+            child: GlassSurface(
+              radius: AppRadii.xl,
+              tint: bannerColor.withValues(alpha: 0.14),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl, vertical: AppSpacing.xxl),
               child: Column(
                 children: [
-                  Icon(
-                    notFound
-                        ? Icons.help_outline_rounded
-                        : valid
-                            ? Icons.check_circle_outline_rounded
-                            : Icons.error_outline_rounded,
-                    size: 54,
-                    color: bannerColor,
-                  ),
-                  const SizedBox(height: 12),
+                  if (valid)
+                    SuccessCheck(size: 96, color: bannerColor)
+                  else
+                    Icon(
+                      notFound
+                          ? Icons.help_outline_rounded
+                          : Icons.error_outline_rounded,
+                      size: 88,
+                      color: bannerColor,
+                    ),
+                  const SizedBox(height: AppSpacing.base),
                   Text(
                     _statusHeadline,
                     textAlign: TextAlign.center,
-                    style: AppText.title(
-                      17,
-                      w: FontWeight.w700,
+                    style: AppText.display(
+                      AppText.displayMd,
+                      w: FontWeight.w800,
                       color: bannerColor,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     notFound
                         ? 'No reservation matches "${widget.code}".'
@@ -202,13 +210,14 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                             ? 'Identity and booking details matched.'
                             : 'Pass code ${widget.code} cannot be accepted.',
                     textAlign: TextAlign.center,
-                    style: AppText.body(12.5, color: bannerColor),
+                    style: AppText.body(15,
+                        w: FontWeight.w500, color: AppColors.textPrimary),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.base),
           if (!notFound)
             StaggeredEntrance(
               index: 1,
@@ -240,7 +249,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 13),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +257,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                               Text(
                                 ownerName,
                                 style:
-                                    AppText.title(15.5, w: FontWeight.w700),
+                                    AppText.title(17, w: FontWeight.w700),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -283,7 +292,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                             child: Text(
                               'Code ${widget.code}',
                               style: AppText.body(
-                                  13.5, color: AppColors.textSecondary),
+                                  14, color: AppColors.textSecondary),
                             ),
                           ),
                           StatusPill(
@@ -298,7 +307,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           if (valid)
             PrimaryButton(
               label: _isSeat ? 'Confirm Check-in' : 'Confirm Handover',
@@ -310,7 +319,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
               icon: Icons.qr_code_scanner_rounded,
               onPressed: () => Navigator.of(context).pop(),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Report an Issue',
             tone: ButtonTone.danger,

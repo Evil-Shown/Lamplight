@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
@@ -21,74 +22,116 @@ class ActiveSessionScreen extends StatefulWidget {
 }
 
 class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
-  late final DateTime _checkedInAt = widget.booking.checkedInAt ?? DateTime.now();
+  late final DateTime _checkedInAt =
+      widget.booking.checkedInAt ?? DateTime.now();
   int _extendedMinutes = 0;
 
   @override
   Widget build(BuildContext context) {
     final booking = widget.booking;
     final elapsed = DateTime.now().difference(_checkedInAt);
-    final endsAt = booking.endTime
-        .add(Duration(minutes: _extendedMinutes));
+    final endsAt = booking.endTime.add(Duration(minutes: _extendedMinutes));
+    final total = endsAt.difference(booking.startTime).inMinutes;
+    final used = DateTime.now().difference(booking.startTime).inMinutes;
+    final progress = total <= 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
+    final remaining = endsAt.difference(DateTime.now());
+    final remainingLabel = remaining.isNegative
+        ? 'Session window ended'
+        : '${remaining.inHours} h ${remaining.inMinutes.remainder(60)} m left';
     final window = '${DateFormat('h:mm a').format(booking.startTime)} – '
         '${DateFormat('h:mm a').format(endsAt)}';
 
     return AppScaffold(
       title: 'Active Session',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xl),
         children: [
-          GradientHero(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            child: Column(
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.22),
+          StaggeredEntrance(
+            child: GradientHero(
+              padding: const EdgeInsets.all(AppSpacing.lg + 4),
+              child: Column(
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.textInverse.withValues(alpha: 0.22),
+                    ),
+                    child: Icon(Icons.verified_rounded,
+                        size: 32, color: AppColors.textInverse),
                   ),
-                  child: Icon(Icons.verified_rounded,
-                      size: 32, color: AppColors.textInverse),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(AppRadii.full),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md - 2, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.textInverse.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                    ),
+                    child: Text(
+                      'STATE: VERIFIED',
+                      style: AppText.label(10.5,
+                          w: FontWeight.w700,
+                          ls: 1.2,
+                          color: AppColors.textInverse),
+                    ),
                   ),
-                  child: Text(
-                    'STATE: VERIFIED',
-                    style: AppText.label(10.5, w: FontWeight.w700, ls: 1.2,
+                  const SizedBox(height: 13),
+                  Text(
+                    'Check-in Successful',
+                    textAlign: TextAlign.center,
+                    style: AppText.display(22,
+                        w: FontWeight.w800,
+                        ls: -0.4,
                         color: AppColors.textInverse),
                   ),
-                ),
-                const SizedBox(height: 13),
-                Text(
-                  'Check-in Successful',
-                  textAlign: TextAlign.center,
-                  style: AppText.display(22, w: FontWeight.w800, ls: -0.4,
-                      color: AppColors.textInverse),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'You are officially checked in. Desk power & Wi-Fi priority '
-                  'enabled.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    13,
-                    color: AppColors.textInverse.withValues(alpha: 0.84),
-                    height: 1.5,
+                  const SizedBox(height: 6),
+                  Text(
+                    'You are officially checked in. Desk power & Wi-Fi priority '
+                    'enabled.',
+                    textAlign: TextAlign.center,
+                    style: AppText.body(
+                      13,
+                      color: AppColors.textInverse.withValues(alpha: 0.84),
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.lg),
+                  // Glanceable countdown: time left and how far through.
+                  Semantics(
+                    label: '$remainingLabel, ${(progress * 100).round()} '
+                        'percent of the session used',
+                    excludeSemantics: true,
+                    child: Column(
+                      children: [
+                        Text(
+                          remainingLabel,
+                          textAlign: TextAlign.center,
+                          style: AppText.display(26,
+                              w: FontWeight.w800,
+                              ls: -0.6,
+                              color: AppColors.textInverse),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        MeterBar(
+                          value: progress,
+                          height: 8,
+                          color: AppColors.textInverse,
+                          background:
+                              AppColors.textInverse.withValues(alpha: 0.25),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
+            index: 1,
             child: SurfaceCard(
               child: Row(
                 children: [
@@ -119,7 +162,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           ),
           const SizedBox(height: 14),
           StaggeredEntrance(
-            index: 1,
+            index: 2,
             child: SurfaceCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,8 +173,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('A-12',
-                          style: AppText.display(30, w: FontWeight.w800,
-                              ls: -0.8, color: AppColors.primary)),
+                          style: AppText.display(30,
+                              w: FontWeight.w800,
+                              ls: -0.8,
+                              color: AppColors.primary)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Padding(
@@ -184,6 +229,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                         icon: Icon(Icons.copy_rounded,
                             size: 15, color: AppColors.primary),
                         onPressed: () {
+                          AppFeedback.tap();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Token ID copied'),
@@ -200,7 +246,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           ),
           const SizedBox(height: 14),
           const StaggeredEntrance(
-            index: 2,
+            index: 3,
             child: Row(
               children: [
                 Expanded(
@@ -233,8 +279,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           PrimaryButton(
             label: 'Back to Home',
             trailingIcon: Icons.arrow_forward_rounded,
-            onPressed: () =>
-                Navigator.of(context).popUntil((r) => r.isFirst),
+            onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
           ),
           const SizedBox(height: 12),
           PrimaryButton(
@@ -261,8 +306,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                 cancelLabel: 'Keep session',
               );
               if (confirmed && context.mounted) {
-                AppScope.read(context)
-                    .cancelSeatBooking(booking.id);
+                AppScope.read(context).cancelSeatBooking(booking.id);
                 if (context.mounted) {
                   Navigator.of(context).popUntil((r) => r.isFirst);
                 }
@@ -296,7 +340,8 @@ class _EntitlementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SurfaceCard(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.base - 2, horizontal: AppSpacing.md - 2),
       tint: AppColors.cyan.withValues(alpha: 0.24),
       child: Column(
         children: [

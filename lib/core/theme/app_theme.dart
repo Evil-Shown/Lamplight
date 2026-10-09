@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -176,7 +177,9 @@ class AppColors {
   static Color get infoSoft =>
       Color.alphaBlend(primary.withValues(alpha: 0.10), scheme.surface);
   static Color get neutral => scheme.onSurfaceVariant;
-  static Color get neutralSoft => scheme.surfaceContainerHigh;  // Seat map — aliases per spec §3.1 (yours = primary, selected = rust).
+  static Color get neutralSoft => scheme.surfaceContainerHigh;
+
+  // Seat map — aliases per spec §3.1 (yours = primary, selected = rust).
   static Color get seatAvailable => success;
   static Color get seatLimited => warning;
   static Color get seatOccupied => error;
@@ -245,6 +248,144 @@ class AppMotion {
   static const Curve exit = Curves.easeInCubic;
   static const Curve emphasis = Curves.easeInOutCubic;
   static const Curve press = Curves.easeOutBack;
+
+  // Springs: physical, slightly bouncy. Use the [SpringDescription]s with
+  // `SpringSimulation`, or the [Curve]s anywhere a duration-based
+  // animation is needed.
+
+  /// Press-down / release on buttons and cards: quick, barely overshoots.
+  static const SpringDescription pressSpring =
+      SpringDescription(mass: 1, stiffness: 520, damping: 26);
+
+  /// Entrances and morphs (dock pill, sheets): a touch more bounce.
+  static const SpringDescription entranceSpring =
+      SpringDescription(mass: 1, stiffness: 300, damping: 21);
+
+  /// Spring as a curve for press-release; pair with [pressSettle].
+  static const Curve springPress = SpringCurve(pressSpring);
+
+  /// Spring as a curve for entrances and morphs; pair with [entranceSettle].
+  static const Curve springEntrance = SpringCurve(entranceSpring);
+
+  static const pressSettle = Duration(milliseconds: 260);
+  static const entranceSettle = Duration(milliseconds: 480);
+}
+
+/// A [Curve] driven by a damped spring, running 0 → 1 over the animation's
+/// duration (it may overshoot 1 on the way).
+class SpringCurve extends Curve {
+  const SpringCurve(this.description, {this.settle = 0.5});
+
+  final SpringDescription description;
+
+  /// Seconds of simulation that `t == 1` maps to.
+  final double settle;
+
+  @override
+  double transformInternal(double t) =>
+      SpringSimulation(description, 0, 1, 0).x(t * settle);
+}
+
+/// Liquid-glass tokens: translucent fills, hairline borders, blur sigmas
+/// and a top-left highlight. Getters follow [AppColors.isDark]; the
+/// `*For(dark)` forms are for theme construction.
+class AppGlass {
+  AppGlass._();
+
+  /// Blur for chrome (app bar, dock, sheets) and for hero panels.
+  static const double blurChrome = 24;
+
+  /// Blur for single glass cards outside scrolling lists.
+  static const double blurCard = 16;
+
+  static Color cardFillFor(bool dark) => dark
+      ? const Color(0xFF1E293B).withValues(alpha: 0.58)
+      : Colors.white.withValues(alpha: 0.64);
+
+  static Color chromeFillFor(bool dark) => dark
+      ? const Color(0xFF111B30).withValues(alpha: 0.72)
+      : Colors.white.withValues(alpha: 0.78);
+
+  static Color borderFor(bool dark) => dark
+      ? Colors.white.withValues(alpha: 0.12)
+      : const Color(0xFF0F172A).withValues(alpha: 0.07);
+
+  /// Bright rim light on the top/left edge.
+  static Color rimFor(bool dark) => dark
+      ? Colors.white.withValues(alpha: 0.22)
+      : Colors.white.withValues(alpha: 0.95);
+
+  static Color shadowFor(bool dark) => dark
+      ? Colors.black.withValues(alpha: 0.38)
+      : const Color(0xFF1E3A8A).withValues(alpha: 0.10);
+
+  /// Translucent card fill (frosted cards, chips, inputs).
+  static Color get cardFill => cardFillFor(AppColors.isDark);
+
+  /// Stronger fill for chrome that sits over moving content.
+  static Color get chromeFill => chromeFillFor(AppColors.isDark);
+
+  /// Hairline outline.
+  static Color get border => borderFor(AppColors.isDark);
+
+  /// Top-left rim highlight colour.
+  static Color get rim => rimFor(AppColors.isDark);
+
+  static Color get shadow => shadowFor(AppColors.isDark);
+
+  /// Diagonal sheen painted over a glass surface: bright at the top-left
+  /// corner, gone by the middle.
+  static Gradient get highlight => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        stops: const [0, 0.45],
+        colors: [
+          Colors.white.withValues(alpha: AppColors.isDark ? 0.12 : 0.55),
+          Colors.white.withValues(alpha: 0),
+        ],
+      );
+
+  /// Soft shadow under glass: a tinted ambient drop plus a tight contact.
+  static List<BoxShadow> get shadows => [
+        BoxShadow(
+          color: shadow,
+          blurRadius: 28,
+          spreadRadius: -6,
+          offset: const Offset(0, 12),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: AppColors.isDark ? 0.25 : 0.04),
+          blurRadius: 6,
+          offset: const Offset(0, 1),
+        ),
+      ];
+}
+
+/// Soft tints for the [AuroraBackground] blobs, derived from brand blue,
+/// indigo, a cool cyan and a whisper of amber.
+class AppAurora {
+  AppAurora._();
+
+  static const List<Color> light = [
+    Color(0x4D0D50E8), // blue 30%
+    Color(0x424F46E5), // indigo 26%
+    Color(0x3822D3EE), // cyan 22%
+    Color(0x2BF59E0B), // amber 17%
+  ];
+
+  static const List<Color> dark = [
+    Color(0x660D50E8),
+    Color(0x594F46E5),
+    Color(0x330891B2),
+    Color(0x1FF59E0B),
+  ];
+
+  static List<Color> get colors => AppColors.isDark ? dark : light;
+
+  /// Canvas colour the blobs float over.
+  static Color get base => AppColors.isDark
+      ? const Color(0xFF0B1224)
+      : const Color(0xFFF4F7FC);
 }
 
 /// The M3 corner scale: extra-small 8, small 12, medium 16, large 20,
@@ -490,11 +631,18 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
       splashFactory: InkSparkle.splashFactory,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ).apply(
+        bodyColor: scheme.onSurface,
+        displayColor: scheme.onSurface,
+      ),
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: AppGlass.chromeFillFor(dark),
+        surfaceTintColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
         elevation: 0,
-        scrolledUnderElevation: 2,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         titleTextStyle: AppText.title(17, w: FontWeight.w600),
         iconTheme: const IconThemeData(size: 22),
@@ -503,7 +651,7 @@ class AppTheme {
             : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: AppGlass.cardFillFor(dark),
         elevation: 0,
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -513,7 +661,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHigh,
+        fillColor: AppGlass.cardFillFor(dark),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: AppText.body(14.5, color: scheme.onSurfaceVariant),
         labelStyle: AppText.body(13.5, color: scheme.onSurfaceVariant),
@@ -521,11 +669,11 @@ class AppTheme {
             AppText.body(13, w: FontWeight.w600, color: scheme.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: AppGlass.borderFor(dark)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: AppGlass.borderFor(dark)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
@@ -589,13 +737,17 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? scheme.onPrimary
-              : scheme.outline,
+              ? Colors.white
+              : (dark ? scheme.onSurfaceVariant : Colors.white),
         ),
+        thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
+        trackOutlineWidth: const WidgetStatePropertyAll(1),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? scheme.primary
-              : scheme.surfaceContainerHighest,
+              : (dark
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : const Color(0xFF0F172A).withValues(alpha: 0.16)),
         ),
         trackOutlineColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
@@ -616,12 +768,12 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: AppGlass.cardFillFor(dark),
         selectedColor: scheme.secondaryContainer,
         labelStyle: AppText.label(13, color: scheme.onSurfaceVariant),
         secondaryLabelStyle:
             AppText.label(13, color: scheme.onSecondaryContainer),
-        side: BorderSide(color: scheme.outlineVariant),
+        side: BorderSide(color: AppGlass.borderFor(dark)),
         shape: const StadiumBorder(),
       ),
       dividerTheme: DividerThemeData(
@@ -631,28 +783,36 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: scheme.inverseSurface,
+        backgroundColor: scheme.inverseSurface.withValues(alpha: 0.92),
+        elevation: 0,
+        insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: dark ? 0.0 : 0.12),
+          ),
         ),
         contentTextStyle:
             AppText.body(13.5, color: scheme.onInverseSurface),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: scheme.surfaceContainerLow.withValues(alpha: 0.94),
+        modalBackgroundColor:
+            scheme.surfaceContainerLow.withValues(alpha: 0.94),
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
-        dragHandleColor: scheme.outlineVariant,
+        dragHandleColor: scheme.outline.withValues(alpha: 0.5),
         shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: scheme.surfaceContainerLow.withValues(alpha: 0.95),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.xl),
+          side: BorderSide(color: AppGlass.borderFor(dark)),
         ),
       ),
       progressIndicatorTheme:

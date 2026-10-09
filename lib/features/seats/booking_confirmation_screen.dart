@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../qr/qr_ticket_screen.dart';
@@ -26,42 +27,39 @@ class BookingConfirmationScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
         children: [
-          // Outcome panel: flat success container — mint gradients retired.
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 26, 20, 26),
-            decoration: BoxDecoration(
-              color: AppColors.successContainer,
-              borderRadius: BorderRadius.circular(AppRadii.xl),
-            ),
-            child: Column(
-              children: [
-                const SuccessCheck(size: 84),
-                const SizedBox(height: 15),
-                Text(
-                  'Booking confirmed',
-                  textAlign: TextAlign.center,
-                  style: AppText.display(
-                    22,
-                    w: FontWeight.w800,
-                    ls: -0.9,
-                    color: AppColors.onSuccessContainer,
-                  ),
+          // Outcome panel: a glass hero with a success wash.
+          StaggeredEntrance(
+            child: GlassSurface(
+              radius: AppRadii.xl,
+              tint: AppColors.success.withValues(alpha: 0.16),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, 26, AppSpacing.lg, 26),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    const SuccessCheck(size: 84),
+                    const SizedBox(height: 15),
+                    Text(
+                      'Booking confirmed',
+                      textAlign: TextAlign.center,
+                      style: AppText.display(22, w: FontWeight.w800, ls: -0.9),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Seat ${booking.seat.label} is yours.',
+                      textAlign: TextAlign.center,
+                      style: AppText.body(14,
+                          color: AppColors.textSecondary, height: 1.5),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Seat ${booking.seat.label} is yours.',
-                  textAlign: TextAlign.center,
-                  style: AppText.body(
-                    14,
-                    color: AppColors.onSuccessContainer.withValues(alpha: 0.86),
-                    height: 1.5,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl),
           StaggeredEntrance(
+            index: 1,
             child: TicketCard(
               top: Column(
                 children: [
@@ -90,8 +88,7 @@ class BookingConfirmationScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const Callout(
             icon: Icons.qr_code_rounded,
-            message:
-                'Your QR pass is ready. Show it at the entrance.',
+            message: 'Your QR pass is ready. Show it at the entrance.',
           ),
           const SizedBox(height: 26),
           PrimaryButton(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../notifications/notifications_screen.dart';
@@ -21,26 +22,31 @@ class AccountScreen extends StatelessWidget {
     final profile = state.activeProfile;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenMargin,
+            AppSpacing.xl,
+            AppSpacing.screenMargin,
+            AppSpacing.scrollBottomInset,
+          ),
           children: [
             // App-level cached-data banner (D-14).
             ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             StaggeredEntrance(
               child: Text('Profile',
-                  style: AppText.display(24, w: FontWeight.w700, ls: -0.5)),
+                  style: AppText.display(32, w: FontWeight.w800, ls: -0.8)),
             ),
             const SizedBox(height: 18),
             StaggeredEntrance(
               index: 1,
               child: _IdentityCard(profile: profile),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.sectionGap),
             const _MemberStats(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.sectionGap),
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 10),
               child: SectionLabel('Privacy'),
@@ -52,22 +58,30 @@ class AccountScreen extends StatelessWidget {
                 // The visibility toggle is cosmetic this cycle — the
                 // backend has no enforcement, so it is disabled with an
                 // honest "coming soon" note rather than a fake switch.
-                child: SwitchListTile(
-                  value: profile.reservationsVisibleToStaffOnly,
-                  onChanged: null,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  title: Text('Staff-only visibility',
-                      style: AppText.body(14.5)),
-                  subtitle: Text(
-                    'Only library staff can see your active reservations. '
-                    'Coming soon.',
-                    style: AppText.body(12.5, color: AppColors.textSecondary),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SettingRow(
+                      label: 'Staff-only visibility',
+                      icon: Icons.visibility_off_outlined,
+                      switchValue: profile.reservationsVisibleToStaffOnly,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(66, 0, 16, 14),
+                      child: Text(
+                        'Only library staff can see your active reservations. '
+                        'Coming soon.',
+                        style: AppText.body(
+                          12.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.sectionGap),
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 10),
               child: SectionLabel('Quick links'),
@@ -86,7 +100,7 @@ class AccountScreen extends StatelessWidget {
                         const NotificationsScreen(),
                       ),
                     ),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const Divider(height: 1, indent: 66, endIndent: 16),
                     SettingRow(
                       label: 'Settings',
                       icon: Icons.settings_outlined,
@@ -95,7 +109,7 @@ class AccountScreen extends StatelessWidget {
                         const SettingsScreen(),
                       ),
                     ),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const Divider(height: 1, indent: 66, endIndent: 16),
                     const SettingRow(
                       label: 'Help & support',
                       icon: Icons.help_outline_rounded,
@@ -104,7 +118,7 @@ class AccountScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.sectionGap),
             StaggeredEntrance(
               index: 4,
               child: PrimaryButton(
@@ -139,25 +153,20 @@ class _IdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppGradients.brand,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
+    return GlassSurface(
+      radius: AppRadii.xl,
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Row(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.18),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.28),
-                width: 1.5,
-              ),
+              gradient: AppGradients.brand,
+              boxShadow: AppShadows.ambient,
+              border: Border.all(color: AppGlass.rim, width: 1.5),
             ),
             child: Text(
               profile.firstName.substring(0, 1).toUpperCase(),
@@ -178,9 +187,8 @@ class _IdentityCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppText.title(
-                    16.5,
+                    18,
                     w: FontWeight.w700,
-                    color: AppColors.textInverse,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -188,7 +196,7 @@ class _IdentityCard extends StatelessWidget {
                   profile.studentId,
                   style: AppText.body(
                     12.5,
-                    color: AppColors.textInverse.withValues(alpha: 0.78),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -198,7 +206,7 @@ class _IdentityCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppText.body(
                     12,
-                    color: AppColors.textInverse.withValues(alpha: 0.62),
+                    color: AppColors.textFaint,
                   ),
                 ),
               ],

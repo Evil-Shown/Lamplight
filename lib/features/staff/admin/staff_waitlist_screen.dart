@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart' hide AppSpacing;
+import '../../../core/constants/app_constants.dart' show AppNavInset;
+import '../../../core/feedback/app_feedback.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../../../models/models.dart';
 import 'staff_mock_data.dart';
@@ -21,8 +23,9 @@ class _StaffWaitlistScreenState extends State<StaffWaitlistScreen> {
   Widget build(BuildContext context) {
     final entries = List<StaffWaitlistItem>.from(StaffMockData.waitlist);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Waiting List')),
+    return AppScaffold(
+      title: 'Waiting List',
+      contentUnderBar: true,
       body: entries.isEmpty
           ? const EmptyState(
               icon: Icons.hourglass_top_outlined,
@@ -30,8 +33,11 @@ class _StaffWaitlistScreenState extends State<StaffWaitlistScreen> {
               message: 'No students are waiting for books or seats right now.',
             )
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xl),
+              padding: EdgeInsets.fromLTRB(
+                  AppSpacing.base,
+                  GlassAppBar.contentTopPadding(context),
+                  AppSpacing.base,
+                  AppNavInset.bottom),
               itemCount: entries.length,
               separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) => _WaitlistCard(
@@ -64,7 +70,6 @@ class _WaitlistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SurfaceCard(
-      elevated: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -76,7 +81,7 @@ class _WaitlistCard extends StatelessWidget {
                 ? AppColors.primary
                 : AppColors.info,
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.base),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,8 +91,7 @@ class _WaitlistCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         entry.studentName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 15),
+                        style: AppText.title(15, w: FontWeight.w800),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -99,22 +103,20 @@ class _WaitlistCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   entry.studentId,
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: AppText.body(13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${entry.itemTitle} · Position #${entry.position}',
-                  style:
-                      const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  style: AppText.label(13,
+                      w: FontWeight.w700, color: AppColors.textPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Joined ${DateFormat('MMM d · h:mm a').format(entry.joinedAt)}',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
+                  style: AppText.body(12, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -122,6 +124,7 @@ class _WaitlistCard extends StatelessWidget {
           PopupMenuButton<String>(
             tooltip: 'Desk actions',
             icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+            onOpened: AppFeedback.tap,
             onSelected: (action) => _handleAction(context, action),
             itemBuilder: (context) => const [
               PopupMenuItem(
@@ -161,11 +164,13 @@ class _WaitlistCard extends StatelessWidget {
   void _handleAction(BuildContext context, String action) {
     switch (action) {
       case 'notify':
+        AppFeedback.success();
         _updateStatus(StaffWaitlistStatus.notified);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${entry.studentName} notified by app alert')),
         );
       case 'ready':
+        AppFeedback.success();
         _updateStatus(StaffWaitlistStatus.ready);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -203,6 +208,7 @@ class _WaitlistCard extends StatelessWidget {
               minimumSize: const Size(0, 40),
             ),
             onPressed: () {
+              AppFeedback.warning();
               Navigator.pop(dialogContext);
               StaffMockData.waitlist.remove(entry);
               _renumberQueues();
