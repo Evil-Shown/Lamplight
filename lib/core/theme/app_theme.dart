@@ -39,9 +39,9 @@ class AppColors {
     onErrorContainer: Color(0xFF410002),
     surface: Color(0xFFE8B380),
     onSurface: Color(0xFF2A180C),
-    onSurfaceVariant: Color(0xFF553822),
-    outline: Color(0xFF8A6446),
-    outlineVariant: Color(0xFFCDA070),
+    onSurfaceVariant: Color(0xFF4A2F1C),
+    outline: Color(0xFF6B4A32),
+    outlineVariant: Color(0xFFB88652),
     inverseSurface: Color(0xFF2A180C),
     onInverseSurface: Color(0xFFFBEBD3),
     inversePrimary: Color(0xFFF0B070),
@@ -74,8 +74,8 @@ class AppColors {
     onErrorContainer: Color(0xFFFFDAD6),
     surface: Color(0xFF1C110C),
     onSurface: Color(0xFFF6E6D2),
-    onSurfaceVariant: Color(0xFFC4A68C),
-    outline: Color(0xFF8A6C55),
+    onSurfaceVariant: Color(0xFFD6BCA3),
+    outline: Color(0xFFA58A72),
     outlineVariant: Color(0xFF43302A),
     inverseSurface: Color(0xFFF6E6D2),
     onInverseSurface: Color(0xFF2A180C),
@@ -299,16 +299,16 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF2B1D14).withValues(alpha: 0.62)
-      : const Color(0xFFFFF4E2).withValues(alpha: 0.66);
+      ? const Color(0xFF2B1D14).withValues(alpha: 0.74)
+      : const Color(0xFFFFF4E2).withValues(alpha: 0.82);
 
   static Color chromeFillFor(bool dark) => dark
-      ? const Color(0xFF1B110B).withValues(alpha: 0.78)
-      : const Color(0xFFFFEDD2).withValues(alpha: 0.82);
+      ? const Color(0xFF1B110B).withValues(alpha: 0.88)
+      : const Color(0xFFFFEDD2).withValues(alpha: 0.94);
 
   static Color borderFor(bool dark) => dark
-      ? Colors.white.withValues(alpha: 0.12)
-      : const Color(0xFF4A2410).withValues(alpha: 0.12);
+      ? Colors.white.withValues(alpha: 0.18)
+      : const Color(0xFF4A2410).withValues(alpha: 0.22);
 
   /// Bright rim light on the top/left edge.
   static Color rimFor(bool dark) => dark
@@ -362,7 +362,7 @@ class AppGlass {
 }
 
 /// The dusk sky behind the app: amber at the top deepening to brown, with
-/// soft copper glows. A blurred mountain is painted over it (see glass.dart).
+/// soft copper glows. A desert scene is painted over it (see glass.dart).
 class AppAurora {
   AppAurora._();
 

@@ -28,7 +28,7 @@ class GlassDock extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
     final reduced = MediaQuery.disableAnimationsOf(context);
     final dark = AppColors.isDark;
-    final accent = dark ? AppColors.scheme.secondary : AppColors.indigo;
+    final accent = dark ? AppColors.scheme.primary : AppColors.primary;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -56,10 +56,10 @@ class GlassDock extends StatelessWidget {
                     bottom: 8,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: dark ? 0.28 : 0.15),
+                        color: accent.withValues(alpha: dark ? 0.30 : 0.26),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: accent.withValues(alpha: dark ? 0.45 : 0.28),
+                          color: accent.withValues(alpha: dark ? 0.55 : 0.5),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -149,7 +149,7 @@ class _DockItem extends StatelessWidget {
             curve: Curves.easeOutCubic,
             style: AppText.label(
               10,
-              w: selected ? FontWeight.w700 : FontWeight.w500,
+              w: selected ? FontWeight.w800 : FontWeight.w600,
               color: selected ? AppColors.textPrimary : AppColors.textSecondary,
             ),
             child: Text(
