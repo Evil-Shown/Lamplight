@@ -30,7 +30,7 @@ class _IntroFrame extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AuthPalette.turf,
+        backgroundColor: AuthPalette.deep,
         body: Stack(
           fit: StackFit.expand,
           children: [
