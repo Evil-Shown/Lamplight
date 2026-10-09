@@ -1,39 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Fixed palette for the signed-out flow. Deliberately independent of the
-/// app theme: the intro slides and the sheet are always the same
-/// library-green look, light or dark.
+/// Fixed palette for the signed-out flow and the splash: warm dark wood,
+/// cream paper and lamp-light amber. Deliberately independent of the app
+/// theme, so it looks the same in light and dark mode.
 class AuthPalette {
   AuthPalette._();
 
-  static const blue = Color(0xFF173A9E);
-  static const navy = Color(0xFF060F2B);
-  static const deep = Color(0xFF0A1E4D);
-  static const cream = Color(0xFFEEF3FF);
-  static const field = Color(0xFFF1F4FA);
-  static const ink = Color(0xFF0E1630);
-  static const muted = Color(0xFF5E6A85);
-  static const error = Color(0xFFB3261E);
-  static const errorSoft = Color(0xFFFDECEA);
+  /// Lamp-light amber: primary buttons, links, highlights.
+  static const accent = Color(0xFFD99246);
+
+  /// Near-black brown: text on amber, wordmark outline, deepest scrim.
+  static const espresso = Color(0xFF140E0B);
+
+  /// Dark walnut: backdrops and scrims.
+  static const walnut = Color(0xFF2A1B12);
+
+  /// Dark sheet the forms sit on.
+  static const sheet = Color(0xFF1D1511);
+
+  /// Paper cream: headlines, pills, text on the sheet.
+  static const cream = Color(0xFFF3E8D6);
+  static const onSheet = cream;
+  static const fieldFill = Color(0xFF2B211B);
+  static const muted = Color(0xFFB3A391);
+  static const error = Color(0xFFFF9C8F);
+  static const errorSoft = Color(0xFF3B1D19);
 }
 
 class AuthType {
   AuthType._();
 
-  /// Heavy, tight display face for the slide headlines.
-  static TextStyle headline(double size, {Color color = Colors.white}) =>
-      GoogleFonts.outfit(
+  /// Heavy serif display face for headlines.
+  static TextStyle headline(double size, {Color color = AuthPalette.cream}) =>
+      GoogleFonts.fraunces(
         fontSize: size,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w800,
         height: 1.0,
-        letterSpacing: -1.2,
+        letterSpacing: -1.0,
         color: color,
       );
 }
 
-/// The "Library+" wordmark: chunky dark-green letters with a cream outline
-/// so it reads over both the hero and the white sheet.
+/// The "Library+" wordmark: cream serif letters with a dark outline, so it
+/// reads over both the hero and the dark sheet.
 class LibraryWordmark extends StatelessWidget {
   const LibraryWordmark({super.key, this.size = 36});
 
@@ -41,9 +51,10 @@ class LibraryWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = GoogleFonts.lilitaOne(
+    final base = GoogleFonts.fraunces(
       fontSize: size,
-      letterSpacing: 0.4,
+      fontWeight: FontWeight.w900,
+      letterSpacing: -0.5,
       height: 1,
     );
     return Semantics(
@@ -56,12 +67,12 @@ class LibraryWordmark extends StatelessWidget {
               style: base.copyWith(
                 foreground: Paint()
                   ..style = PaintingStyle.stroke
-                  ..strokeWidth = size * 0.3
+                  ..strokeWidth = size * 0.26
                   ..strokeJoin = StrokeJoin.round
-                  ..color = AuthPalette.cream,
+                  ..color = AuthPalette.espresso,
               ),
             ),
-            Text('Library+', style: base.copyWith(color: AuthPalette.navy)),
+            Text('Library+', style: base.copyWith(color: AuthPalette.cream)),
           ],
         ),
       ),
@@ -118,7 +129,7 @@ class WhitePillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AuthPalette.cream,
       shape: const StadiumBorder(),
       elevation: 0,
       child: InkWell(
@@ -132,7 +143,7 @@ class WhitePillButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 19, color: AuthPalette.ink),
+                  Icon(icon, size: 19, color: AuthPalette.espresso),
                   const SizedBox(width: 10),
                 ],
                 Flexible(
@@ -142,7 +153,7 @@ class WhitePillButton extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
-                      color: AuthPalette.ink,
+                      color: AuthPalette.espresso,
                     ),
                   ),
                 ),
