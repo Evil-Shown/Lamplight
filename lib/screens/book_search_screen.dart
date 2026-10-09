@@ -19,6 +19,11 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
     'CATEGORY',
   ];
 
+  static const List<String> _popularSearches = [
+    'Clean Code',
+    'Software Engineering',
+  ];
+
   String _selectedType = 'TITLE';
   final TextEditingController _searchController = TextEditingController();
 
@@ -107,6 +112,82 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Popular searches',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              ..._popularSearches.map(
+                (query) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _PopularSearchItem(
+                    query: query,
+                    colorScheme: colorScheme,
+                    onTap: () {
+                      setState(() => _searchController.text = query);
+                      _searchController.selection = TextSelection.collapsed(
+                        offset: query.length,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable popular-search row: search icon, query text, trailing chevron,
+/// enclosed in a subtle rounded outlined container.
+class _PopularSearchItem extends StatelessWidget {
+  const _PopularSearchItem({
+    required this.query,
+    required this.colorScheme,
+    required this.onTap,
+  });
+
+  final String query;
+  final ColorScheme colorScheme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.search_outlined,
+                size: 22,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  query,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 22,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
