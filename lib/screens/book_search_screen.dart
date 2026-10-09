@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'search_results_screen.dart';
+
 /// Screen 1 — `book-search-v2`.
 ///
 /// Incremental build: search input, type filter chips and the SEARCH button.
@@ -26,6 +28,17 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
 
   String _selectedType = 'TITLE';
   final TextEditingController _searchController = TextEditingController();
+
+  void _openSearchResults(String rawQuery) {
+    final query = rawQuery.trim().isEmpty ? 'Clean Code' : rawQuery.trim();
+    setState(() => _searchController.text = query);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultsScreen(query: query),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -105,7 +118,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // Wire up search in a later step.
+                    _openSearchResults(_searchController.text);
                   },
                   child: const Text(
                     'SEARCH',
@@ -128,10 +141,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     query: query,
                     colorScheme: colorScheme,
                     onTap: () {
-                      setState(() => _searchController.text = query);
-                      _searchController.selection = TextSelection.collapsed(
-                        offset: query.length,
-                      );
+                      _openSearchResults(query);
                     },
                   ),
                 ),
