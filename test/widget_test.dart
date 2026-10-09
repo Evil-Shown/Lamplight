@@ -30,7 +30,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Welcome back to Library+'), findsOneWidget);
+    expect(find.text('Sign in'), findsWidgets);
   });
 
   testWidgets('student shell shows the prototype navigation', (tester) async {
