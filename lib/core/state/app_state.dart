@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/firebase/firestore_service.dart';
+import '../feedback/app_feedback.dart';
 import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
 import '../../services/notification_service.dart';
@@ -59,6 +60,8 @@ class AppState extends ChangeNotifier {
 
   NotificationPreferences _preferences = const NotificationPreferences();
   ThemeMode _themeMode = ThemeMode.light;
+  bool _soundsEnabled = true;
+  bool _hapticsEnabled = true;
 
   UserProfile? get profile => _profile;
   bool get isSignedIn => _profile != null;
@@ -505,6 +508,25 @@ class AppState extends ChangeNotifier {
 
   void updatePreferences(NotificationPreferences prefs) {
     _preferences = prefs;
+    notifyListeners();
+  }
+
+  /// Feedback preferences (in-memory, like [themeMode]); mirrored into
+  /// [AppFeedback] so every `Haptics`/`AppFeedback` call respects them.
+  bool get soundsEnabled => _soundsEnabled;
+  bool get hapticsEnabled => _hapticsEnabled;
+
+  void setSoundsEnabled(bool value) {
+    if (_soundsEnabled == value) return;
+    _soundsEnabled = value;
+    AppFeedback.soundsEnabled = value;
+    notifyListeners();
+  }
+
+  void setHapticsEnabled(bool value) {
+    if (_hapticsEnabled == value) return;
+    _hapticsEnabled = value;
+    AppFeedback.hapticsEnabled = value;
     notifyListeners();
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/glass.dart';
 import 'core/widgets/glass_dock.dart';
 import 'features/account/account_screen.dart';
 import 'features/books/book_search_screen.dart';
@@ -58,8 +59,8 @@ class _AppShellState extends State<AppShell> {
   static const _staffTabs = <_Destination>[
     _Destination(Icons.home_outlined, Icons.home_rounded, 'Home'),
     _Destination(Icons.event_seat_outlined, Icons.event_seat_rounded, 'Seats'),
-    _Destination(Icons.library_books_outlined, Icons.library_books_rounded,
-        'Catalog'),
+    _Destination(
+        Icons.library_books_outlined, Icons.library_books_rounded, 'Catalog'),
     _Destination(Icons.confirmation_number_outlined,
         Icons.confirmation_number_rounded, 'Bookings'),
     _Destination(Icons.badge_outlined, Icons.badge_rounded, 'Staff'),
@@ -99,35 +100,37 @@ class _AppShellState extends State<AppShell> {
         GlassDock.bottomInset +
         MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: AppMotion.tabFade,
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: KeyedSubtree(
-                key: ValueKey<int>(safeIndex),
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: dockHeight),
-                  child: screens[safeIndex],
+    return AuroraBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: AppMotion.tabFade,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: KeyedSubtree(
+                  key: ValueKey<int>(safeIndex),
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: dockHeight),
+                    child: screens[safeIndex],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: GlassDock(
-              selectedIndex: safeIndex,
-              onSelected: switchTo,
-              destinations: dockDestinations,
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GlassDock(
+                selectedIndex: safeIndex,
+                onSelected: switchTo,
+                destinations: dockDestinations,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

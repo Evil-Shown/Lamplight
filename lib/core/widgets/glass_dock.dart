@@ -1,11 +1,12 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
+import 'glass.dart';
+import 'shared_widgets.dart';
 
-/// Floating glass bottom navigation dock (Nordic Modern Campus).
+/// Floating glass bottom navigation dock (Liquid Glass Campus): a blurred
+/// pill with a spring-driven active indicator that slides behind the
+/// selected item.
 class GlassDock extends StatelessWidget {
   const GlassDock({
     super.key,
@@ -25,12 +26,9 @@ class GlassDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final glassFill = AppColors.isDark
-        ? const Color(0xFF1E293B).withValues(alpha: 0.72)
-        : Colors.white.withValues(alpha: 0.82);
-    final borderColor = AppColors.isDark
-        ? Colors.white.withValues(alpha: 0.14)
-        : Colors.white.withValues(alpha: 0.65);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final dark = AppColors.isDark;
+    final accent = dark ? AppColors.scheme.secondary : AppColors.indigo;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -39,37 +37,58 @@ class GlassDock extends StatelessWidget {
         horizontalInset,
         bottomInset + bottom,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: glassFill,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: borderColor, width: 1),
-              boxShadow: AppShadows.ambient,
-            ),
-            child: SizedBox(
-              height: height,
-              child: Row(
+      child: GlassSurface(
+        radius: 28,
+        child: SizedBox(
+          height: height,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / destinations.length;
+              return Stack(
                 children: [
-                  for (var i = 0; i < destinations.length; i++)
-                    Expanded(
-                      child: _DockItem(
-                        destination: destinations[i],
-                        selected: i == selectedIndex,
-                        onTap: () {
-                          if (i != selectedIndex) {
-                            HapticFeedback.selectionClick();
-                            onSelected(i);
-                          }
-                        },
+                  // Sliding / morphing active pill.
+                  AnimatedPositioned(
+                    duration: reduced ? Duration.zero : AppMotion.entranceSettle,
+                    curve: AppMotion.springEntrance,
+                    left: selectedIndex * itemWidth + 4,
+                    width: itemWidth - 8,
+                    top: 8,
+                    bottom: 8,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: dark ? 0.28 : 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: accent.withValues(alpha: dark ? 0.45 : 0.28),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: dark ? 0.30 : 0.18),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                  Row(
+                    children: [
+                      for (var i = 0; i < destinations.length; i++)
+                        Expanded(
+                          child: _DockItem(
+                            destination: destinations[i],
+                            selected: i == selectedIndex,
+                            accent: accent,
+                            onTap: () {
+                              if (i != selectedIndex) onSelected(i);
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -93,63 +112,53 @@ class _DockItem extends StatelessWidget {
   const _DockItem({
     required this.destination,
     required this.selected,
+    required this.accent,
     required this.onTap,
   });
 
   final GlassDockDestination destination;
   final bool selected;
+  final Color accent;
   final VoidCallback onTap;
-
-  static const _indigo = Color(0xFF4F46E5);
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: AnimatedContainer(
-          duration: AppMotion.fast,
-          curve: Curves.easeOutBack,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? _indigo.withValues(alpha: 0.18) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return PressScale(
+      onTap: onTap,
+      scale: 0.94,
+      feedback: selected ? PressFeedback.none : PressFeedback.select,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: selected ? 1.12 : 1.0),
+            duration: reduced ? Duration.zero : AppMotion.entranceSettle,
+            curve: AppMotion.springEntrance,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: Icon(
+              selected ? destination.selectedIcon : destination.icon,
+              size: 22,
+              color: selected ? accent : AppColors.textSecondary,
+            ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(end: selected ? 1.08 : 1.0),
-                duration: AppMotion.fast,
-                curve: Curves.easeOutBack,
-                builder: (context, scale, child) =>
-                    Transform.scale(scale: scale, child: child),
-                child: Icon(
-                  selected ? destination.selectedIcon : destination.icon,
-                  size: 22,
-                  color: selected ? _indigo : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: AppMotion.fast,
-                curve: Curves.easeOutCubic,
-                style: AppText.label(
-                  10,
-                  w: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? AppColors.textPrimary : AppColors.textFaint,
-                ),
-                child: Text(
-                  destination.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          const SizedBox(height: 2),
+          AnimatedDefaultTextStyle(
+            duration: AppMotion.fast,
+            curve: Curves.easeOutCubic,
+            style: AppText.label(
+              10,
+              w: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            ),
+            child: Text(
+              destination.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

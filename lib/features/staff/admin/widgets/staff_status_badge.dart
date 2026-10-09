@@ -37,7 +37,7 @@ class StaffStatusBadge extends StatelessWidget {
         vertical: compact ? 4 : 6,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: AppColors.isDark ? 0.2 : 0.12),
         borderRadius: BorderRadius.circular(AppRadii.full),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
@@ -50,12 +50,8 @@ class StaffStatusBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: compact ? 11 : 12,
-              letterSpacing: 0.1,
-            ),
+            style: AppText.label(compact ? 11.5 : 12.5,
+                w: FontWeight.w700, color: color),
           ),
         ],
       ),
