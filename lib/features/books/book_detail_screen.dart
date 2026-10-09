@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion3d.dart';
@@ -153,12 +154,11 @@ class BookDetailScreen extends StatelessWidget {
                 onPressed: () {
                   final reservation =
                       AppScope.read(context).reserveBook(book);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ReservationConfirmationScreen(
-                        book: book,
-                        reservation: reservation,
-                      ),
+                  AppRoute.push(
+                    context,
+                    ReservationConfirmationScreen(
+                      book: book,
+                      reservation: reservation,
                     ),
                   );
                 },
@@ -170,11 +170,7 @@ class BookDetailScreen extends StatelessWidget {
                 // Books use the same waitlist screen as seats, just
                 // parameterised (D-08) — no snackbar shortcut.
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WaitlistScreen(book: book),
-                    ),
-                  );
+                  AppRoute.push(context, WaitlistScreen(book: book));
                 },
               ),
       ),

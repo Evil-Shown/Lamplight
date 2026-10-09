@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/firebase/firestore_service.dart';
@@ -47,16 +48,13 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
     FocusScope.of(context).unfocus();
     final result = await FirestoreService.instance.verifyCode(code);
     if (!mounted) return;
-    Navigator.of(context)
-        .push(
-          MaterialPageRoute(
-            builder: (_) => VerificationResultScreen(
-              code: code.trim(),
-              result: result,
-            ),
-          ),
-        )
-        .then((_) {
+    AppRoute.push(
+      context,
+      VerificationResultScreen(
+        code: code.trim(),
+        result: result,
+      ),
+    ).then((_) {
       if (mounted) setState(() => _handling = false);
     });
   }

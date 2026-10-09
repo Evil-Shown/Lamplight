@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/ledger_widgets.dart';
@@ -95,10 +96,9 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const StaffScannerScreen(),
-                    ),
+                  onPressed: () => AppRoute.push(
+                    context,
+                    const StaffScannerScreen(),
                   ),
                   style: IconButton.styleFrom(
                     backgroundColor: AppColors.surface,
