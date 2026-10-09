@@ -722,12 +722,12 @@ class _AvailabilitySummary extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: activeFilters > 0
                       ? AppColors.primary
-                      : AppColors.primary.withValues(alpha: 0.10),
+                      : AppColors.primary.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(AppRadii.md),
                   border: Border.all(
                     color: activeFilters > 0
                         ? AppColors.primary
-                        : AppColors.primary.withValues(alpha: 0.2),
+                        : AppColors.primary.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Stack(
@@ -1569,8 +1569,7 @@ class _SeatBadge extends StatelessWidget {
                       .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
                   SeatStatus.limited => AppColors.warningContainer
                       .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
-                  SeatStatus.occupied =>
-                    AppColors.surfaceSunken.withValues(alpha: 0.65),
+                  SeatStatus.occupied => const Color(0xFF3B3A34),
                 };
 
   Color get _glowColor => isSelected
@@ -1594,7 +1593,8 @@ class _SeatBadge extends StatelessWidget {
                     AppColors.seatAvailable.withValues(alpha: 0.6),
                   SeatStatus.limited =>
                     AppColors.seatLimited.withValues(alpha: 0.6),
-                  SeatStatus.occupied => AppColors.border,
+                  SeatStatus.occupied =>
+                    const Color(0xFFF3E8D6).withValues(alpha: 0.22),
                 };
 
   double get _ringWidth => dimmed
@@ -1612,7 +1612,8 @@ class _SeatBadge extends StatelessWidget {
           : switch (seat.status) {
               SeatStatus.available => AppColors.onSuccessContainer,
               SeatStatus.limited => AppColors.onWarningContainer,
-              SeatStatus.occupied => AppColors.textFaint,
+              SeatStatus.occupied =>
+                const Color(0xFFF3E8D6).withValues(alpha: 0.7),
             };
 
   String _statusLabel(SeatStatus status) => switch (status) {
@@ -1635,7 +1636,12 @@ class _Legend extends StatelessWidget {
     final items = <(Color, Color, IconData?, String)>[
       (AppColors.successContainer, AppColors.seatAvailable, null, 'Free'),
       (AppColors.warningContainer, AppColors.seatLimited, null, 'Limited'),
-      (AppColors.surfaceSunken, AppColors.border, null, 'Full'),
+      (
+        const Color(0xFF3B3A34),
+        const Color(0xFFF3E8D6).withValues(alpha: 0.3),
+        null,
+        'Full'
+      ),
       (
         AppColors.seatSelected,
         AppColors.seatSelected,

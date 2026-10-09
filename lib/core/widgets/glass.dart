@@ -109,7 +109,7 @@ class _AuroraBackgroundState extends State<AuroraBackground>
               ),
             ),
           ),
-          _MountainBackdrop(dark: AppColors.isDark),
+          _DesertBackdrop(dark: AppColors.isDark),
           widget.child,
         ],
       ),
@@ -176,11 +176,12 @@ class _AuroraPainter extends CustomPainter {
       old.sky != sky || old.colors != colors || old.progress != progress;
 }
 
-/// A softly blurred mountain at the bottom of the backdrop, like a
-/// out-of-focus photo behind the glass. Painted once inside its own
-/// repaint boundary, so it costs nothing while scrolling.
-class _MountainBackdrop extends StatelessWidget {
-  const _MountainBackdrop({required this.dark});
+/// An arid dusk scene at the bottom of the backdrop: a low sun, flat-topped
+/// buttes and layered sand dunes with a lit and a shadowed side, and a
+/// saguaro in the foreground. Painted once inside its own repaint boundary
+/// with no blur, so it stays crisp and costs nothing while scrolling.
+class _DesertBackdrop extends StatelessWidget {
+  const _DesertBackdrop({required this.dark});
 
   final bool dark;
 
@@ -189,74 +190,84 @@ class _MountainBackdrop extends StatelessWidget {
         child: RepaintBoundary(
           child: CustomPaint(
             size: Size.infinite,
-            painter: _MountainPainter(dark: dark),
+            painter: _DesertPainter(dark: dark),
           ),
         ),
       );
 }
 
-class _MountainPainter extends CustomPainter {
-  const _MountainPainter({required this.dark});
+class _DesertPainter extends CustomPainter {
+  const _DesertPainter({required this.dark});
 
   final bool dark;
+
+  // Lit top, base, and shadow colour for each dune, back to front.
+  static const _litLight = [
+    Color(0xFFF6CB98),
+    Color(0xFFEFB67F),
+    Color(0xFFE3A167),
+    Color(0xFFD38C55),
+  ];
+  static const _baseLight = [
+    Color(0xFFE6AE78),
+    Color(0xFFDA9A64),
+    Color(0xFFC7824F),
+    Color(0xFFA96A3F),
+  ];
+  static const _shadeLight = [
+    Color(0xFFB8733E),
+    Color(0xFFA5643A),
+    Color(0xFF8D4F2E),
+    Color(0xFF6E3C22),
+  ];
+
+  static const _litDark = [
+    Color(0xFF7A5238),
+    Color(0xFF68442E),
+    Color(0xFF55372A),
+    Color(0xFF432B20),
+  ];
+  static const _baseDark = [
+    Color(0xFF4A301F),
+    Color(0xFF3D2819),
+    Color(0xFF301F15),
+    Color(0xFF24170F),
+  ];
+  static const _shadeDark = [
+    Color(0xFF1D120C),
+    Color(0xFF170E09),
+    Color(0xFF120A06),
+    Color(0xFF0C0604),
+  ];
+
+  // Per dune: left y, crest x, crest y, right y (all fractions).
+  static const _dunes = [
+    (0.70, 0.80, 0.645, 0.725),
+    (0.755, 0.22, 0.695, 0.785),
+    (0.83, 0.68, 0.765, 0.845),
+    (0.91, 0.30, 0.85, 0.915),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final ink = dark ? const Color(0xFF0E0705) : const Color(0xFF4A2812);
+    final lit = dark ? _litDark : _litLight;
+    final base = dark ? _baseDark : _baseLight;
+    final shade = dark ? _shadeDark : _shadeLight;
 
-    Paint soft(double alpha, double sigma) => Paint()
-      ..color = ink.withValues(alpha: alpha)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, sigma);
+    _sun(canvas, w, h);
+    _buttes(canvas, w, h);
 
-    // Far ridge on the right, hazier and lighter.
-    final far = Path()
-      ..moveTo(w * 0.34, h)
-      ..lineTo(w * 0.58, h * 0.70)
-      ..lineTo(w * 0.68, h * 0.74)
-      ..lineTo(w * 0.84, h * 0.62)
-      ..lineTo(w * 1.1, h * 0.8)
-      ..lineTo(w * 1.1, h)
-      ..close();
-    canvas.drawPath(far, soft(dark ? 0.42 : 0.14, 20));
+    for (var i = 0; i < _dunes.length; i++) {
+      final (ly, cx, cy, ry) = _dunes[i];
+      _dune(canvas, w, h, ly, cx, cy, ry, lit[i], base[i], shade[i], i);
+    }
 
-    // The main peak, off-centre to the left.
-    final peak = Path()
-      ..moveTo(-w * 0.1, h)
-      ..lineTo(w * 0.06, h * 0.8)
-      ..lineTo(w * 0.17, h * 0.68)
-      ..lineTo(w * 0.22, h * 0.64)
-      ..lineTo(w * 0.3, h * 0.53)
-      ..lineTo(w * 0.36, h * 0.62)
-      ..lineTo(w * 0.43, h * 0.67)
-      ..lineTo(w * 0.52, h * 0.76)
-      ..lineTo(w * 0.7, h * 0.86)
-      ..lineTo(w * 1.1, h * 0.95)
-      ..lineTo(w * 1.1, h)
-      ..close();
-    canvas.drawPath(peak, soft(dark ? 0.62 : 0.26, 10));
+    _cactus(canvas, w, h);
 
-    // A hint of snow catching the light near the summit.
-    final snow = Path()
-      ..moveTo(w * 0.3, h * 0.53)
-      ..lineTo(w * 0.249, h * 0.6)
-      ..lineTo(w * 0.27, h * 0.59)
-      ..lineTo(w * 0.285, h * 0.612)
-      ..lineTo(w * 0.3, h * 0.595)
-      ..lineTo(w * 0.318, h * 0.615)
-      ..lineTo(w * 0.335, h * 0.6)
-      ..lineTo(w * 0.35, h * 0.606)
-      ..close();
-    canvas.drawPath(
-      snow,
-      Paint()
-        ..color = const Color(0xFFFFE9CC).withValues(alpha: dark ? 0.2 : 0.3)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
-    );
-
-    // Mist at the foot of the mountain, fading into the page.
-    final foot = Rect.fromLTWH(0, h * 0.62, w, h * 0.38);
+    // Foreground depth: the page darkens slightly toward the bottom edge.
+    final foot = Rect.fromLTWH(0, h * 0.82, w, h * 0.18);
     canvas.drawRect(
       foot,
       Paint()
@@ -264,15 +275,221 @@ class _MountainPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            ink.withValues(alpha: 0),
-            ink.withValues(alpha: dark ? 0.55 : 0.2),
+            const Color(0xFF2A1408).withValues(alpha: 0),
+            const Color(0xFF2A1408).withValues(alpha: dark ? 0.55 : 0.3),
           ],
         ).createShader(foot),
     );
   }
 
+  void _sun(Canvas canvas, double w, double h) {
+    final c = Offset(w * 0.7, h * 0.625);
+    final glowR = w * 0.5;
+    canvas.drawCircle(
+      c,
+      glowR,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFF0D0))
+              .withValues(alpha: dark ? 0.32 : 0.8),
+          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD79A))
+              .withValues(alpha: dark ? 0.1 : 0.28),
+          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD79A))
+              .withValues(alpha: 0),
+        ], stops: const [
+          0,
+          0.35,
+          1
+        ]).createShader(Rect.fromCircle(center: c, radius: glowR)),
+    );
+    canvas.drawCircle(
+      c,
+      w * 0.072,
+      Paint()
+        ..color = (dark ? const Color(0xFFF5B574) : const Color(0xFFFFF4DC))
+            .withValues(alpha: dark ? 0.7 : 0.95),
+    );
+  }
+
+  /// Flat-topped rock buttes on the horizon, lit on the left, shaded on the
+  /// right.
+  void _buttes(Canvas canvas, double w, double h) {
+    Path poly(List<(double, double)> pts) {
+      final path = Path()..moveTo(w * pts.first.$1, h * pts.first.$2);
+      for (final pt in pts.skip(1)) {
+        path.lineTo(w * pt.$1, h * pt.$2);
+      }
+      return path..close();
+    }
+
+    final body = dark ? const Color(0xFF2E1D14) : const Color(0xFFC98A58);
+    final side = dark ? const Color(0xFF1A0F0A) : const Color(0xFFA56A3E);
+
+    final big = [
+      (0.02, 0.73),
+      (0.045, 0.655),
+      (0.075, 0.645),
+      (0.185, 0.645),
+      (0.215, 0.665),
+      (0.235, 0.73),
+    ];
+    canvas.drawPath(poly(big), Paint()..color = body);
+    canvas.drawPath(
+      poly([
+        (0.14, 0.645),
+        (0.185, 0.645),
+        (0.215, 0.665),
+        (0.235, 0.73),
+        (0.15, 0.73),
+      ]),
+      Paint()..color = side,
+    );
+
+    final small = [
+      (0.25, 0.73),
+      (0.265, 0.685),
+      (0.285, 0.678),
+      (0.34, 0.678),
+      (0.355, 0.7),
+      (0.37, 0.73),
+    ];
+    canvas.drawPath(poly(small), Paint()..color = body);
+    canvas.drawPath(
+      poly([
+        (0.315, 0.678),
+        (0.34, 0.678),
+        (0.355, 0.7),
+        (0.37, 0.73),
+        (0.31, 0.73),
+      ]),
+      Paint()..color = side,
+    );
+  }
+
+  /// One dune: a lit windward slope, then a crisp crest and a shadowed lee.
+  void _dune(Canvas canvas, double w, double h, double ly, double cx, double cy,
+      double ry, Color lit, Color base, Color shade, int index) {
+    final left = Offset(-w * 0.1, h * ly);
+    final crest = Offset(w * cx, h * cy);
+    final right = Offset(w * 1.1, h * ry);
+    final rise = crest.dx - left.dx;
+    final fall = right.dx - crest.dx;
+
+    // The dune body.
+    final body = Path()
+      ..moveTo(left.dx, left.dy)
+      ..cubicTo(left.dx + rise * 0.4, left.dy, crest.dx - rise * 0.32, crest.dy,
+          crest.dx, crest.dy)
+      ..cubicTo(crest.dx + fall * 0.05, crest.dy + (right.dy - crest.dy) * 0.55,
+          right.dx - fall * 0.45, right.dy, right.dx, right.dy)
+      ..lineTo(right.dx, h)
+      ..lineTo(left.dx, h)
+      ..close();
+    final bounds = Rect.fromLTWH(0, h * (cy - 0.02), w, h);
+    canvas.drawPath(
+      body,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [lit, base],
+        ).createShader(bounds),
+    );
+
+    // The lee side in shadow: sharp along the crest, fading into the dune.
+    final lee = Path()
+      ..moveTo(crest.dx, crest.dy)
+      ..cubicTo(crest.dx + fall * 0.05, crest.dy + (right.dy - crest.dy) * 0.55,
+          right.dx - fall * 0.45, right.dy, right.dx, right.dy)
+      ..lineTo(right.dx, right.dy + h * 0.1)
+      ..cubicTo(right.dx - fall * 0.35, right.dy + h * 0.1, crest.dx + fall * 0.1,
+          crest.dy + h * 0.1, crest.dx, crest.dy)
+      ..close();
+    final leeBox = Rect.fromLTRB(crest.dx, crest.dy, right.dx, right.dy + h * 0.1);
+    canvas.drawPath(
+      lee,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            shade.withValues(alpha: dark ? 0.85 : 0.7),
+            shade.withValues(alpha: 0),
+          ],
+        ).createShader(leeBox),
+    );
+
+    // A thin warm rim along the crest where the sun grazes it.
+    final rim = Path()
+      ..moveTo(left.dx + rise * 0.45, left.dy + (crest.dy - left.dy) * 0.3)
+      ..cubicTo(left.dx + rise * 0.6, left.dy + (crest.dy - left.dy) * 0.62,
+          crest.dx - rise * 0.15, crest.dy + 0.5, crest.dx, crest.dy);
+    canvas.drawPath(
+      rim,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..strokeCap = StrokeCap.round
+        ..color = (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFE9C4))
+            .withValues(alpha: dark ? 0.22 : 0.55),
+    );
+  }
+
+  /// A saguaro on the nearest dune: dark body with a thin lit edge.
+  void _cactus(Canvas canvas, double w, double h) {
+    final x = w * 0.86;
+    final base = h * 0.915;
+    final ht = h * 0.1;
+    final body = dark ? const Color(0xFF0C0604) : const Color(0xFF3D2314);
+    final edge = (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD9A8))
+        .withValues(alpha: dark ? 0.35 : 0.5);
+
+    void shape(Paint paint, double dx) {
+      final trunk = w * 0.026;
+      final arm = w * 0.017;
+      canvas.drawLine(
+        Offset(x + dx, base),
+        Offset(x + dx, base - ht),
+        paint
+          ..strokeWidth = trunk
+          ..strokeCap = StrokeCap.round,
+      );
+      paint
+        ..strokeWidth = arm
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(
+        Path()
+          ..moveTo(x + dx, base - ht * 0.42)
+          ..lineTo(x + dx - w * 0.052, base - ht * 0.42)
+          ..lineTo(x + dx - w * 0.052, base - ht * 0.7),
+        paint,
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(x + dx, base - ht * 0.58)
+          ..lineTo(x + dx + w * 0.046, base - ht * 0.58)
+          ..lineTo(x + dx + w * 0.046, base - ht * 0.84),
+        paint,
+      );
+    }
+
+    shape(
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..color = edge,
+      -1.6,
+    );
+    shape(
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..color = body,
+      0,
+    );
+  }
+
   @override
-  bool shouldRepaint(covariant _MountainPainter old) => old.dark != dark;
+  bool shouldRepaint(covariant _DesertPainter old) => old.dark != dark;
 }
 
 /// Shared glass look. [blur] null = frosted (no BackdropFilter).
