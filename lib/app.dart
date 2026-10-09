@@ -6,7 +6,7 @@ import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_frame.dart';
 import 'core/widgets/ledger_widgets.dart';
-import 'features/auth/login_screen.dart';
+import 'features/auth/auth_flow.dart';
 import 'services/preferences_store.dart';
 
 class LibraryApp extends StatefulWidget {
@@ -113,6 +113,6 @@ class _SignedInGate extends StatelessWidget {
     final signedIn = AppScope.of(context).isSignedIn;
     return signedIn
         ? const AppShell(key: ValueKey('shell'))
-        : const LoginScreen(key: ValueKey('login'));
+        : const AuthFlow(key: ValueKey('auth'));
   }
 }
