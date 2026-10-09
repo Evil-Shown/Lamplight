@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/feedback/app_feedback.dart';
 import '../../core/state/app_state.dart';
@@ -286,18 +287,18 @@ class _LoginScreenState extends State<LoginScreen> {
       errorStyle: AppText.body(12, color: AuthPalette.error),
       suffixIcon: suffix,
       filled: true,
-      fillColor: AuthPalette.field,
+      fillColor: AuthPalette.fieldFill,
       hintStyle: AppText.body(14, color: AuthPalette.muted),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
       border: side(),
       enabledBorder: side(),
-      focusedBorder: side(AuthPalette.blue, 1.5),
+      focusedBorder: side(AuthPalette.accent, 1.5),
       errorBorder: side(AuthPalette.error),
       focusedErrorBorder: side(AuthPalette.error, 1.5),
     );
   }
 
-  TextStyle get _input => AppText.body(14.5, color: AuthPalette.ink);
+  TextStyle get _input => AppText.body(14.5, color: AuthPalette.onSheet);
 
   Widget _labeled(String label, Widget field) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: AppText.label(
                 12.5,
                 w: FontWeight.w700,
-                color: AuthPalette.ink,
+                color: AuthPalette.onSheet,
               ),
             ),
           ),
@@ -336,13 +337,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final keyboardUp = media.viewInsets.bottom > 0;
     final heroH = keyboardUp
         ? 96.0
-        : (media.size.height * 0.27).clamp(150.0, 260.0).toDouble();
+        : (media.size.height * 0.22).clamp(130.0, 240.0).toDouble();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        backgroundColor: AuthPalette.navy,
+        backgroundColor: AuthPalette.espresso,
         body: Stack(
           children: [
             const Positioned(
@@ -409,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Positioned.fill(
           child: DecoratedBox(
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AuthPalette.sheet,
               borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: ClipRRect(
@@ -452,7 +453,11 @@ class _LoginScreenState extends State<LoginScreen> {
             signingIn ? 'Welcome Back!' : 'Join Library+',
             key: ValueKey(signingIn),
             textAlign: TextAlign.center,
-            style: AppText.title(19, w: FontWeight.w800, color: AuthPalette.ink),
+            style: GoogleFonts.fraunces(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AuthPalette.onSheet,
+            ),
           ),
         ),
         const SizedBox(height: 6),
@@ -475,8 +480,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Just a hint. Staff access is granted by the library, not chosen '
-          'here.',
+          'Staff access is granted by the library.',
           textAlign: TextAlign.center,
           style: AppText.body(11, color: AuthPalette.muted),
         ),
@@ -595,14 +599,14 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextButton.styleFrom(
                 minimumSize: const Size(44, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                foregroundColor: AuthPalette.blue,
+                foregroundColor: AuthPalette.accent,
               ),
               child: Text(
                 'Forgot Password?',
                 style: AppText.label(
                   12.5,
                   w: FontWeight.w600,
-                  color: AuthPalette.blue,
+                  color: AuthPalette.accent,
                 ),
               ),
             ),
@@ -626,7 +630,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: AuthPalette.blue.withValues(alpha: 0.38),
+                color: AuthPalette.accent.withValues(alpha: 0.38),
                 blurRadius: 18,
                 offset: const Offset(0, 7),
               ),
@@ -640,10 +644,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     _handleEmailAuth();
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: AuthPalette.blue,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AuthPalette.blue.withValues(alpha: 0.5),
-              disabledForegroundColor: Colors.white,
+              backgroundColor: AuthPalette.accent,
+              foregroundColor: AuthPalette.espresso,
+              disabledBackgroundColor: AuthPalette.accent.withValues(alpha: 0.5),
+              disabledForegroundColor: AuthPalette.espresso,
               minimumSize: const Size.fromHeight(54),
               elevation: 0,
               shape: const StadiumBorder(),
@@ -654,7 +658,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      color: Colors.white,
+                      color: AuthPalette.espresso,
                     ),
                   )
                 : Text(
@@ -662,7 +666,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: AppText.title(
                       15,
                       w: FontWeight.w700,
-                      color: Colors.white,
+                      color: AuthPalette.espresso,
                     ),
                   ),
           ),
@@ -698,7 +702,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: AppText.title(
                       12.5,
                       w: FontWeight.w700,
-                      color: AuthPalette.blue,
+                      color: AuthPalette.accent,
                     ),
                   ),
                 ),
@@ -749,7 +753,7 @@ class _ErrorNote extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       message,
-                      style: AppText.body(12.5, color: AuthPalette.ink),
+                      style: AppText.body(12.5, color: AuthPalette.onSheet),
                     ),
                   ],
                 ),
@@ -809,7 +813,7 @@ class _RolePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = selected ? AuthPalette.blue : AuthPalette.muted;
+    final tone = selected ? AuthPalette.accent : AuthPalette.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -821,11 +825,11 @@ class _RolePill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
             color: selected
-                ? AuthPalette.blue.withValues(alpha: 0.12)
-                : AuthPalette.field,
+                ? AuthPalette.accent.withValues(alpha: 0.12)
+                : AuthPalette.fieldFill,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AuthPalette.blue : Colors.transparent,
+              color: selected ? AuthPalette.accent : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -866,7 +870,7 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AuthPalette.field,
+      color: AuthPalette.fieldFill,
       shape: const StadiumBorder(),
       child: InkWell(
         customBorder: const StadiumBorder(),
@@ -884,7 +888,7 @@ class _GoogleButton extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AuthPalette.blue,
+                      color: AuthPalette.accent,
                     ),
                   )
                 else
@@ -897,7 +901,7 @@ class _GoogleButton extends StatelessWidget {
                     style: AppText.title(
                       14,
                       w: FontWeight.w600,
-                      color: AuthPalette.ink,
+                      color: AuthPalette.onSheet,
                     ),
                   ),
                 ),
@@ -930,7 +934,7 @@ class _ConsentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = AppText.body(12.5, color: AuthPalette.muted);
     final link =
-        AppText.label(12.5, w: FontWeight.w600, color: AuthPalette.blue);
+        AppText.label(12.5, w: FontWeight.w600, color: AuthPalette.accent);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -941,8 +945,8 @@ class _ConsentRow extends StatelessWidget {
               label: 'Accept Terms and Privacy notice',
               child: Checkbox(
                 value: value,
-                activeColor: AuthPalette.blue,
-                checkColor: Colors.white,
+                activeColor: AuthPalette.accent,
+                checkColor: AuthPalette.espresso,
                 side: const BorderSide(color: AuthPalette.muted, width: 1.5),
                 onChanged: (v) {
                   AppFeedback.toggle();
