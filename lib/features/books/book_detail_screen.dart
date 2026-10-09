@@ -91,7 +91,7 @@ class BookDetailScreen extends StatelessWidget {
                   Text(
                     book.title,
                     textAlign: TextAlign.center,
-                    style: AppText.display(
+                    style: AppText.title(
                       22,
                       w: FontWeight.w800,
                       ls: -0.6,

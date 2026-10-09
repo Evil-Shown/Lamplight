@@ -94,7 +94,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   children: [
                     Text('My Reservations',
                         style:
-                            AppText.display(30, w: FontWeight.w800, ls: -0.9)),
+                            AppText.title(28, w: FontWeight.w800, ls: -0.7)),
                     const SizedBox(height: 4),
                     Text(
                       'Books and reading-room seats',
@@ -525,7 +525,7 @@ class _WaitlistCard extends StatelessWidget {
               ),
               CountUp(
                 value: entry.position,
-                style: AppText.display(
+                style: AppText.title(
                   24,
                   w: FontWeight.w800,
                   color: AppColors.primary,
