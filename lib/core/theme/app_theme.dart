@@ -21,79 +21,79 @@ class AppColors {
 
   /// Nordic light: sapphire, porcelain canvas, indigo accent.
   static const ColorScheme _lightScheme = ColorScheme.light(
-    primary: Color(0xFF0D50E8),
-    onPrimary: Color(0xFFFFFFFF),
-    primaryContainer: Color(0xFFDCE8FF),
-    onPrimaryContainer: Color(0xFF062A6E),
-    secondary: Color(0xFF4F46E5),
+    primary: Color(0xFF6B3516),
+    onPrimary: Color(0xFFFFF3E0),
+    primaryContainer: Color(0xFFF3D3A6),
+    onPrimaryContainer: Color(0xFF3A1B06),
+    secondary: Color(0xFF9C4A2B),
     onSecondary: Color(0xFFFFFFFF),
-    secondaryContainer: Color(0xFFE8E7FF),
-    onSecondaryContainer: Color(0xFF1E1B4B),
-    tertiary: Color(0xFF0EA5E9),
+    secondaryContainer: Color(0xFFF4D5C4),
+    onSecondaryContainer: Color(0xFF3E1608),
+    tertiary: Color(0xFF7A5A1A),
     onTertiary: Color(0xFFFFFFFF),
-    tertiaryContainer: Color(0xFFE0F2FE),
-    onTertiaryContainer: Color(0xFF0369A1),
-    error: Color(0xFFBA1A1A),
+    tertiaryContainer: Color(0xFFF2DDA0),
+    onTertiaryContainer: Color(0xFF35270A),
+    error: Color(0xFFB3261E),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
     onErrorContainer: Color(0xFF410002),
-    surface: Color(0xFFF8FAFC),
-    onSurface: Color(0xFF111827),
-    onSurfaceVariant: Color(0xFF6B7280),
-    outline: Color(0xFF9CA3AF),
-    outlineVariant: Color(0xFFE5E7EB),
-    inverseSurface: Color(0xFF1F2937),
-    onInverseSurface: Color(0xFFF9FAFB),
-    inversePrimary: Color(0xFF93B8FF),
-    surfaceContainerLowest: Color(0xFFFFFFFF),
-    surfaceContainerLow: Color(0xFFFFFFFF),
-    surfaceContainer: Color(0xFFF1F5F9),
-    surfaceContainerHigh: Color(0xFFE2E8F0),
-    surfaceContainerHighest: Color(0xFFCBD5E1),
-    surfaceDim: Color(0xFFE2E8F0),
-    surfaceBright: Color(0xFFF8FAFC),
+    surface: Color(0xFFE8B380),
+    onSurface: Color(0xFF2A180C),
+    onSurfaceVariant: Color(0xFF553822),
+    outline: Color(0xFF8A6446),
+    outlineVariant: Color(0xFFCDA070),
+    inverseSurface: Color(0xFF2A180C),
+    onInverseSurface: Color(0xFFFBEBD3),
+    inversePrimary: Color(0xFFF0B070),
+    surfaceContainerLowest: Color(0xFFFFF9EE),
+    surfaceContainerLow: Color(0xFFFFF1DC),
+    surfaceContainer: Color(0xFFF2D9B4),
+    surfaceContainerHigh: Color(0xFFE8C799),
+    surfaceContainerHighest: Color(0xFFDDB57F),
+    surfaceDim: Color(0xFFD9A369),
+    surfaceBright: Color(0xFFEBB886),
   );
 
   /// Nordic dark: slate canvas, light sapphire primary.
   static const ColorScheme _darkScheme = ColorScheme.dark(
-    primary: Color(0xFF93B8FF),
-    onPrimary: Color(0xFF062A6E),
-    primaryContainer: Color(0xFF0D50E8),
-    onPrimaryContainer: Color(0xFFDCE8FF),
-    secondary: Color(0xFFA5B4FC),
-    onSecondary: Color(0xFF1E1B4B),
-    secondaryContainer: Color(0xFF3730A3),
-    onSecondaryContainer: Color(0xFFE8E7FF),
-    tertiary: Color(0xFF38BDF8),
-    onTertiary: Color(0xFF0C4A6E),
-    tertiaryContainer: Color(0xFF0369A1),
-    onTertiaryContainer: Color(0xFFE0F2FE),
+    primary: Color(0xFFF0B070),
+    onPrimary: Color(0xFF2A1503),
+    primaryContainer: Color(0xFF7A4A1E),
+    onPrimaryContainer: Color(0xFFFFDDB8),
+    secondary: Color(0xFFE0A58A),
+    onSecondary: Color(0xFF3E1608),
+    secondaryContainer: Color(0xFF5A3322),
+    onSecondaryContainer: Color(0xFFF8DECF),
+    tertiary: Color(0xFFE6C98A),
+    onTertiary: Color(0xFF35270A),
+    tertiaryContainer: Color(0xFF5E4A12),
+    onTertiaryContainer: Color(0xFFF6E8B8),
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
     errorContainer: Color(0xFF93000A),
     onErrorContainer: Color(0xFFFFDAD6),
-    surface: Color(0xFF0F172A),
-    onSurface: Color(0xFFF1F5F9),
-    onSurfaceVariant: Color(0xFF94A3B8),
-    outline: Color(0xFF64748B),
-    outlineVariant: Color(0xFF334155),
-    inverseSurface: Color(0xFFF1F5F9),
-    onInverseSurface: Color(0xFF0F172A),
-    inversePrimary: Color(0xFF0D50E8),
-    surfaceContainerLowest: Color(0xFF020617),
-    surfaceContainerLow: Color(0xFF1E293B),
-    surfaceContainer: Color(0xFF1E293B),
-    surfaceContainerHigh: Color(0xFF334155),
-    surfaceContainerHighest: Color(0xFF475569),
-    surfaceDim: Color(0xFF0F172A),
-    surfaceBright: Color(0xFF334155),
+    surface: Color(0xFF1C110C),
+    onSurface: Color(0xFFF6E6D2),
+    onSurfaceVariant: Color(0xFFC4A68C),
+    outline: Color(0xFF8A6C55),
+    outlineVariant: Color(0xFF43302A),
+    inverseSurface: Color(0xFFF6E6D2),
+    onInverseSurface: Color(0xFF2A180C),
+    inversePrimary: Color(0xFF6B3516),
+    surfaceContainerLowest: Color(0xFF120A07),
+    surfaceContainerLow: Color(0xFF271912),
+    surfaceContainer: Color(0xFF2F1F16),
+    surfaceContainerHigh: Color(0xFF3B281C),
+    surfaceContainerHighest: Color(0xFF4B3426),
+    surfaceDim: Color(0xFF1C110C),
+    surfaceBright: Color(0xFF3B281C),
   );
 
   /// Electric indigo — selected seats, nav pill, focus rings.
-  static const Color indigo = Color(0xFF4F46E5);
+  static const Color indigo = Color(0xFFB5532C);
 
   /// Cyan accent for your seat / special highlights (no yellow).
-  static const Color amberHighlight = Color(0xFF0284C7);
+  static const Color amberHighlight = Color(0xFFE6B422);
 
   /// The scheme matching the active brightness. Kept in sync by the app
   /// root through [isDark] before the frame is built.
@@ -189,16 +189,16 @@ class AppColors {
   /// ARGB values, so they line up with `Book.coverColor`. Deterministic:
   /// index = `book.id.hashCode.abs() % 10`.
   static const List<int> coverPalette = [
-    0xFF1E40AF,
-    0xFF0E7490,
-    0xFF3B82F6,
-    0xFF6366F1,
-    0xFF5B21B6,
-    0xFF155E75,
-    0xFF166534,
-    0xFF475569,
-    0xFF0284C7,
-    0xFF1E3A8A,
+    0xFF7A2E2B,
+    0xFF2F4A3A,
+    0xFFB5733A,
+    0xFF4B3426,
+    0xFF22344C,
+    0xFF8E4B2A,
+    0xFF5A5F3A,
+    0xFF6B3A52,
+    0xFF3D5A5E,
+    0xFF9A6B2F,
   ];
 }
 
@@ -299,16 +299,16 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF1E293B).withValues(alpha: 0.58)
-      : Colors.white.withValues(alpha: 0.64);
+      ? const Color(0xFF2B1D14).withValues(alpha: 0.62)
+      : const Color(0xFFFFF4E2).withValues(alpha: 0.66);
 
   static Color chromeFillFor(bool dark) => dark
-      ? const Color(0xFF111B30).withValues(alpha: 0.72)
-      : Colors.white.withValues(alpha: 0.78);
+      ? const Color(0xFF1B110B).withValues(alpha: 0.78)
+      : const Color(0xFFFFEDD2).withValues(alpha: 0.82);
 
   static Color borderFor(bool dark) => dark
       ? Colors.white.withValues(alpha: 0.12)
-      : const Color(0xFF0F172A).withValues(alpha: 0.07);
+      : const Color(0xFF4A2410).withValues(alpha: 0.12);
 
   /// Bright rim light on the top/left edge.
   static Color rimFor(bool dark) => dark
@@ -317,7 +317,7 @@ class AppGlass {
 
   static Color shadowFor(bool dark) => dark
       ? Colors.black.withValues(alpha: 0.38)
-      : const Color(0xFF1E3A8A).withValues(alpha: 0.10);
+      : const Color(0xFF4A2410).withValues(alpha: 0.16);
 
   /// Translucent card fill (frosted cards, chips, inputs).
   static Color get cardFill => cardFillFor(AppColors.isDark);
@@ -361,31 +361,36 @@ class AppGlass {
       ];
 }
 
-/// Soft tints for the [AuroraBackground] blobs, derived from brand blue,
-/// indigo, a cool cyan and sky blue.
+/// The dusk sky behind the app: amber at the top deepening to brown, with
+/// soft copper glows. A blurred mountain is painted over it (see glass.dart).
 class AppAurora {
   AppAurora._();
 
   static const List<Color> light = [
-    Color(0x4D0D50E8), // sapphire 30%
-    Color(0x424F46E5), // indigo 26%
-    Color(0x3822D3EE), // cyan 22%
-    Color(0x2B38BDF8), // sky blue 17%
+    Color(0x66FFE3B8), // cream glow 40%
+    Color(0x40C2703A), // copper 25%
+    Color(0x33FFC58A), // peach 20%
+    Color(0x2E8A4A2B), // rust 18%
   ];
 
   static const List<Color> dark = [
-    Color(0x660D50E8),
-    Color(0x594F46E5),
-    Color(0x330891B2),
-    Color(0x1F38BDF8),
+    Color(0x40E0904A),
+    Color(0x338A4A2B),
+    Color(0x29B8703A),
+    Color(0x1F5A3322),
   ];
 
   static List<Color> get colors => AppColors.isDark ? dark : light;
 
   /// Canvas colour the blobs float over.
   static Color get base => AppColors.isDark
-      ? const Color(0xFF0B1224)
-      : const Color(0xFFF4F7FC);
+      ? const Color(0xFF241610)
+      : const Color(0xFFE3A872);
+
+  /// Top-to-bottom sky gradient stops.
+  static List<Color> get sky => AppColors.isDark
+      ? const [Color(0xFF3A2216), Color(0xFF241610), Color(0xFF140C08)]
+      : const [Color(0xFFF0C99C), Color(0xFFE3A872), Color(0xFFC98350)];
 }
 
 /// The M3 corner scale: extra-small 8, small 12, medium 16, large 20,
@@ -465,20 +470,21 @@ class AppGradients {
   static Gradient get brand => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF0D50E8), Color(0xFF4F46E5)],
+        colors: [Color(0xFFE0A050), Color(0xFFB8702C)],
       );
 
-  /// Depth hero: sapphire → indigo at 135°.
+  /// Depth hero: glowing amber in dark mode (dark text on it), deep brown
+  /// in light mode (cream text on it), at 135 degrees.
   static Gradient get hero => AppColors.isDark
       ? const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0D50E8), Color(0xFF312E81)],
+          colors: [Color(0xFFF0B070), Color(0xFFC27A2C)],
         )
       : const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0D50E8), Color(0xFF4F46E5)],
+          colors: [Color(0xFF7A4020), Color(0xFF4A2410)],
         );
 
   /// Legacy name kept so existing call sites restyle onto `hero`; the

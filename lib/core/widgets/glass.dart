@@ -104,11 +104,12 @@ class _AuroraBackgroundState extends State<AuroraBackground>
             child: CustomPaint(
               painter: _AuroraPainter(
                 colors: AppAurora.colors,
-                base: AppAurora.base,
+                sky: AppAurora.sky,
                 progress: _controller,
               ),
             ),
           ),
+          _MountainBackdrop(dark: AppColors.isDark),
           widget.child,
         ],
       ),
@@ -119,12 +120,12 @@ class _AuroraBackgroundState extends State<AuroraBackground>
 class _AuroraPainter extends CustomPainter {
   _AuroraPainter({
     required this.colors,
-    required this.base,
+    required this.sky,
     required this.progress,
   }) : super(repaint: progress);
 
   final List<Color> colors;
-  final Color base;
+  final List<Color> sky;
   final Animation<double>? progress;
 
   // Anchor (fraction of size), radius (fraction of the longer side),
@@ -138,7 +139,16 @@ class _AuroraPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = base);
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: sky,
+        ).createShader(rect),
+    );
     final t = progress?.value ?? 0.0;
     final longest = math.max(size.width, size.height);
     for (var i = 0; i < _blobs.length; i++) {
@@ -163,7 +173,106 @@ class _AuroraPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_AuroraPainter old) =>
-      old.base != base || old.colors != colors || old.progress != progress;
+      old.sky != sky || old.colors != colors || old.progress != progress;
+}
+
+/// A softly blurred mountain at the bottom of the backdrop, like a
+/// out-of-focus photo behind the glass. Painted once inside its own
+/// repaint boundary, so it costs nothing while scrolling.
+class _MountainBackdrop extends StatelessWidget {
+  const _MountainBackdrop({required this.dark});
+
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+        child: RepaintBoundary(
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: _MountainPainter(dark: dark),
+          ),
+        ),
+      );
+}
+
+class _MountainPainter extends CustomPainter {
+  const _MountainPainter({required this.dark});
+
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final ink = dark ? const Color(0xFF0E0705) : const Color(0xFF4A2812);
+
+    Paint soft(double alpha, double sigma) => Paint()
+      ..color = ink.withValues(alpha: alpha)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, sigma);
+
+    // Far ridge on the right, hazier and lighter.
+    final far = Path()
+      ..moveTo(w * 0.34, h)
+      ..lineTo(w * 0.58, h * 0.70)
+      ..lineTo(w * 0.68, h * 0.74)
+      ..lineTo(w * 0.84, h * 0.62)
+      ..lineTo(w * 1.1, h * 0.8)
+      ..lineTo(w * 1.1, h)
+      ..close();
+    canvas.drawPath(far, soft(dark ? 0.42 : 0.14, 20));
+
+    // The main peak, off-centre to the left.
+    final peak = Path()
+      ..moveTo(-w * 0.1, h)
+      ..lineTo(w * 0.06, h * 0.8)
+      ..lineTo(w * 0.17, h * 0.68)
+      ..lineTo(w * 0.22, h * 0.64)
+      ..lineTo(w * 0.3, h * 0.53)
+      ..lineTo(w * 0.36, h * 0.62)
+      ..lineTo(w * 0.43, h * 0.67)
+      ..lineTo(w * 0.52, h * 0.76)
+      ..lineTo(w * 0.7, h * 0.86)
+      ..lineTo(w * 1.1, h * 0.95)
+      ..lineTo(w * 1.1, h)
+      ..close();
+    canvas.drawPath(peak, soft(dark ? 0.62 : 0.26, 10));
+
+    // A hint of snow catching the light near the summit.
+    final snow = Path()
+      ..moveTo(w * 0.3, h * 0.53)
+      ..lineTo(w * 0.249, h * 0.6)
+      ..lineTo(w * 0.27, h * 0.59)
+      ..lineTo(w * 0.285, h * 0.612)
+      ..lineTo(w * 0.3, h * 0.595)
+      ..lineTo(w * 0.318, h * 0.615)
+      ..lineTo(w * 0.335, h * 0.6)
+      ..lineTo(w * 0.35, h * 0.606)
+      ..close();
+    canvas.drawPath(
+      snow,
+      Paint()
+        ..color = const Color(0xFFFFE9CC).withValues(alpha: dark ? 0.2 : 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+
+    // Mist at the foot of the mountain, fading into the page.
+    final foot = Rect.fromLTWH(0, h * 0.62, w, h * 0.38);
+    canvas.drawRect(
+      foot,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            ink.withValues(alpha: 0),
+            ink.withValues(alpha: dark ? 0.55 : 0.2),
+          ],
+        ).createShader(foot),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MountainPainter old) => old.dark != dark;
 }
 
 /// Shared glass look. [blur] null = frosted (no BackdropFilter).

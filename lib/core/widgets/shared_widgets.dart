@@ -194,7 +194,7 @@ class GradientHero extends StatelessWidget {
         borderRadius: r,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5A3512)
+            color: const Color(0xFF4A2410)
                 .withValues(alpha: AppColors.isDark ? 0.40 : 0.28),
             blurRadius: 28,
             spreadRadius: -4,
@@ -1968,12 +1968,12 @@ class TicketCard extends StatelessWidget {
     );
     return Material(
       color: AppColors.isDark
-          ? const Color(0xFF2A1F18).withValues(alpha: 0.86)
-          : const Color(0xFFFFFBF3).withValues(alpha: 0.9),
+          ? const Color(0xFF2B1D14).withValues(alpha: 0.86)
+          : const Color(0xFFFFF4E2).withValues(alpha: 0.9),
       shape: shape,
       clipBehavior: Clip.antiAlias,
       elevation: AppColors.isDark ? 0 : 5,
-      shadowColor: const Color(0xFF5A3512).withValues(alpha: 0.18),
+      shadowColor: const Color(0xFF4A2410).withValues(alpha: 0.2),
       child: Opacity(
         opacity: dimmed ? 0.35 : 1,
         child: DecoratedBox(

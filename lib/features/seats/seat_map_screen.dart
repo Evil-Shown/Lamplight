@@ -12,6 +12,7 @@ import '../../data/mock/mock_data.dart';
 import '../../models/models.dart';
 import '../reservations/live_widgets.dart';
 import 'seat_detail_screen.dart';
+import 'forest_scene.dart';
 import 'seat_filter_sheet.dart';
 
 /// P-06 Seat Map.
@@ -1258,44 +1259,57 @@ class _SeatGridCard extends StatelessWidget {
           ],
         );
 
-    return FrostedCard(
-      radius: AppRadii.xl,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      tint: AppColors.primary.withValues(alpha: 0.05),
+    // The map sits on a dark clearing in front of a misty pine forest: the
+    // crowns rise above and beside the panel, the seats stay on solid dark
+    // green so every tile and label keeps its contrast in both themes.
+    const cream = Color(0xFFF3E8D6);
+    final faint = cream.withValues(alpha: 0.66);
+
+    final panel = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1D13).withValues(alpha: 0.93),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: cream.withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(Icons.window_rounded,
-                  size: 14, color: AppColors.textFaint),
+              Icon(Icons.window_rounded, size: 14, color: faint),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'WINDOW WALL · NATURAL LIGHT',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.overline(9.5,
-                      ls: 1.1, color: AppColors.textFaint),
+                  style: AppText.overline(9.5, ls: 1.1, color: faint),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                  color: cream.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(color: AppGlass.border),
+                  border: Border.all(color: cream.withValues(alpha: 0.18)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.compass_calibration_outlined,
-                        size: 11, color: AppColors.textSecondary),
+                        size: 11, color: faint),
                     const SizedBox(width: 4),
                     Text(
                       'NORTH WING',
-                      style: AppText.overline(9,
-                          ls: 0.8, color: AppColors.textSecondary),
+                      style: AppText.overline(9, ls: 0.8, color: faint),
                     ),
                   ],
                 ),
@@ -1303,7 +1317,7 @@ class _SeatGridCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1),
+          Divider(height: 1, color: cream.withValues(alpha: 0.12)),
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, box) {
@@ -1318,26 +1332,43 @@ class _SeatGridCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
-          const Divider(height: 1),
+          Divider(height: 1, color: cream.withValues(alpha: 0.12)),
           const SizedBox(height: 14),
-          _Legend(hasMine: mySeatIds.isNotEmpty),
+          _Legend(hasMine: mySeatIds.isNotEmpty, textColor: faint),
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.meeting_room_outlined,
-                  size: 15, color: AppColors.textFaint),
+              Icon(Icons.meeting_room_outlined, size: 15, color: faint),
               const SizedBox(width: 6),
               Flexible(
                 child: Text('ENTRANCE · STAIRWELL A',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppText.overline(9.5,
-                        ls: 1.2, color: AppColors.textFaint)),
+                    style: AppText.overline(9.5, ls: 1.2, color: faint)),
               ),
             ],
           ),
         ],
+      ),
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        boxShadow: AppGlass.shadows,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        child: Stack(
+          children: [
+            const Positioned.fill(child: ForestScene()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 96, 12, 26),
+              child: panel,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1592,9 +1623,12 @@ class _SeatBadge extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.hasMine});
+  const _Legend({required this.hasMine, this.textColor});
 
   final bool hasMine;
+
+  /// Label colour; defaults to the theme's secondary text.
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1640,7 +1674,8 @@ class _Legend extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(text,
-                  style: AppText.body(12, color: AppColors.textSecondary)),
+                  style: AppText.body(12,
+                      color: textColor ?? AppColors.textSecondary)),
             ],
           ),
       ],
