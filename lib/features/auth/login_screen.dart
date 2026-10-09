@@ -1,12 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/feedback/app_feedback.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/navigation/app_route.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
+import '../../data/firebase/auth_failure.dart';
 import '../../models/models.dart';
+import '../help/legal_screens.dart';
 
 enum AuthMode { signIn, register }
 
@@ -36,15 +41,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _remember = true;
+  bool _consent = false;
   bool _busy = false;
   bool _googleBusy = false;
 
   String? _emailError;
   String? _passwordError;
   String? _formError;
+  String? _consentError;
+
+  late final TapGestureRecognizer _termsTap = TapGestureRecognizer()
+    ..onTap = () => AppRoute.push(context, const TermsScreen());
+  late final TapGestureRecognizer _privacyTap = TapGestureRecognizer()
+    ..onTap = () => AppRoute.push(context, const PrivacyScreen());
 
   @override
   void dispose() {
+    _termsTap.dispose();
+    _privacyTap.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -63,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _formError = null;
       _emailError = null;
       _passwordError = null;
+      _consentError = null;
     });
   }
 
@@ -76,6 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _emailError = null;
       _passwordError = null;
       _formError = null;
+      _consentError = null;
     });
 
     if (email.isEmpty) {
@@ -102,12 +118,18 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _formError = 'Passwords do not match');
         return;
       }
+      if (!_consent) {
+        setState(() => _consentError =
+            'Please accept the Terms and Privacy notice to continue');
+        return;
+      }
     }
 
     Haptics.tap();
     setState(() => _busy = true);
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      final state = AppScope.read(context);
       if (_mode == AuthMode.signIn) {
         await state.signInWithEmail(
           email: email,
@@ -122,14 +144,13 @@ class _LoginScreenState extends State<LoginScreen> {
           role: _role,
         );
       }
-    } catch (e) {
+      _announceRole(state, messenger);
+    } on AuthFailure catch (f) {
+      if (mounted) _showFailure(f);
+    } catch (_) {
       if (mounted) {
-        setState(() {
-          final errStr = e.toString().replaceAll('Exception:', '').trim();
-          _formError = errStr.isNotEmpty
-              ? errStr
-              : "We couldn't sign you in. Check your email and password.";
-        });
+        setState(() => _formError = "We couldn't sign you in. Please try "
+            'again.');
         Haptics.danger();
       }
     } finally {
@@ -137,15 +158,64 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Puts an AuthFailure next to the field it concerns, or in the form-level
+  /// callout when it is not about one field.
+  void _showFailure(AuthFailure f) {
+    Haptics.danger();
+    FocusNode? focus;
+    setState(() {
+      switch (f.code) {
+        case 'wrong-password':
+        case 'weak-password':
+          _passwordError = f.message;
+          focus = _passwordFocus;
+        case 'invalid-email':
+        case 'email-in-use':
+          _emailError = f.message;
+          focus = _emailFocus;
+        default:
+          _formError = f.message;
+      }
+    });
+    focus?.requestFocus();
+  }
+
+  /// Staff access comes from the server. If the user asked for staff but did
+  /// not get it, say so plainly; the message outlives this screen.
+  void _announceRole(AppState state, ScaffoldMessengerState messenger) {
+    final notice = state.roleNotice;
+    if (notice != null) {
+      messenger.showSnackBar(SnackBar(content: Text(notice)));
+    } else if (_role == UserRole.staff && state.role != UserRole.staff) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Signed in as a student. This account is not on the '
+            'library staff list.'),
+      ));
+    }
+  }
+
   Future<void> _handleGoogleAuth() async {
     Haptics.tap();
-    setState(() => _googleBusy = true);
+    setState(() {
+      _googleBusy = true;
+      _formError = null;
+    });
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      final state = AppScope.read(context);
       await state.signInWithGoogle(role: _role);
-    } catch (e) {
+      _announceRole(state, messenger);
+    } on AuthFailure catch (f) {
       if (mounted) {
-        _showSnackBar('Google Sign-In was cancelled or unavailable');
+        if (f.isCancelled) {
+          _showSnackBar('Google sign-in was cancelled');
+        } else {
+          _showFailure(f);
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _formError = 'Google sign-in is unavailable right now.');
       }
     } finally {
       if (mounted) setState(() => _googleBusy = false);
@@ -169,59 +239,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showForgotPasswordDialog() {
-    final resetController = TextEditingController(text: _emailController.text);
-    showDialog(
+  Future<void> _showForgotPasswordDialog() async {
+    final email = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.card),
-        ),
-        title: Text(
-          'Reset password',
-          style: AppText.title(18, w: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter your campus email and we’ll send a reset link.',
-              style: AppText.body(14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: resetController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Campus email',
-                hintText: 'student@sliit.lk',
-                prefixIcon: Icon(Icons.email_outlined, size: 20),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: AppText.label(13, color: AppColors.textFaint),
-            ),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              final to = resetController.text.trim().isEmpty
-                  ? 'your email'
-                  : resetController.text.trim();
-              _showSnackBar('Reset link sent to $to');
-            },
-            child: const Text('Send link'),
-          ),
-        ],
-      ),
+      builder: (_) => _ResetPasswordDialog(initialEmail: _emailController.text),
     );
+    if (email == null || !mounted) return;
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        _showSnackBar('If an account exists for $email, a reset link is on '
+            'its way.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) _showSnackBar(AuthFailure.fromAuth(e).message);
+    } catch (_) {
+      if (mounted) {
+        _showSnackBar("Couldn't send a reset link right now. Try again later.");
+      }
+    }
   }
 
   InputDecoration _field({
@@ -323,6 +359,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 setState(() => _role = role);
                               },
                             ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Just a hint. Staff access is granted by the '
+                              'library, not chosen here.',
+                              style: AppText.body(11.5,
+                                  color: AppColors.textSecondary),
+                            ),
                             const SizedBox(height: 18),
                             if (_formError != null) ...[
                               Callout(
@@ -398,6 +441,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       icon: Icons.lock_outline_rounded,
                                       error: _passwordError,
                                       suffix: IconButton(
+                                        tooltip: _obscurePassword
+                                            ? 'Show password'
+                                            : 'Hide password',
                                         icon: Icon(
                                           _obscurePassword
                                               ? Icons.visibility_outlined
@@ -428,6 +474,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         hint: 'Confirm password',
                                         icon: Icons.lock_outline_rounded,
                                         suffix: IconButton(
+                                          tooltip: _obscureConfirmPassword
+                                              ? 'Show password'
+                                              : 'Hide password',
                                           icon: Icon(
                                             _obscureConfirmPassword
                                                 ? Icons.visibility_outlined
@@ -471,14 +520,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      AppFeedback.toggle();
-                                      setState(() => _remember = !_remember);
-                                    },
-                                    child: Text(
-                                      'Remember me',
-                                      style: AppText.body(13, color: AppColors.textSecondary),
+                                  Flexible(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        AppFeedback.toggle();
+                                        setState(() => _remember = !_remember);
+                                      },
+                                      child: Text(
+                                        'Remember me',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppText.body(13, color: AppColors.textSecondary),
+                                      ),
                                     ),
                                   ),
                                   Flexible(
@@ -487,9 +540,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       child: TextButton(
                                         onPressed: _showForgotPasswordDialog,
                                         style: TextButton.styleFrom(
-                                          visualDensity: VisualDensity.compact,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
+                                          minimumSize: const Size(44, 44),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 2,
                                           ),
@@ -509,6 +560,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ],
+                            if (!signingIn) ...[
+                              const SizedBox(height: 10),
+                              _ConsentRow(
+                                value: _consent,
+                                error: _consentError,
+                                termsTap: _termsTap,
+                                privacyTap: _privacyTap,
+                                onChanged: (v) => setState(() {
+                                  _consent = v;
+                                  _consentError = null;
+                                }),
                               ),
                             ],
                             const SizedBox(height: 22),
@@ -555,13 +619,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               children: [
                                 Expanded(child: Divider(color: AppColors.border)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Text(
-                                    'or continue with',
-                                    style: AppText.body(12, color: AppColors.textSecondary),
+                                Flexible(
+                                  flex: 3,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    child: Text(
+                                      'or continue with',
+                                      textAlign: TextAlign.center,
+                                      style: AppText.body(12, color: AppColors.textSecondary),
+                                    ),
                                   ),
                                 ),
                                 Expanded(child: Divider(color: AppColors.border)),
@@ -584,18 +652,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                       : 'Already have an account? ',
                                   style: AppText.body(13, color: AppColors.textSecondary),
                                 ),
-                                GestureDetector(
+                                InkWell(
                                   onTap: () => _toggleMode(
                                     signingIn
                                         ? AuthMode.register
                                         : AuthMode.signIn,
                                   ),
-                                  child: Text(
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(minHeight: 44),
+                                    child: Center(
+                                      widthFactor: 1,
+                                      child: Text(
                                     signingIn ? 'Sign up' : 'Sign in',
                                     style: AppText.title(
                                       13,
                                       w: FontWeight.w700,
                                       color: AppColors.primary,
+                                    ),
+                                  ),
                                     ),
                                   ),
                                 ),
@@ -727,7 +802,7 @@ class _RoleRow extends StatelessWidget {
       children: [
         Expanded(
           child: _RolePill(
-            label: 'Student',
+            label: "I'm a student",
             icon: Icons.school_rounded,
             selected: role == UserRole.student,
             onTap: () => onChanged(UserRole.student),
@@ -736,7 +811,7 @@ class _RoleRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _RolePill(
-            label: 'Staff',
+            label: "I'm staff",
             icon: Icons.badge_rounded,
             selected: role == UserRole.staff,
             onTap: () => onChanged(UserRole.staff),
@@ -787,12 +862,17 @@ class _RolePill extends StatelessWidget {
               color: selected ? AppColors.primary : AppColors.textSecondary,
             ),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppText.label(
-                13,
-                w: FontWeight.w600,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                style: AppText.label(
+                  13,
+                  w: FontWeight.w600,
+                  color:
+                      selected ? AppColors.primary : AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -899,4 +979,141 @@ class _GooglePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Required terms/privacy consent shown on sign-up.
+class _ConsentRow extends StatelessWidget {
+  const _ConsentRow({
+    required this.value,
+    required this.onChanged,
+    required this.termsTap,
+    required this.privacyTap,
+    this.error,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final GestureRecognizer termsTap;
+  final GestureRecognizer privacyTap;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = AppText.body(13, color: AppColors.textSecondary);
+    final link = AppText.label(13, w: FontWeight.w600, color: AppColors.primary);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Semantics(
+              label: 'Accept Terms and Privacy notice',
+              child: Checkbox(
+                value: value,
+                activeColor: AppColors.primary,
+                onChanged: (v) {
+                  AppFeedback.toggle();
+                  onChanged(v ?? false);
+                },
+              ),
+            ),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: base,
+                  children: [
+                    const TextSpan(text: 'I agree to the '),
+                    TextSpan(text: 'Terms', style: link, recognizer: termsTap),
+                    const TextSpan(text: ' and '),
+                    TextSpan(
+                        text: 'Privacy notice',
+                        style: link,
+                        recognizer: privacyTap),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(error!,
+                style: AppText.body(12, color: AppColors.error)),
+          ),
+      ],
+    );
+  }
+}
+
+/// Asks for the email to send a reset link to; pops it, or null on cancel.
+class _ResetPasswordDialog extends StatefulWidget {
+  const _ResetPasswordDialog({required this.initialEmail});
+
+  final String initialEmail;
+
+  @override
+  State<_ResetPasswordDialog> createState() => _ResetPasswordDialogState();
+}
+
+class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
+  late final _controller = TextEditingController(text: widget.initialEmail);
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final v = _controller.text.trim();
+    if (!v.contains('@') || v.startsWith('@') || v.endsWith('@')) {
+      setState(() => _error = 'Enter the email you signed up with');
+      return;
+    }
+    Navigator.pop(context, v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      title: Text('Reset password', style: AppText.title(18, w: FontWeight.w600)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your email and we will send a reset link.',
+              style: AppText.body(14, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                labelText: 'Email',
+                errorText: _error,
+                prefixIcon: const Icon(Icons.email_outlined, size: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Send link')),
+      ],
+    );
+  }
 }

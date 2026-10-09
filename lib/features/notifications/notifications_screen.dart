@@ -5,7 +5,13 @@ import '../../core/feedback/app_feedback.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
+import '../../core/navigation/app_route.dart';
 import '../../models/models.dart';
+import '../books/reservation_detail_screen.dart';
+import '../qr/active_session_screen.dart';
+import '../qr/qr_ticket_screen.dart';
+import '../reservations/live_widgets.dart';
+import '../waitlist/offer_screen.dart';
 
 /// P-11 / screen-notifications.
 ///
@@ -20,64 +26,125 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final notifications = state.notifications;
-    final unread = state.unreadNotifications;
+    final unread = state.unreadCount;
 
-    return AppScaffold(
-      title: 'Notifications',
-      body: notifications.isEmpty
-          ? const EmptyState(
-              icon: Icons.notifications_none_rounded,
-              title: 'Nothing new',
-              message:
-                  'Reservation updates and reminders will appear here.',
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenMargin,
-                AppSpacing.sm,
-                AppSpacing.screenMargin,
-                AppSpacing.xxl,
+    final Widget body;
+    if (syncFailed(state)) {
+      body = syncErrorState(state);
+    } else if (!state.isHydrated) {
+      body = ListView(
+        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        children: const [
+          SkeletonCard(),
+          SizedBox(height: AppSpacing.md),
+          SkeletonCard(),
+          SizedBox(height: AppSpacing.md),
+          SkeletonCard(),
+        ],
+      );
+    } else if (notifications.isEmpty) {
+      // Scrollable so pull-to-refresh works on the empty state too.
+      body = refreshable(
+        state,
+        LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: c.maxHeight,
+              child: const EmptyState(
+                icon: Icons.notifications_none_rounded,
+                title: 'Nothing new',
+                message: 'Reservation updates and reminders will appear here.',
               ),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SectionLabel(
-                          unread > 0
-                              ? 'Recent activity · $unread unread'
-                              : 'Recent activity',
+            ),
+          ),
+        ),
+      );
+    } else {
+      body = refreshable(
+        state,
+        ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenMargin,
+            AppSpacing.sm,
+            AppSpacing.screenMargin,
+            AppSpacing.xxl,
+          ),
+          children: [
+            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SectionLabel(
+                      unread > 0
+                          ? 'Recent activity · $unread unread'
+                          : 'Recent activity',
+                    ),
+                  ),
+                  if (unread > 0)
+                    TextButton(
+                      onPressed: () {
+                        AppFeedback.success();
+                        state.markAllRead();
+                      },
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(
+                        'Mark all read',
+                        style: AppText.label(
+                          12.5,
+                          w: FontWeight.w600,
+                          color: AppColors.primary,
                         ),
                       ),
-                      if (unread > 0)
-                        TextButton(
-                          onPressed: () {
-                            AppFeedback.success();
-                            state.markAllNotificationsRead();
-                          },
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(0, 34),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Mark all as read',
-                            style: AppText.label(
-                              12.5,
-                              w: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                ..._grouped(notifications),
-              ],
+                    ),
+                ],
+              ),
             ),
-    );
+            ..._grouped(notifications),
+          ],
+        ),
+      );
+    }
+
+    return AppScaffold(title: 'Notifications', body: body);
+  }
+}
+
+/// Marks [n] read and opens the item it points at. Loan notifications only
+/// mark read (the loans screen is linked from Account).
+void openNotification(BuildContext context, AppNotification n) {
+  final state = AppScope.read(context);
+  state.markRead(n.id);
+  final target = state.notificationTarget(n);
+  if (!target.hasTarget) return;
+  final id = target.id!;
+  switch (target.type) {
+    case NotificationType.reservation:
+      final r = state.reservations.where((r) => r.id == id).firstOrNull;
+      if (r != null) {
+        AppRoute.push(context, ReservationDetailScreen(reservation: r));
+      }
+    case NotificationType.booking:
+      final b = state.bookings.where((b) => b.id == id).firstOrNull;
+      if (b != null) {
+        AppRoute.push(
+          context,
+          b.checkedInAt != null
+              ? ActiveSessionScreen(booking: b)
+              : QrTicketScreen(booking: b),
+        );
+      }
+    case NotificationType.offer:
+      AppRoute.push(context, OfferScreen(entryId: id));
+    case NotificationType.loan:
+    case NotificationType.info:
+      break;
   }
 }
 
@@ -145,21 +212,17 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final isUnread = !state.isNotificationRead(item.id);
+    final isUnread = !item.isRead;
 
     return Semantics(
-      label:
-          '${item.title}. ${item.body}. ${_timestamp(item.timestamp)}.'
+      label: '${item.title}. ${item.body}. ${_timestamp(item.timestamp)}.'
           '${isUnread ? ' Unread.' : ''}',
       button: true,
       child: SurfaceCard(
         padding: const EdgeInsets.all(14),
         tint: isUnread ? _color.withValues(alpha: 0.28) : null,
         borderColor: isUnread ? _color.withValues(alpha: 0.45) : null,
-        onTap: isUnread
-            ? () => AppScope.read(context).markNotificationRead(item.id)
-            : null,
+        onTap: () => openNotification(context, item),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

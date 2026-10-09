@@ -1,8 +1,6 @@
-import 'dart:math' as math;
+﻿import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
-
-import '../constants/app_constants.dart';
+import '../constants/app_constants.dart' hide AppSpacing;
 import '../theme/app_theme.dart';
 import 'glass.dart';
 
@@ -58,7 +56,9 @@ class CampusMark extends StatelessWidget {
   }
 }
 
-/// Opening: ring draws, mark lands, wordmark fades. Tap skips. Reduce-motion shortens it.
+/// Opening: the logo rises in on a glass panel, a soft ring pulses, the name
+/// and tagline fade in, and a slim progress bar fills. Tap skips.
+/// Reduce-motion shows the final state straight away.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onDone});
 
@@ -70,25 +70,34 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
+  static const _total = Duration(milliseconds: 1700);
+  static const _reducedHold = Duration(milliseconds: 400);
+
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1800),
+    duration: _total,
   );
 
   bool _started = false;
+  bool _finished = false;
+
+  void _finish() {
+    if (_finished || !mounted) return;
+    _finished = true;
+    widget.onDone();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    final reduced = MediaQuery.disableAnimationsOf(context);
-    _controller.duration = reduced
-        ? const Duration(milliseconds: 400)
-        : const Duration(milliseconds: 1800);
-    _controller.forward().whenComplete(() {
-      if (mounted) widget.onDone();
-    });
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+      Future<void>.delayed(_reducedHold, _finish);
+    } else {
+      _controller.forward().whenComplete(_finish);
+    }
   }
 
   @override
@@ -97,80 +106,132 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  Animation<double> _interval(double a, double b, Curve curve) =>
+      CurvedAnimation(parent: _controller, curve: Interval(a, b, curve: curve));
+
   @override
   Widget build(BuildContext context) {
-    final ring = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
-    );
-    final mark = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.16, 0.50, curve: Curves.easeOutCubic),
-    );
-    final word = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.40, 0.72, curve: Curves.easeOutCubic),
-    );
+    final logoIn = _interval(0.0, 0.50, AppMotion.springEntrance);
+    final logoFade = _interval(0.0, 0.25, Curves.easeOut);
+    final pulse = _interval(0.25, 0.80, Curves.easeOutCubic);
+    final word = _interval(0.35, 0.65, Curves.easeOutCubic);
+    final bar = _interval(0.10, 1.0, Curves.easeInOutCubic);
+
     return AuroraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: GestureDetector(
           onTap: () {
             _controller.stop();
-            widget.onDone();
+            _finish();
           },
           behavior: HitTestBehavior.opaque,
-          child: Center(
+          child: SafeArea(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 148,
-                  height: 148,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedBuilder(
-                        animation: ring,
-                        builder: (context, _) => CustomPaint(
-                          size: const Size(148, 148),
-                          painter: _BrandRingPainter(ring.value),
-                        ),
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
                       ),
-                      ScaleTransition(
-                        scale: Tween<double>(begin: 0.6, end: 1).animate(
-                          CurvedAnimation(
-                            parent: _controller,
-                            curve: const Interval(
-                              0.16,
-                              0.62,
-                              curve: AppMotion.springEntrance,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 168,
+                            height: 168,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                AnimatedBuilder(
+                                  animation: pulse,
+                                  builder: (context, _) => CustomPaint(
+                                    size: const Size(168, 168),
+                                    painter: _PulseRingPainter(pulse.value),
+                                  ),
+                                ),
+                                AnimatedBuilder(
+                                  animation: _controller,
+                                  builder: (context, child) => Opacity(
+                                    opacity: logoFade.value.clamp(0.0, 1.0),
+                                    child: Transform.translate(
+                                      offset: Offset(
+                                        0,
+                                        AppSpacing.xxl * (1 - logoIn.value),
+                                      ),
+                                      child: Transform.scale(
+                                        scale: 0.7 + 0.3 * logoIn.value,
+                                        child: child,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const GlassSurface(
+                                    radius: AppRadii.xl,
+                                    padding: EdgeInsets.all(AppSpacing.lg),
+                                    child: CampusMark(size: 64),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          FadeTransition(
+                            opacity: word,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.25),
+                                end: Offset.zero,
+                              ).animate(word),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    AppStrings.appName,
+                                    textAlign: TextAlign.center,
+                                    style: AppText.title(
+                                      28,
+                                      w: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    'Campus library & study seats',
+                                    textAlign: TextAlign.center,
+                                    style: AppText.body(
+                                      14,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+                  child: FadeTransition(
+                    opacity: word,
+                    child: Semantics(
+                      label: 'Loading',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadii.xs),
+                        child: SizedBox(
+                          width: 120,
+                          height: 4,
+                          child: AnimatedBuilder(
+                            animation: bar,
+                            builder: (context, _) => CustomPaint(
+                              painter: _ProgressBarPainter(bar.value),
                             ),
                           ),
                         ),
-                        child: FadeTransition(
-                          opacity: mark,
-                          child: const CampusMark(size: 64),
-                        ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FadeTransition(
-                  opacity: word,
-                  child: Column(
-                    children: [
-                      Text(
-                        AppStrings.appName,
-                        style: AppText.title(28, w: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Campus library & study seats',
-                        style: AppText.body(14, color: AppColors.textSecondary),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -182,42 +243,60 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-class _BrandRingPainter extends CustomPainter {
-  _BrandRingPainter(this.progress);
+/// Soft brand-gradient halo that expands and settles.
+class _PulseRingPainter extends CustomPainter {
+  _PulseRingPainter(this.t);
 
-  final double progress;
+  final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (t <= 0) return;
     final centre = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 8;
-
+    final radius = size.width / 2 - 20 + 12 * t;
+    final rect = Rect.fromCircle(center: centre, radius: radius);
+    final alpha = (1 - t) * 0.9 + 0.1;
     canvas.drawCircle(
       centre,
       radius,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..color = AppColors.primary.withValues(alpha: 0.10 * progress),
+        ..strokeWidth = 8
+        ..color = AppColors.primary.withValues(alpha: 0.10 * alpha),
     );
-
-    canvas.drawArc(
-      Rect.fromCircle(center: centre, radius: radius),
-      -math.pi / 2,
-      2 * math.pi * progress,
-      false,
+    canvas.drawCircle(
+      centre,
+      radius,
       Paint()
-        ..shader = AppGradients.brand.createShader(
-          Rect.fromCircle(center: centre, radius: radius),
-        )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
+        ..strokeWidth = 2
+        ..shader = AppGradients.brand.createShader(rect),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _BrandRingPainter old) =>
+  bool shouldRepaint(covariant _PulseRingPainter old) => old.t != t;
+}
+
+class _ProgressBarPainter extends CustomPainter {
+  _ProgressBarPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = AppColors.primary.withValues(alpha: 0.14),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width * progress, size.height),
+      Paint()..shader = AppGradients.brand.createShader(Offset.zero & size),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProgressBarPainter old) =>
       old.progress != progress;
 }
 

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import 'pickup_countdown.dart';
 
 /// reservation-success "Reservation Successful".
 ///
@@ -59,14 +60,18 @@ class ReservationConfirmationScreen extends StatelessWidget {
             child: SurfaceCard(
               child: Row(
                 children: [
-                  BookCover(
-                    title: book.title,
-                    color: book.coverColor,
-                    isbn: book.isbn,
-                    width: 52,
-                    height: 74,
-                    heroTag: 'book-${book.id}',
-                  ),
+                  Semantics(
+                      image: true,
+                      label: 'Cover of ${book.title}',
+                      excludeSemantics: true,
+                      child: BookCover(
+                        title: book.title,
+                        color: book.coverColor,
+                        isbn: book.isbn,
+                        width: 52,
+                        height: 74,
+                        heroTag: 'book-${book.id}',
+                      )),
                   const SizedBox(width: 13),
                   Expanded(
                     child: Column(
@@ -77,8 +82,8 @@ class ReservationConfirmationScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           book.author,
-                          style: AppText.body(
-                              12.5, color: AppColors.textSecondary),
+                          style: AppText.body(12.5,
+                              color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -113,9 +118,15 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      DateFormat('EEE d MMMM yyyy').format(reservation.pickupBy),
+                      DateFormat('EEE d MMMM yyyy')
+                          .format(reservation.pickupBy),
                       style: AppText.title(15, w: FontWeight.w600),
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: PickupCountdownText(reservation: reservation),
                   ),
                   const Divider(height: 22),
                   Padding(
