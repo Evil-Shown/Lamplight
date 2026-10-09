@@ -15,14 +15,22 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (_) {
-    // The app still opens; sign-in reports that the service is unavailable.
+    ).timeout(const Duration(seconds: 3));
+  } catch (e) {
+    debugPrint('Firebase initialization timeout or error: $e');
   }
   // Demo builds only (--dart-define=DEMO_MODE=true): seed sample data.
   unawaited(FirestoreService.instance.seedIfEmpty());
   // Theme, sounds and haptics are read before the first frame.
-  final settings = await PreferencesStore.load();
+  LocalSettings settings;
+  try {
+    settings = await PreferencesStore.load().timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => const LocalSettings(),
+    );
+  } catch (_) {
+    settings = const LocalSettings();
+  }
   // Material 3 edge-to-edge: the scaffold and NavigationBar draw behind
   // the system bars; the app bar theme drives icon brightness per screen.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -37,5 +45,6 @@ Future<void> main() async {
   );
   // Preload UI sounds so the first tap is not late.
   unawaited(AppFeedback.init());
+  debugPrint('>>> Calling runApp(LibraryApp)...');
   runApp(LibraryApp(initialSettings: settings));
 }
