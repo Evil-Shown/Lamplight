@@ -4,6 +4,7 @@ import '../../app_shell.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../notifications/notifications_screen.dart';
@@ -22,9 +23,9 @@ class HomeScreen extends StatelessWidget {
         value: AppColors.isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        child: Scaffold(
-          backgroundColor: AppColors.background,
-          body: const SafeArea(bottom: false, child: _HomeSkeleton()),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(bottom: false, child: _HomeSkeleton()),
         ),
       );
     }
@@ -36,7 +37,7 @@ class HomeScreen extends StatelessWidget {
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           bottom: false,
           child: ListView(
@@ -45,23 +46,35 @@ class HomeScreen extends StatelessWidget {
             ),
             children: [
               ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
-              const _HomeGreeting(),
-              const SizedBox(height: 20),
+              const StaggeredEntrance(child: _HomeGreeting()),
+              const SizedBox(height: AppSpacing.lg),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: booking != null
-                    ? _SessionHero(booking: booking)
-                    : const _EmptySessionHero(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenMargin,
+                ),
+                child: StaggeredEntrance(
+                  index: 1,
+                  child: booking != null
+                      ? _SessionHero(booking: booking)
+                      : const _EmptySessionHero(),
+                ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: AppSpacing.sectionGap),
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: _HomeBento(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenMargin,
+                ),
+                child: StaggeredEntrance(index: 2, child: _HomeBento()),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: AppSpacing.sectionGap),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _OccupancyMeter(lastSyncedAt: state.lastSyncedAt),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenMargin,
+                ),
+                child: StaggeredEntrance(
+                  index: 3,
+                  child: _OccupancyMeter(lastSyncedAt: state.lastSyncedAt),
+                ),
               ),
             ],
           ),
@@ -85,32 +98,16 @@ class _HomeGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final profile = state.activeProfile;
-    final parts = profile.name.trim().split(RegExp(r'\s+'));
-    final initials = parts
-        .take(2)
-        .map((p) => p.isNotEmpty ? p[0] : '')
-        .join()
-        .toUpperCase();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenMargin,
+        AppSpacing.md,
+        AppSpacing.screenMargin,
+        0,
+      ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.brand,
-              boxShadow: AppShadows.ambient,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initials.isEmpty ? 'SL' : initials,
-              style: AppText.title(15, w: FontWeight.w700, color: Colors.white),
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,37 +123,52 @@ class _HomeGreeting extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'Campus library · open',
-                      style: AppText.body(12, color: AppColors.textSecondary),
+                    Flexible(
+                      child: Text(
+                        'Campus library · open',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body(
+                          12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${_greeting()}, ${profile.firstName}',
-                  style: AppText.title(22, w: FontWeight.w600),
+                  _greeting(),
+                  style: AppText.body(
+                    16,
+                    w: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  profile.firstName,
+                  style: AppText.display(34, w: FontWeight.w800, ls: -1),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          IconButton.filledTonal(
-            onPressed: () => AppRoute.push(
-              context,
-              const NotificationsScreen(),
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          const SizedBox(width: AppSpacing.md),
+          PressScale(
+            onTap: () => AppRoute.push(context, const NotificationsScreen()),
+            child: FrostedCard(
+              radius: AppRadii.md,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Badge(
+                isLabelVisible: state.unreadNotifications > 0,
+                backgroundColor: AppColors.error,
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  size: 24,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            icon: Badge(
-              isLabelVisible: state.unreadNotifications > 0,
-              backgroundColor: AppColors.error,
-              child: const Icon(Icons.notifications_none_rounded, size: 22),
             ),
           ),
         ],
@@ -198,7 +210,7 @@ class _SessionHero extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
+                  color: AppColors.textInverse.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                 ),
                 child: Text(
@@ -219,7 +231,7 @@ class _SessionHero extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.textInverse.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -249,22 +261,63 @@ class _SessionHero extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          FilledButton(
-            onPressed: () => AppRoute.push(
+          _HeroButton(
+            label: 'View QR ticket',
+            icon: Icons.qr_code_2_rounded,
+            onTap: () => AppRoute.push(
               context,
               QrTicketScreen(booking: booking),
             ),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: const Text('View QR ticket'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// White pill on the hero gradient: the one primary action of the screen.
+class _HeroButton extends StatelessWidget {
+  const _HeroButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      onTap: onTap,
+      child: Container(
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.textInverse,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          boxShadow: AppShadows.ambient,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.label(
+                  15,
+                  w: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -296,17 +349,10 @@ class _EmptySessionHero extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          FilledButton(
-            onPressed: () => AppShell.switchTab(context, AppTab.seats),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: const Text('Book a seat'),
+          _HeroButton(
+            label: 'Book a seat',
+            icon: Icons.event_seat_rounded,
+            onTap: () => AppShell.switchTab(context, AppTab.seats),
           ),
         ],
       ),
@@ -322,8 +368,8 @@ class _HomeBento extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick actions', style: AppText.title(17, w: FontWeight.w600)),
-        const SizedBox(height: 12),
+        Text('Quick actions', style: AppText.title(20, w: FontWeight.w700)),
+        const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
@@ -334,7 +380,7 @@ class _HomeBento extends StatelessWidget {
                 onTap: () => AppShell.switchTab(context, AppTab.seats),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: BentoTile(
                 icon: Icons.menu_book_rounded,
@@ -345,7 +391,7 @@ class _HomeBento extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
@@ -356,12 +402,12 @@ class _HomeBento extends StatelessWidget {
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: BentoTile(
                 icon: Icons.qr_code_2_rounded,
                 label: 'QR pass',
-                tint: const Color(0xFF64748B),
+                tint: AppColors.textSecondary,
                 onTap: () => _openQr(context),
               ),
             ),
@@ -402,13 +448,13 @@ class _OccupancyMeter extends StatelessWidget {
     };
 
     return SurfaceCard(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Floor 2 occupancy',
-            style: AppText.title(16, w: FontWeight.w600),
+            style: AppText.title(18, w: FontWeight.w600),
           ),
           const SizedBox(height: 14),
           Row(

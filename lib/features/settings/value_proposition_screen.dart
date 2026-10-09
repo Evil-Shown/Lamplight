@@ -17,24 +17,43 @@ class ValuePropositionScreen extends StatelessWidget {
     return AppScaffold(
       title: 'About',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenMargin,
+          AppSpacing.sm,
+          AppSpacing.screenMargin,
+          AppSpacing.xxl,
+        ),
         children: [
           StaggeredEntrance(
-            child: Text(
-              'SYSTEM VALUE PROPOSITION',
-              style: AppText.overline(11, color: AppColors.textFaint),
+            child: DepthHero(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'WHAT LIBRARY+ DOES',
+                    style: AppText.overline(
+                      11,
+                      color: AppColors.textInverse.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'One app for your seat, your books and your check-in.',
+                    style: AppText.display(
+                      26,
+                      color: AppColors.textInverse,
+                      height: 1.15,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Core feature capabilities, business rules and architectural highlights',
-            style: AppText.body(13, color: AppColors.textSecondary, height: 1.5),
-          ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppSpacing.sectionGap),
           for (var i = 0; i < MockData.featureHighlights.length; i++) ...[
-            if (i > 0) const SizedBox(height: 10),
+            if (i > 0) const SizedBox(height: AppSpacing.md),
             StaggeredEntrance(
-              index: i,
+              index: i + 1,
               child: _FeatureCard(feature: MockData.featureHighlights[i]),
             ),
           ],
@@ -55,9 +74,13 @@ class _FeatureCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle_rounded,
-              size: 19, color: AppColors.success),
-          const SizedBox(width: 12),
+          IconBadge(
+            icon: Icons.check_rounded,
+            color: AppColors.success,
+            background: AppColors.success.withValues(alpha: 0.12),
+            size: 36,
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

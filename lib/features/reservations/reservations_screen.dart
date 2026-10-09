@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../app_shell.dart';
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
@@ -38,7 +39,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     final isBooks = _tab == 'Books';
 
     // Resolve the current tab + filter into a concrete list (D-05).
-    final Widget content;    if (isBooks) {
+    final Widget content;
+    if (isBooks) {
       content = switch (_filter) {
         'Waiting' => _WaitlistEntries(
             entries: state.waitlist
@@ -72,8 +74,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       };
     }
 
+    // Tab inside the shell: the shell paints the aurora, so stay transparent.
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -81,7 +84,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             // App-level cached-data banner (D-14).
             ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Column(
@@ -89,8 +93,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   children: [
                     Text('My Reservations',
                         style:
-                            AppText.display(22, w: FontWeight.w700, ls: -0.4)),
-                    const SizedBox(height: 3),
+                            AppText.display(30, w: FontWeight.w800, ls: -0.9)),
+                    const SizedBox(height: 4),
                     Text(
                       'Books and reading-room seats',
                       style: AppText.body(13, color: AppColors.textSecondary),
@@ -99,29 +103,29 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.base),
             SegmentedTabs(
               options: const ['Books', 'Seats'],
               selected: _tab,
               onSelected: (value) {
-                Haptics.selection();
+                AppFeedback.select();
                 setState(() {
                   _tab = value;
                   _filter = 'Active';
                 });
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             FilterChipRow(
               options: _filters,
               selected: _filter,
               onSelected: (value) {
-                Haptics.selection();
+                AppFeedback.select();
                 setState(() => _filter = value);
               },
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.base),
             Expanded(child: content),
           ],
         ),
@@ -153,9 +157,9 @@ class _BookHolds extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: reservations.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) => StaggeredEntrance(
         index: i,
         child: _BookHoldCard(reservation: reservations[i]),
@@ -198,6 +202,8 @@ class _BookHoldCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: AppText.title(15.5, w: FontWeight.w700)),
                     const SizedBox(height: 2),
                     Text(
@@ -216,6 +222,11 @@ class _BookHoldCard extends StatelessWidget {
                         ReservationStatus.ready => AppColors.success,
                         _ => AppColors.primary,
                       },
+                      icon: switch (reservation.status) {
+                        ReservationStatus.cancelled => Icons.close_rounded,
+                        ReservationStatus.ready => Icons.check_rounded,
+                        _ => Icons.schedule_rounded,
+                      },
                       compact: true,
                     ),
                   ],
@@ -225,22 +236,24 @@ class _BookHoldCard extends StatelessWidget {
                   size: 20, color: AppColors.textFaint),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           const Divider(height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              Icon(Icons.inventory_2_outlined,
-                  size: 15, color: AppColors.textFaint),
+              Icon(Icons.schedule_rounded, size: 16, color: AppColors.primary),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Shelf ${book.shelfLocation}  ·  Pickup by $pickupBy',
+                  'Pickup by $pickupBy',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.body(12.5, color: AppColors.textSecondary),
+                  style: AppText.label(13,
+                      w: FontWeight.w700, color: AppColors.textPrimary),
                 ),
               ),
+              const SizedBox(width: AppSpacing.sm),
+              ShelfTag(book.shelfLocation),
             ],
           ),
         ],
@@ -272,9 +285,9 @@ class _SeatBookings extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: bookings.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) => StaggeredEntrance(
         index: i,
         child: _SeatBookingCard(booking: bookings[i], history: history),
@@ -306,9 +319,15 @@ class _SeatBookingCard extends StatelessWidget {
                   children: [
                     Text('Seat ${booking.seat.label} · ${booking.seat.section}',
                         style: AppText.title(15.5, w: FontWeight.w700)),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
-                      'Floor ${booking.seat.floor} · $time',
+                      time,
+                      style: AppText.label(13.5,
+                          w: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Floor ${booking.seat.floor}',
                       style:
                           AppText.body(12.5, color: AppColors.textSecondary),
                     ),
@@ -323,6 +342,7 @@ class _SeatBookingCard extends StatelessWidget {
               StatusPill(
                 label: history ? 'Completed' : 'Active',
                 color: history ? AppColors.neutral : AppColors.success,
+                icon: history ? Icons.done_all_rounded : Icons.check_rounded,
                 compact: true,
                 pulse: !history,
               ),
@@ -408,9 +428,9 @@ class _WaitlistEntries extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: entries.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) =>
           StaggeredEntrance(index: i, child: _WaitlistCard(entry: entries[i])),
     );
@@ -470,6 +490,7 @@ class _WaitlistCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () async {
+                AppFeedback.tap();
                 // M01: leaving the queue confirms — the position is lost.
                 final confirmed = await showConfirmDialog(
                   context,
