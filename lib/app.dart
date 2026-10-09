@@ -5,8 +5,8 @@ import 'core/constants/app_constants.dart';
 import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_frame.dart';
-import 'core/widgets/ledger_widgets.dart';
 import 'features/auth/auth_flow.dart';
+import 'features/auth/splash_screen.dart';
 import 'services/preferences_store.dart';
 
 class LibraryApp extends StatefulWidget {

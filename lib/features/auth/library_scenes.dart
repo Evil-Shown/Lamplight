@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 import 'auth_style.dart';
 
-/// Painted hero art for the auth flow. Both scenes are decorative and
-/// deterministic, so they cost no assets and never shift between rebuilds.
+/// Painted hero art for the signed-out flow and splash. Every scene is
+/// decorative and deterministic, so it costs no assets and never shifts
+/// between rebuilds.
 
-/// A wall of bookshelves: colourful spines on wooden boards.
+/// A warm wooden bookcase: leather spines, brass bands, and a reading lamp
+/// glowing on the second shelf.
 class ShelfScene extends StatelessWidget {
   const ShelfScene({super.key});
 
@@ -17,7 +19,8 @@ class ShelfScene extends StatelessWidget {
       );
 }
 
-/// Top-down reading desk: striped blue desk with a couple of books.
+/// Top-down reading desk: dark walnut planks, a coffee cup and two books in
+/// the pool of lamp light.
 class DeskScene extends StatelessWidget {
   const DeskScene({super.key});
 
@@ -42,14 +45,14 @@ class _ShelfPainter extends CustomPainter {
   const _ShelfPainter();
 
   static const _spines = [
-    Color(0xFF3A62C4),
-    Color(0xFFD9A441),
-    Color(0xFFB5533C),
-    Color(0xFF2F5D7C),
-    Color(0xFFEDE3C8),
-    Color(0xFF8C3B4A),
-    Color(0xFF3F7F6B),
-    Color(0xFFC77D3A),
+    Color(0xFF2F4A3A),
+    Color(0xFF7A2E2B),
+    Color(0xFFB5733A),
+    Color(0xFF4B3426),
+    Color(0xFFE3D2B0),
+    Color(0xFF22344C),
+    Color(0xFF8E4B2A),
+    Color(0xFF5A5F3A),
   ];
 
   @override
@@ -61,21 +64,27 @@ class _ShelfPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF102A5C), Color(0xFF050D26)],
+          colors: [Color(0xFF3B2516), Color(0xFF1B0F08)],
         ).createShader(rect),
     );
 
     const rowH = 96.0;
+    const frame = 10.0;
     final rng = _Lcg(7);
-    final wood = Paint()..color = const Color(0xFFB07A45);
-    final woodShade = Paint()..color = Colors.black.withValues(alpha: 0.28);
-    final band = Paint()..color = Colors.white.withValues(alpha: 0.35);
-    final edge = Paint()..color = Colors.black.withValues(alpha: 0.14);
+    final wood = Paint()..color = const Color(0xFF8A5530);
+    final woodLight = Paint()..color = const Color(0xFFB07A4A);
+    final woodShade = Paint()..color = Colors.black.withValues(alpha: 0.35);
+    final band = Paint()..color = const Color(0xFFE6C48A).withValues(alpha: 0.55);
+    final edge = Paint()..color = Colors.black.withValues(alpha: 0.16);
+    final lampX = size.width * 0.74;
+    Offset? lampBase;
 
-    for (var top = -12.0; top < size.height; top += rowH) {
+    var row = 0;
+    for (var top = -12.0; top < size.height; top += rowH, row++) {
       final base = top + rowH - 10;
-      var x = 4 + rng.next() * 10;
-      while (x < size.width) {
+      final hasLamp = row == 1;
+      var x = frame + 4 + rng.next() * 8;
+      while (x < size.width - frame) {
         final w = 11 + rng.next() * 14;
         final h = 52 + rng.next() * 30;
         if (rng.next() < 0.1) {
@@ -84,6 +93,10 @@ class _ShelfPainter extends CustomPainter {
         }
         final color = _spines[(rng.next() * _spines.length).floor() %
             _spines.length];
+        if (hasLamp && (x - lampX).abs() < 34) {
+          x += w + 1;
+          continue;
+        }
         canvas.drawRRect(
           RRect.fromRectAndCorners(
             Rect.fromLTWH(x, base - h, w, h),
@@ -98,8 +111,58 @@ class _ShelfPainter extends CustomPainter {
         x += w + 1;
       }
       canvas.drawRect(Rect.fromLTWH(0, base, size.width, 10), wood);
+      canvas.drawRect(Rect.fromLTWH(0, base, size.width, 2), woodLight);
       canvas.drawRect(Rect.fromLTWH(0, base + 10, size.width, 6), woodShade);
+      if (hasLamp) lampBase = Offset(lampX, base);
     }
+
+    // Side posts of the bookcase.
+    final post = Paint()..color = const Color(0xFF6B4125);
+    canvas.drawRect(Rect.fromLTWH(0, 0, frame, size.height), post);
+    canvas.drawRect(
+        Rect.fromLTWH(size.width - frame, 0, frame, size.height), post);
+
+    if (lampBase != null) _lamp(canvas, lampBase);
+  }
+
+  void _lamp(Canvas canvas, Offset base) {
+    final glowC = Offset(base.dx, base.dy - 34);
+    canvas.drawCircle(
+      glowC,
+      150,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFFFFB45A).withValues(alpha: 0.45),
+          const Color(0xFFFFB45A).withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: glowC, radius: 150)),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(base.dx - 10, base.dy - 7, 20, 7),
+        const Radius.circular(3),
+      ),
+      Paint()..color = const Color(0xFF3A2314),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(base.dx - 2, base.dy - 24, 4, 18),
+      Paint()..color = const Color(0xFF3A2314),
+    );
+    final shade = Path()
+      ..moveTo(base.dx - 11, base.dy - 56)
+      ..lineTo(base.dx + 11, base.dy - 56)
+      ..lineTo(base.dx + 22, base.dy - 24)
+      ..lineTo(base.dx - 22, base.dy - 24)
+      ..close();
+    canvas.drawPath(shade, Paint()..color = const Color(0xFFF6CE8B));
+    canvas.drawPath(
+      shade,
+      Paint()
+        ..shader = LinearGradient(colors: [
+          Colors.white.withValues(alpha: 0.35),
+          Colors.transparent,
+        ]).createShader(Rect.fromCenter(
+            center: Offset(base.dx, base.dy - 40), width: 44, height: 32)),
+    );
   }
 
   @override
@@ -118,40 +181,93 @@ class _DeskPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A44A0), Color(0xFF081C4A)],
+          colors: [Color(0xFF4A2D1A), Color(0xFF22130B)],
         ).createShader(rect),
     );
 
-    // Mown-stripe desk.
-    final stripe = Paint()..color = Colors.white.withValues(alpha: 0.05);
-    const band = 34.0;
-    for (var y = 0.0; y < size.height; y += band * 2) {
-      canvas.drawRect(Rect.fromLTWH(0, y, size.width, band), stripe);
+    // Walnut planks with a little grain.
+    const plank = 64.0;
+    final rng = _Lcg(11);
+    final seam = Paint()
+      ..color = Colors.black.withValues(alpha: 0.38)
+      ..strokeWidth = 2;
+    final grain = Paint()
+      ..color = Colors.white.withValues(alpha: 0.05)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    var i = 0;
+    for (var x = 0.0; x < size.width; x += plank, i++) {
+      if (i.isOdd) {
+        canvas.drawRect(Rect.fromLTWH(x, 0, plank, size.height),
+            Paint()..color = Colors.white.withValues(alpha: 0.03));
+      }
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), seam);
+      for (var g = 0; g < 5; g++) {
+        final gx = x + 8 + rng.next() * (plank - 16);
+        final sway = (rng.next() - 0.5) * 14;
+        canvas.drawPath(
+          Path()
+            ..moveTo(gx, 0)
+            ..cubicTo(gx + sway, size.height * 0.3, gx - sway,
+                size.height * 0.65, gx + sway * 0.5, size.height),
+          grain,
+        );
+      }
     }
 
-    // Window-grille shadow across the top, like the net in a court photo.
-    final grille = Paint()
-      ..color = Colors.black.withValues(alpha: 0.28)
-      ..strokeWidth = 2.2;
-    final grilleH = size.height * 0.26;
-    for (var x = -grilleH; x < size.width + grilleH; x += 22) {
-      canvas.drawLine(Offset(x, 0), Offset(x + grilleH, grilleH), grille);
-      canvas.drawLine(Offset(x + grilleH, 0), Offset(x, grilleH), grille);
-    }
+    // Pool of lamp light.
+    final lightC = Offset(size.width * 0.78, size.height * 0.3);
+    final lightR = size.width * 0.95;
+    canvas.drawCircle(
+      lightC,
+      lightR,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFFFFB45A).withValues(alpha: 0.38),
+          const Color(0xFFFFB45A).withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: lightC, radius: lightR)),
+    );
 
+    _cup(canvas, Offset(size.width * 0.2, size.height * 0.2));
     _book(
       canvas,
-      center: Offset(size.width * 0.66, size.height * 0.31),
+      center: Offset(size.width * 0.64, size.height * 0.33),
       size: Size(size.width * 0.34, size.width * 0.44),
       angle: -0.34,
-      cover: const Color(0xFFBFD7FF),
+      cover: const Color(0xFFB5532C),
     );
     _book(
       canvas,
-      center: Offset(size.width * 0.98, size.height * 0.43),
+      center: Offset(size.width * 0.98, size.height * 0.45),
       size: Size(size.width * 0.3, size.width * 0.4),
       angle: 0.28,
-      cover: const Color(0xFFF2C75A),
+      cover: const Color(0xFF2F5A45),
+    );
+  }
+
+  void _cup(Canvas canvas, Offset c) {
+    canvas.drawCircle(
+      c.translate(6, 10),
+      36,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    // Handle, then the cup and the coffee.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: c.translate(38, 0), width: 22, height: 14),
+        const Radius.circular(7),
+      ),
+      Paint()..color = const Color(0xFFEFE2CC),
+    );
+    canvas.drawCircle(c, 34, Paint()..color = const Color(0xFFEFE2CC));
+    canvas.drawCircle(c, 27, Paint()..color = const Color(0xFFCDBBA0));
+    canvas.drawCircle(c, 24, Paint()..color = const Color(0xFF3A1F10));
+    canvas.drawCircle(
+      c.translate(-7, -7),
+      7,
+      Paint()..color = Colors.white.withValues(alpha: 0.12),
     );
   }
 
@@ -172,7 +288,7 @@ class _DeskPainter extends CustomPainter {
     canvas.drawRRect(
       rr.shift(const Offset(10, 16)),
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.35)
+        ..color = Colors.black.withValues(alpha: 0.45)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
     );
     // Page block peeking out below and to the right.
@@ -188,10 +304,10 @@ class _DeskPainter extends CustomPainter {
         topLeft: const Radius.circular(10),
         bottomLeft: const Radius.circular(10),
       ),
-      Paint()..color = Colors.black.withValues(alpha: 0.18),
+      Paint()..color = Colors.black.withValues(alpha: 0.22),
     );
-    // Title lines.
-    final line = Paint()..color = AuthPalette.navy.withValues(alpha: 0.55);
+    // Gilt title lines.
+    final line = Paint()..color = const Color(0xFFE6C48A).withValues(alpha: 0.8);
     final lx = r.left + size.width * 0.26;
     final lw = size.width * 0.52;
     for (var i = 0; i < 3; i++) {
@@ -207,7 +323,7 @@ class _DeskPainter extends CustomPainter {
     // Ribbon bookmark.
     canvas.drawRect(
       Rect.fromLTWH(r.right - size.width * 0.22, r.top, 8, size.height * 0.28),
-      Paint()..color = const Color(0xFFB5533C),
+      Paint()..color = AuthPalette.accent,
     );
     canvas.restore();
   }
@@ -216,7 +332,7 @@ class _DeskPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Darkens the bottom of a hero so white copy stays readable.
+/// Darkens the bottom of a hero so cream copy stays readable.
 class HeroScrim extends StatelessWidget {
   const HeroScrim({super.key, this.from = 0.35});
 
@@ -232,9 +348,9 @@ class HeroScrim extends StatelessWidget {
               end: Alignment.bottomCenter,
               stops: [0, math.min(from, 0.9), 1],
               colors: [
-                Colors.black.withValues(alpha: 0.28),
-                AuthPalette.navy.withValues(alpha: 0),
-                AuthPalette.deep.withValues(alpha: 0.96),
+                Colors.black.withValues(alpha: 0.35),
+                AuthPalette.espresso.withValues(alpha: 0),
+                AuthPalette.espresso.withValues(alpha: 0.97),
               ],
             ),
           ),
