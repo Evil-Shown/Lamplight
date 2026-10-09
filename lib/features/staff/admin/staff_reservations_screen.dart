@@ -1,22 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart' show AppNavInset;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
-import 'staff_mock_data.dart';
+import '../../../core/feedback/app_feedback.dart';
+import '../../../core/state/app_state.dart';
+import '../../../models/models.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_status_badge.dart';
 
-String _reservationStatusLabel(StaffReservationStatus status) =>
-    switch (status) {
-      StaffReservationStatus.active => 'Active',
-      StaffReservationStatus.pickedUp => 'Picked up',
-      StaffReservationStatus.expired => 'Expired',
-      StaffReservationStatus.cancelled => 'Cancelled',
-    };
+/// The filter bucket a reservation falls in: 'Active', 'Expired',
+/// 'Completed' or 'Cancelled'. A reservation still open past its deadline
+/// counts as expired even before the server flips its status.
+String staffReservationStatusLabel(AdminReservation r, [DateTime? now]) {
+  switch (r.status) {
+    case ReservationStatus.completed:
+      return 'Completed';
+    case ReservationStatus.cancelled:
+      return 'Cancelled';
+    case ReservationStatus.ready:
+    case ReservationStatus.active:
+    case ReservationStatus.expiringSoon:
+      final due = r.dueAt;
+      return due != null && due.isBefore(now ?? DateTime.now())
+          ? 'Expired'
+          : 'Active';
+  }
+}
 
-/// Staff-side monitor of student reservations, with status filters and a
-/// detail sheet per reservation.
+/// Staff-side monitor of student reservations (live), with status filters,
+/// pull-to-refresh and a detail sheet per reservation.
 class StaffReservationsScreen extends StatefulWidget {
   const StaffReservationsScreen({super.key, this.initialFilter = 'All'});
 
@@ -28,7 +43,7 @@ class StaffReservationsScreen extends StatefulWidget {
 }
 
 class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
-  static const _filters = ['All', 'Active', 'Expired', 'Picked up', 'Cancelled'];
+  static const _filters = ['All', 'Active', 'Expired', 'Completed', 'Cancelled'];
 
   late String _filter = _filters.contains(widget.initialFilter)
       ? widget.initialFilter
@@ -36,9 +51,12 @@ class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = StaffMockData.reservations
+    final state = AppScope.of(context);
+    final all = state.adminReservations;
+    final now = DateTime.now();
+    final visible = all
         .where((r) =>
-            _filter == 'All' || _reservationStatusLabel(r.status) == _filter)
+            _filter == 'All' || staffReservationStatusLabel(r, now) == _filter)
         .toList();
 
     return AppScaffold(
@@ -54,21 +72,34 @@ class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: visible.isEmpty
-                ? const EmptyState(
-                    icon: Icons.bookmark_border_rounded,
-                    title: 'Nothing here',
-                    message: 'No reservations match this filter.',
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.base,
-                        AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
-                    itemCount: visible.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, index) =>
-                        _ReservationCard(reservation: visible[index]),
-                  ),
+            child: StaffLiveGate(
+              state: state,
+              hasData: all.isNotEmpty,
+              builder: (context) => visible.isEmpty
+                  ? StaffScrollable(
+                      state: state,
+                      child: EmptyState(
+                        icon: Icons.bookmark_border_rounded,
+                        title: 'Nothing here',
+                        message: all.isEmpty
+                            ? 'No students have reserved a book or seat yet.'
+                            : 'No reservations match this filter.',
+                      ),
+                    )
+                  : StaffRefreshable(
+                      state: state,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                            AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                        itemCount: visible.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (context, index) =>
+                            _ReservationCard(reservation: visible[index]),
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -79,25 +110,26 @@ class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
 class _ReservationCard extends StatelessWidget {
   const _ReservationCard({required this.reservation});
 
-  final StaffReservation reservation;
+  final AdminReservation reservation;
 
-  bool get _isExpired => reservation.status == StaffReservationStatus.expired;
+  String get _label => staffReservationStatusLabel(reservation);
 
-  IconData get _typeIcon => reservation.type == StaffReservationType.book
-      ? Icons.menu_book_rounded
-      : Icons.event_seat_rounded;
+  bool get _isExpired => _label == 'Expired';
 
-  StaffBadgeTone get _tone => switch (reservation.status) {
-        StaffReservationStatus.active => StaffBadgeTone.success,
-        StaffReservationStatus.pickedUp => StaffBadgeTone.info,
-        StaffReservationStatus.expired => StaffBadgeTone.danger,
-        StaffReservationStatus.cancelled => StaffBadgeTone.neutral,
+  IconData get _typeIcon =>
+      reservation.isSeat ? Icons.event_seat_rounded : Icons.menu_book_rounded;
+
+  StaffBadgeTone get _tone => switch (_label) {
+        'Active' => StaffBadgeTone.success,
+        'Completed' => StaffBadgeTone.info,
+        'Expired' => StaffBadgeTone.danger,
+        _ => StaffBadgeTone.neutral,
       };
 
   @override
   Widget build(BuildContext context) {
     final r = reservation;
-    final isBook = r.type == StaffReservationType.book;
+    final isBook = !r.isSeat;
 
     return SurfaceCard(
       tint: _isExpired ? AppColors.error.withValues(alpha: 0.14) : null,
@@ -128,7 +160,7 @@ class _ReservationCard extends StatelessWidget {
                 ),
               ),
               StaffStatusBadge(
-                label: _reservationStatusLabel(r.status),
+                label: _label,
                 tone: _tone,
                 compact: true,
               ),
@@ -167,7 +199,7 @@ class _ReservationCard extends StatelessWidget {
 
   void _showDetails(BuildContext context) {
     final r = reservation;
-    final isBook = r.type == StaffReservationType.book;
+    final isBook = !r.isSeat;
 
     showGlassSheet<void>(
       context,
@@ -183,12 +215,12 @@ class _ReservationCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Reservation ${r.id}',
+                      'Reservation details',
                       style: AppText.title(20, w: FontWeight.w800),
                     ),
                   ),
                   StaffStatusBadge(
-                      label: _reservationStatusLabel(r.status), tone: _tone),
+                      label: _label, tone: _tone),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -209,6 +241,24 @@ class _ReservationCard extends StatelessWidget {
                   value: DateFormat('EEE, MMM d · h:mm a').format(r.dueAt!),
                   valueColor: _isExpired ? AppColors.error : null,
                 ),
+              const SizedBox(height: AppSpacing.base),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: r.studentId.isEmpty
+                      ? null
+                      : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          await Clipboard.setData(
+                              ClipboardData(text: r.studentId));
+                          AppFeedback.tap();
+                          messenger.showSnackBar(const SnackBar(
+                              content: Text('Student ID copied')));
+                        },
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('Copy student ID'),
+                ),
+              ),
             ],
           ),
         ),

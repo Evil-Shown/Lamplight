@@ -5,11 +5,12 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass.dart';
 import '../../../core/widgets/shared_widgets.dart';
 import '../../../models/models.dart';
-import 'staff_mock_data.dart';
+import '../../../core/state/app_state.dart';
+import 'widgets/staff_live_states.dart';
 import 'widgets/staff_status_badge.dart';
 
 /// Staff-side seat availability: floor filter, live status grid and a
-/// status editor per seat on local mock state.
+/// status editor per seat that writes through [AppState.setSeatStatus].
 class StaffSeatsScreen extends StatefulWidget {
   const StaffSeatsScreen({super.key});
 
@@ -20,31 +21,33 @@ class StaffSeatsScreen extends StatefulWidget {
 class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
   String _floorFilter = 'All';
 
-  late final List<Seat> _seats = List<Seat>.from(StaffMockData.seats);
-
-  List<String> get _floorOptions => [
+  List<String> _floorOptions(List<Seat> seats) => [
         'All',
-        ...(_seats.map((s) => 'Floor ${s.floor}').toSet().toList()..sort()),
+        ...(seats.map((s) => 'Floor ${s.floor}').toSet().toList()..sort()),
       ];
 
   @override
   Widget build(BuildContext context) {
-    final visible = _seats
-        .where(
-            (s) => _floorFilter == 'All' || 'Floor ${s.floor}' == _floorFilter)
+    final state = AppScope.of(context);
+    final seats = state.adminSeats;
+    final options = _floorOptions(seats);
+    final floor = options.contains(_floorFilter) ? _floorFilter : 'All';
+    final visible = seats
+        .where((s) => floor == 'All' || 'Floor ${s.floor}' == floor)
         .toList();
     final available =
-        _seats.where((s) => s.status == SeatStatus.available).length;
+        seats.where((s) => s.status == SeatStatus.available).length;
 
     return AppScaffold(
       title: 'Seat Availability',
       contentUnderBar: true,
       actions: [
+        if (seats.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.base),
             child: Center(
               child: StaffStatusBadge(
-                label: '$available of ${_seats.length} free',
+                label: '$available of ${seats.length} free',
                 tone: available > 0
                     ? StaffBadgeTone.success
                     : StaffBadgeTone.danger,
@@ -56,40 +59,53 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
         children: [
           SizedBox(height: GlassAppBar.contentTopPadding(context)),
           FilterChipRow(
-            options: _floorOptions,
-            selected: _floorFilter,
+            options: options,
+            selected: floor,
             onSelected: (f) => setState(() => _floorFilter = f),
           ),
           const SizedBox(height: AppSpacing.sm),
           const _SeatLegend(),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: visible.isEmpty
-                ? const EmptyState(
-                    icon: Icons.event_seat_rounded,
-                    title: 'No seats',
-                    message: 'No seats match this floor filter.',
-                  )
-                : LayoutBuilder(builder: (context, constraints) {
-                    final columns =
-                        (constraints.maxWidth / 104).clamp(3, 8).round();
-                    return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.base,
-                          AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisSpacing: AppSpacing.sm,
-                        crossAxisSpacing: AppSpacing.sm,
-                        childAspectRatio: 1.18,
+            child: StaffLiveGate(
+              state: state,
+              hasData: seats.isNotEmpty,
+              builder: (context) => visible.isEmpty
+                  ? StaffScrollable(
+                      state: state,
+                      child: EmptyState(
+                        icon: Icons.event_seat_rounded,
+                        title: seats.isEmpty ? 'No seats yet' : 'No seats',
+                        message: seats.isEmpty
+                            ? 'No seats have been set up in the library.'
+                            : 'No seats match this floor filter.',
                       ),
-                      itemCount: visible.length,
-                      itemBuilder: (context, index) => _SeatTile(
-                        seat: visible[index],
-                        onTap: () => _editStatus(visible[index]),
-                      ),
-                    );
-                  }),
+                    )
+                  : StaffRefreshable(
+                      state: state,
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        final columns =
+                            (constraints.maxWidth / 104).clamp(3, 8).round();
+                        return GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.base,
+                              AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            mainAxisSpacing: AppSpacing.sm,
+                            crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1.18,
+                          ),
+                          itemCount: visible.length,
+                          itemBuilder: (context, index) => _SeatTile(
+                            seat: visible[index],
+                            onTap: () => _editStatus(visible[index]),
+                          ),
+                        );
+                      }),
+                    ),
+            ),
           ),
         ],
       ),
@@ -175,21 +191,19 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
     );
   }
 
-  void _applyStatus(Seat seat, SeatStatus status) {
-    final index = _seats.indexOf(seat);
-    if (index == -1) return;
-
-    final updated = seat.copyWith(status: status);
-    setState(() => _seats[index] = updated);
-    // Mirror into the shared mock so dashboard counters stay accurate.
-    final mockIndex = StaffMockData.seats.indexOf(seat);
-    if (mockIndex != -1) StaffMockData.seats[mockIndex] = updated;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+  Future<void> _applyStatus(Seat seat, SeatStatus status) async {
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await state.setSeatStatus(seat.id, status);
+      messenger.showSnackBar(SnackBar(
           content: Text(
-              'Seat ${seat.label} is now ${_statusLabel(status).toLowerCase()}')),
-    );
+              'Seat ${seat.label} is now ${_statusLabel(status).toLowerCase()}')));
+    } catch (_) {
+      AppFeedback.error();
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not update seat ${seat.label}. Try again.')));
+    }
   }
 
   static String _statusLabel(SeatStatus status) => switch (status) {

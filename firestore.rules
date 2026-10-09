@@ -1,12 +1,18 @@
 rules_version = '2';
 
-// Library+ (SLIIT Quick Book) — student/staff prototype rules.
-// Every user can read the shared catalogue and seat map, but personal
-// feeds (reservations, bookings, waitlist, notifications, devices) are
-// readable/writable only by their owner. Staff powers are client-declared
-// for the prototype; production should move them to custom claims.
+// Library+ (SLIIT Quick Book) Firestore rules.
+//
+// Roles come from the Firebase Auth custom claim `role` ('staff' | 'student'),
+// assigned server-side by the `claimRole` Cloud Function from the allowlist in
+// config/staffAllowlist. Clients can never write the role.
+//
+// Anything that crosses users (waitlist promotion, copy accounting, no-show
+// release, QR consumption, fines, reminders) is done by Cloud Functions with
+// the Admin SDK, which bypasses these rules.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
 
     function isSignedIn() {
       return request.auth != null;
@@ -16,57 +22,258 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    // Shared catalogue + seat map: any signed-in member can read.
+    // `.get` keeps this safe (false, not an error) when the claim is missing.
+    function isStaff() {
+      return isSignedIn() && request.auth.token.get('role', '') == 'staff';
+    }
+
+    // Every status the app knows about (lib/models ReservationStatus + the
+    // server-assigned `expired` / `noShow`).
+    function validStatus(s) {
+      return s in ['ready', 'active', 'expiringSoon', 'completed', 'cancelled',
+                   'expired', 'noShow'];
+    }
+
+    // Statuses in which a reservation/booking still holds its resource.
+    function isOpenStatus(s) {
+      return s in ['ready', 'active', 'expiringSoon'];
+    }
+
+    function safeId(id) {
+      return id.matches('^[A-Za-z0-9_-]{1,64}$');
+    }
+
+    function changed(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ------------------------------------------------------------------ config
+
+    // Only the fine/loan policy is visible to clients. config/staffAllowlist
+    // and every other config doc fall through to the default deny below.
+    match /config/library {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------------- books
+
     match /books/{bookId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn(); // seeding; restrict to staff in production
+      allow write: if isStaff();
     }
+
+    // ------------------------------------------------------------------- seats
 
     match /seats/{seatId} {
       allow read: if isSignedIn();
-      // Seat status flips happen inside booking transactions.
-      allow update: if isSignedIn();
       allow create, delete: if false;
+
+      allow update: if isStaff()
+        || (isSignedIn() && seatBookingTransition());
     }
 
-    // Staff dispatch queue.
+    // A student may only (a) take an available/limited seat that is not held
+    // for somebody else, marking themselves as holder, or (b) release the seat
+    // they hold. `heldFor` / `heldUntil` are server-managed (waitlist holds).
+    function seatBookingTransition() {
+      let after = request.resource.data;
+      let before = resource.data;
+      return changed(['status', 'heldBy', 'bookingId'])
+        && (
+          // take
+          (before.status in ['available', 'limited']
+            && after.status == 'occupied'
+            && after.heldBy == request.auth.uid
+            && after.bookingId is string
+            && before.get('heldBy', null) == null
+            && before.get('heldFor', request.auth.uid) == request.auth.uid)
+          ||
+          // release
+          (before.get('heldBy', null) == request.auth.uid
+            && after.status == 'available'
+            && after.get('heldBy', null) == null
+            && after.get('bookingId', null) == null)
+        );
+    }
+
+    // ------------------------------------------------------------------ queue
+
     match /queue/{entryId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isStaff();
     }
 
-    // Per-user documents.
+    // ------------------------------------------------------------------- loans
+
+    // Queries by students must filter on userId == auth.uid.
+    match /loans/{loanId} {
+      allow read: if isStaff()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create, delete: if isStaff();
+      allow update: if isStaff()
+        || (isSignedIn()
+            && resource.data.userId == request.auth.uid
+            && changed(['renewalRequested'])
+            && request.resource.data.renewalRequested is bool);
+    }
+
+    // ------------------------------------------------------------------- users
+
     match /users/{uid} {
-      allow read: if isSignedIn(); // staff verification needs owner info
-      allow create, update: if isOwner(uid);
-      allow delete: if false;
+      allow read: if isOwner(uid) || isStaff();
+
+      // `role`, `strikes`, `finesTotal` and any other server-owned field are
+      // not in the whitelist, so the owner can never write them.
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(profileKeys())
+        && validProfile(request.resource.data);
+      allow update: if isOwner(uid)
+        && changed(profileKeys())
+        && validProfile(request.resource.data);
+      allow delete: if false; // use the deleteAccountData callable
 
       match /reservations/{docId} {
-        // Readable signed-in (staff QR verification), writable by owner.
-        allow read: if isSignedIn();
-        allow write: if isOwner(uid);
+        allow read: if isOwner(uid) || isStaff();
+
+        allow create: if isOwner(uid)
+          && safeId(docId)
+          && request.resource.data.keys().hasOnly(
+               ['bookId', 'bookTitle', 'reservedAt', 'pickupBy',
+                'pickupLocation', 'qrCode', 'status', 'userId'])
+          && request.resource.data.keys().hasAll(
+               ['bookId', 'reservedAt', 'pickupBy', 'status', 'userId'])
+          && request.resource.data.userId == uid
+          && request.resource.data.bookId is string
+          && request.resource.data.status in ['ready', 'active']
+          && request.resource.data.reservedAt is timestamp
+          && request.resource.data.pickupBy is timestamp
+          && request.resource.data.pickupBy <= request.time + duration.value(8, 'd');
+
+        // Owner can only cancel an open reservation. Staff can set any valid
+        // status (verification / manual no-show) and checkedInAt.
+        allow update: if (isOwner(uid)
+            && changed(['status'])
+            && request.resource.data.status == 'cancelled'
+            && isOpenStatus(resource.data.status))
+          || (isStaff()
+            && changed(['status', 'checkedInAt'])
+            && validStatus(request.resource.data.status));
+
+        allow delete: if false;
       }
 
       match /bookings/{docId} {
-        allow read: if isSignedIn();
-        allow write: if isOwner(uid);
+        allow read: if isOwner(uid) || isStaff();
+
+        allow create: if isOwner(uid)
+          && safeId(docId)
+          && request.resource.data.keys().hasOnly(
+               ['seatId', 'date', 'startTime', 'endTime', 'qrCode', 'status',
+                'checkedInAt', 'userId'])
+          && request.resource.data.keys().hasAll(
+               ['seatId', 'startTime', 'endTime', 'status', 'userId'])
+          && request.resource.data.userId == uid
+          && request.resource.data.seatId is string
+          && request.resource.data.status in ['ready', 'active']
+          && request.resource.data.get('checkedInAt', null) == null
+          && request.resource.data.startTime is timestamp
+          && request.resource.data.endTime is timestamp
+          && request.resource.data.endTime > request.resource.data.startTime;
+
+        // Owner: cancel an open booking, or complete (early checkout) one that
+        // has been checked in. checkedInAt is set only by verifyQrPass / staff.
+        allow update: if (isOwner(uid)
+            && changed(['status'])
+            && isOpenStatus(resource.data.status)
+            && (request.resource.data.status == 'cancelled'
+                || (request.resource.data.status == 'completed'
+                    && resource.data.get('checkedInAt', null) != null)))
+          || (isStaff()
+            && changed(['status', 'checkedInAt'])
+            && validStatus(request.resource.data.status));
+
+        // Withdrawing a booking that was never checked in.
+        allow delete: if isOwner(uid)
+          && resource.data.get('checkedInAt', null) == null
+          && isOpenStatus(resource.data.status);
       }
 
+      // Entries are created 'waiting'. Offers are answered through the
+      // respondToWaitlistOffer callable, never by editing `status`.
       match /waitlist/{docId} {
-        allow read, write: if isSignedIn(); // promotion touches other users' entries
+        allow read: if isOwner(uid) || isStaff();
+
+        allow create: if isStaff() || (isOwner(uid)
+          && safeId(docId)
+          && request.resource.data.keys().hasOnly(
+               ['type', 'title', 'subtitle', 'position', 'joinedAt',
+                'estimatedWaitMinutes', 'seatPreference', 'resourceId',
+                'userId', 'status', 'date', 'startTime', 'endTime'])
+          && request.resource.data.keys().hasAll(
+               ['type', 'title', 'resourceId', 'userId', 'status', 'joinedAt'])
+          && request.resource.data.type in ['book', 'seat']
+          && request.resource.data.resourceId is string
+          && request.resource.data.userId == uid
+          && request.resource.data.status == 'waiting');
+
+        allow update: if (isOwner(uid) && changed(['seatPreference']))
+          || isStaff();
+
+        allow delete: if isOwner(uid) || isStaff();
       }
 
+      // Created by Cloud Functions (or staff). The owner may only toggle `read`.
       match /notifications/{docId} {
         allow read: if isOwner(uid);
-        allow create: if isSignedIn(); // waitlist offers from other users
-        allow update, delete: if isOwner(uid);
+        allow create: if isStaff();
+        allow update: if isOwner(uid)
+          && changed(['read'])
+          && request.resource.data.read is bool;
+        allow delete: if isOwner(uid);
       }
 
       match /devices/{tokenId} {
-        allow read, write: if isOwner(uid);
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(
+               ['token', 'platform', 'updatedAt', 'appVersion', 'locale']);
+      }
+
+      // Strike history written by releaseNoShowSeats.
+      match /strikes/{strikeId} {
+        allow read: if isOwner(uid) || isStaff();
+        allow write: if false;
       }
     }
 
-    // Everything else is denied.
+    // Staff-wide collection-group reads (admin lists). Students get nothing
+    // here; their own docs are covered by the per-user matches above.
+    match /{path=**}/reservations/{id} {
+      allow read: if isStaff();
+    }
+    match /{path=**}/bookings/{id} {
+      allow read: if isStaff();
+    }
+    match /{path=**}/waitlist/{id} {
+      allow read: if isStaff();
+    }
+
+    function profileKeys() {
+      return ['name', 'studentId', 'email', 'reservationsVisibleToStaffOnly',
+              'notificationPrefs', 'createdAt', 'updatedAt'];
+    }
+
+    function validProfile(d) {
+      return (!('name' in d) || (d.name is string && d.name.size() <= 120))
+        && (!('studentId' in d) || (d.studentId is string && d.studentId.size() <= 64))
+        && (!('email' in d) || (d.email is string && d.email.size() <= 200))
+        && (!('reservationsVisibleToStaffOnly' in d)
+            || d.reservationsVisibleToStaffOnly is bool)
+        && (!('notificationPrefs' in d) || d.notificationPrefs is map);
+    }
+
+    // ----------------------------------------------------------- default deny
+
     match /{document=**} {
       allow read, write: if false;
     }

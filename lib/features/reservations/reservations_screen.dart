@@ -12,6 +12,7 @@ import '../books/reservation_cancelled_screen.dart';
 import '../books/reservation_detail_screen.dart';
 import '../qr/qr_ticket_screen.dart';
 import '../waitlist/waitlist_joined_screen.dart';
+import 'live_widgets.dart';
 
 /// P-10 My Reservations.
 ///
@@ -126,7 +127,26 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             const SizedBox(height: AppSpacing.base),
-            Expanded(child: content),
+            if (state.pendingOffers.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.base, 0, AppSpacing.base, 0),
+                child: OfferStack(offers: state.pendingOffers),
+              ),
+            Expanded(
+              child: syncFailed(state)
+                  ? syncErrorState(state)
+                  : !state.isHydrated
+                      ? ListView(
+                          padding: const EdgeInsets.all(AppSpacing.base),
+                          children: const [
+                            SkeletonCard(),
+                            SizedBox(height: AppSpacing.md),
+                            SkeletonCard(),
+                          ],
+                        )
+                      : refreshable(state, content),
+            ),
           ],
         ),
       ),
@@ -143,35 +163,37 @@ class _BookHolds extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (reservations.isEmpty) {
-      return EmptyState(
+      return _PullEmpty(
         icon: Icons.bookmark_border_rounded,
         title: history ? 'No cancelled holds' : 'No active holds',
         message: history
             ? 'Cancelled book reservations will be listed here.'
             : 'Search the catalog and reserve a book to see it listed here.',
         actionLabel: history ? null : 'Browse books',
-        onAction: history
-            ? null
-            : () => AppShell.switchTab(context, AppTab.books),
+        onAction:
+            history ? null : () => AppShell.switchTab(context, AppTab.books),
       );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: reservations.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) => StaggeredEntrance(
         index: i,
-        child: _BookHoldCard(reservation: reservations[i]),
+        child: _BookHoldCard(reservation: reservations[i], history: history),
       ),
     );
   }
 }
 
 class _BookHoldCard extends StatelessWidget {
-  const _BookHoldCard({required this.reservation});
+  const _BookHoldCard({required this.reservation, this.history = false});
 
   final BookReservation reservation;
+  final bool history;
 
   @override
   Widget build(BuildContext context) {
@@ -256,6 +278,18 @@ class _BookHoldCard extends StatelessWidget {
               ShelfTag(book.shelfLocation),
             ],
           ),
+          if (!history) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CountdownBadge(
+                prefix: 'Pick up within',
+                missedLabel: 'Pickup window missed',
+                remaining: (now) => AppScope.read(context)
+                    .pickupRemaining(reservation, now: now),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -271,21 +305,22 @@ class _SeatBookings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (bookings.isEmpty) {
-      return EmptyState(
+      return _PullEmpty(
         icon: Icons.event_seat_outlined,
         title: history ? 'No past bookings' : 'No active seat bookings',
         message: history
             ? 'Completed and cancelled bookings will be listed here.'
             : 'Reserve a reading-room seat and it will appear here.',
         actionLabel: history ? null : 'Reserve a seat',
-        onAction: history
-            ? null
-            : () => AppShell.switchTab(context, AppTab.seats),
+        onAction:
+            history ? null : () => AppShell.switchTab(context, AppTab.seats),
       );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: bookings.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) => StaggeredEntrance(
@@ -328,8 +363,7 @@ class _SeatBookingCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Floor ${booking.seat.floor}',
-                      style:
-                          AppText.body(12.5, color: AppColors.textSecondary),
+                      style: AppText.body(12.5, color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -349,6 +383,15 @@ class _SeatBookingCard extends StatelessWidget {
             ],
           ),
           if (!history) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CountdownBadge(
+                prefix: 'Check in within',
+                remaining: (now) =>
+                    AppScope.read(context).graceRemaining(booking, now: now),
+              ),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -419,7 +462,7 @@ class _WaitlistEntries extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
-      return const EmptyState(
+      return const _PullEmpty(
         icon: Icons.hourglass_empty_rounded,
         title: 'Nothing in the queue',
         message:
@@ -428,7 +471,9 @@ class _WaitlistEntries extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base, 0, AppSpacing.base, AppSpacing.xl),
       itemCount: entries.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, i) =>
@@ -465,7 +510,10 @@ class _WaitlistCard extends StatelessWidget {
                     Text(entry.subtitle,
                         style:
                             AppText.body(12.5, color: AppColors.textSecondary)),
-                    if (entry.estimatedWaitMinutes != null) ...[
+                    const SizedBox(height: 6),
+                    WaitlistStatusPill(status: entry.status),
+                    if (entry.estimatedWaitMinutes != null &&
+                        entry.status == WaitlistStatus.waiting) ...[
                       const SizedBox(height: 6),
                       Text(
                         'About ${entry.estimatedWaitMinutes} min (estimate)',
@@ -520,4 +568,40 @@ class _WaitlistCard extends StatelessWidget {
 /// Navigates to the cancelled-receipt screen after a cancel is confirmed.
 void openReservationCancelled(BuildContext context) {
   AppRoute.push(context, const ReservationCancelledScreen());
+}
+
+/// [EmptyState] inside a scroll view so pull-to-refresh still works.
+class _PullEmpty extends StatelessWidget {
+  const _PullEmpty({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: c.maxHeight),
+          child: EmptyState(
+            icon: icon,
+            title: title,
+            message: message,
+            actionLabel: actionLabel,
+            onAction: onAction,
+          ),
+        ),
+      ),
+    );
+  }
 }
