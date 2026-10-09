@@ -7,13 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 class AuthPalette {
   AuthPalette._();
 
-  static const olive = Color(0xFF6B8544);
-  static const forest = Color(0xFF1F2B14);
-  static const turf = Color(0xFF34491D);
-  static const cream = Color(0xFFF7F4E9);
-  static const field = Color(0xFFF4F4F1);
-  static const ink = Color(0xFF1B1F16);
-  static const muted = Color(0xFF6D7266);
+  static const blue = Color(0xFF173A9E);
+  static const navy = Color(0xFF060F2B);
+  static const deep = Color(0xFF0A1E4D);
+  static const cream = Color(0xFFEEF3FF);
+  static const field = Color(0xFFF1F4FA);
+  static const ink = Color(0xFF0E1630);
+  static const muted = Color(0xFF5E6A85);
   static const error = Color(0xFFB3261E);
   static const errorSoft = Color(0xFFFDECEA);
 }
@@ -61,7 +61,7 @@ class LibraryWordmark extends StatelessWidget {
                   ..color = AuthPalette.cream,
               ),
             ),
-            Text('Library+', style: base.copyWith(color: AuthPalette.forest)),
+            Text('Library+', style: base.copyWith(color: AuthPalette.navy)),
           ],
         ),
       ),
