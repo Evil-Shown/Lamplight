@@ -4,6 +4,14 @@ import '../core/theme/app_theme.dart';
 import '../models/book_model.dart';
 import '../models/reservation_model.dart';
 
+const Color _bookFlowBackground = Color(0xFF141518);
+const Color _bookFlowSurface = Color(0xFF22242A);
+const Color _bookFlowBorder = Color(0xFF2E313A);
+const Color _bookFlowAccent = Color(0xFFE8A838);
+const Color _bookFlowTextPrimary = Colors.white;
+final Color _bookFlowTextSecondary = Colors.grey[400]!;
+const Color _bookFlowTextInverse = Color(0xFF141518);
+
 class BookDetailsScreen extends StatefulWidget {
   const BookDetailsScreen({super.key, required this.book});
 
@@ -32,7 +40,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: _bookFlowSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
       ),
@@ -91,8 +99,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                               ? null
                               : () => submitReservation(setSheetState),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.textInverse,
+                            backgroundColor: _bookFlowAccent,
+                            foregroundColor: _bookFlowTextInverse,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppRadii.md),
@@ -197,6 +205,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: _bookFlowBackground,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
@@ -246,7 +255,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 book.author,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                  color: _bookFlowTextSecondary,
                     ),
               ),
               const SizedBox(height: 14),
@@ -271,7 +280,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     ? book.description
                     : 'No description is available for this book yet.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                  color: _bookFlowTextSecondary,
                       height: 1.6,
                     ),
               ),
@@ -285,8 +294,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textInverse,
+              backgroundColor: _bookFlowAccent,
+              foregroundColor: _bookFlowTextInverse,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadii.md),
@@ -314,12 +323,16 @@ class _BookCoverImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final placeholder = Container(
-      color: AppColors.primarySoft,
+      decoration: BoxDecoration(
+        color: _bookFlowSurface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: _bookFlowBorder),
+      ),
       alignment: Alignment.center,
       child: Icon(
         Icons.menu_book_rounded,
         size: 42,
-        color: AppColors.primary,
+        color: _bookFlowAccent,
       ),
     );
 
@@ -375,9 +388,9 @@ class _MetadataCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: _bookFlowSurface,
         borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: _bookFlowBorder),
       ),
       child: Wrap(
         spacing: 10,
@@ -406,20 +419,21 @@ class _TagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: _bookFlowSurface,
         borderRadius: BorderRadius.circular(AppRadii.full),
+        border: Border.all(color: _bookFlowBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Icon(icon, size: 16, color: _bookFlowAccent),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textPrimary,
+                color: _bookFlowTextPrimary,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -449,9 +463,9 @@ class _ReservationSummary extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: _bookFlowSurface,
         borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: _bookFlowBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,21 +480,21 @@ class _ReservationSummary extends StatelessWidget {
           Text(
             '$copiesAvailable copies currently available',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+              color: _bookFlowTextSecondary,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             deadlineText,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+              color: _bookFlowTextSecondary,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             'Pickup location: Shelf ${book.shelfLocation}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+              color: _bookFlowTextSecondary,
                 ),
           ),
         ],
