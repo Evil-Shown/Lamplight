@@ -197,11 +197,21 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        Container(
+          width: 3.5,
+          height: 18,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
         Expanded(
           child: Semantics(
             header: true,
-            child: Text(title, style: AppText.display(22, w: FontWeight.w700)),
+            child: Text(title, style: AppText.display(20, w: FontWeight.w700)),
           ),
         ),
         if (trailing != null) trailing!,
@@ -396,10 +406,10 @@ class _HomeGreeting extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD99246).withValues(alpha: 0.15),
+                  color: const Color(0xFFD3A376).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                   border: Border.all(
-                    color: const Color(0xFFD99246).withValues(alpha: 0.35),
+                    color: const Color(0xFFD3A376).withValues(alpha: 0.35),
                   ),
                 ),
                 child: Row(
@@ -408,7 +418,7 @@ class _HomeGreeting extends StatelessWidget {
                     const Icon(
                       Icons.electric_bolt_rounded,
                       size: 13,
-                      color: Color(0xFFD99246),
+                      color: Color(0xFFD3A376),
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -419,7 +429,7 @@ class _HomeGreeting extends StatelessWidget {
                         style: AppText.label(
                           11,
                           w: FontWeight.w700,
-                          color: const Color(0xFFD99246),
+                          color: const Color(0xFFD3A376),
                         ),
                       ),
                     ),
@@ -839,7 +849,7 @@ class _NookPainter extends CustomPainter {
     final books = [
       (h * 0.80, 2.0, h * 0.14, const Color(0xFFE6C48A)),
       (h * 0.66, 8.0, h * 0.14, const Color(0xFFB5532C)),
-      (h * 0.52, 4.0, h * 0.14, const Color(0xFFF3E8D6)),
+      (h * 0.52, 4.0, h * 0.14, const Color(0xFFFFF2DF)),
     ];
     for (final (y, inset, bh, color) in books) {
       canvas.drawRRect(book(y, inset, bh), Paint()..color = color);
@@ -1035,17 +1045,16 @@ class _GoalCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F332D) : const Color(0xFF163832),
+            color: isDark ? const Color(0xFF241B17) : const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
               color: isDark
-                  ? const Color(0xFF8EB69B).withValues(alpha: 0.25)
-                  : const Color(0xFFDAF1DE).withValues(alpha: 0.2),
+                  ? const Color(0xFFE0A050).withValues(alpha: 0.3)
+                  : const Color(0xFFE2E8F0).withValues(alpha: 0.25),
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : const Color(0xFF163832))
-                    .withValues(alpha: 0.16),
+                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -1060,13 +1069,13 @@ class _GoalCard extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8EB69B).withValues(alpha: 0.22),
+                      color: const Color(0xFFD3A376).withValues(alpha: 0.22),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.adjust_rounded,
                       size: 22,
-                      color: Color(0xFFDAF1DE),
+                      color: Color(0xFFFFE0B2),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -1079,7 +1088,7 @@ class _GoalCard extends StatelessWidget {
                           style: AppText.overline(
                             11,
                             ls: 1.0,
-                            color: const Color(0xFF8EB69B),
+                            color: const Color(0xFFD3A376),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1097,10 +1106,10 @@ class _GoalCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD99246).withValues(alpha: 0.22),
+                      color: const Color(0xFFD3A376).withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                       border: Border.all(
-                        color: const Color(0xFFD99246).withValues(alpha: 0.5),
+                        color: const Color(0xFFD3A376).withValues(alpha: 0.5),
                       ),
                     ),
                     child: Row(
@@ -1132,7 +1141,7 @@ class _GoalCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppText.body(
                         12,
-                        color: const Color(0xFFDAF1DE).withValues(alpha: 0.8),
+                        color: const Color(0xFFFFE0B2).withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -1142,7 +1151,7 @@ class _GoalCard extends StatelessWidget {
                     style: AppText.label(
                       12,
                       w: FontWeight.w700,
-                      color: const Color(0xFFDAF1DE),
+                      color: const Color(0xFFFFE0B2),
                     ),
                   ),
                 ],
@@ -1156,7 +1165,7 @@ class _GoalCard extends StatelessWidget {
                     value: progress,
                     backgroundColor: Colors.white.withValues(alpha: 0.18),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF8EB69B),
+                      Color(0xFFD3A376),
                     ),
                   ),
                 ),
@@ -1187,8 +1196,10 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.menu_book_rounded,
                 label: 'Read',
-                tint: const Color(0xFF163832),
-                bgTint: const Color(0xFFDAF1DE),
+                tint: AppColors.primary,
+                bgTint: AppColors.isDark
+                    ? const Color(0xFF4A2810)
+                    : const Color(0xFFFEF3C7),
                 onTap: () => AppShell.switchTab(context, AppTab.books),
               ),
             ),
@@ -1197,8 +1208,10 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.event_seat_rounded,
                 label: 'Desks',
-                tint: const Color(0xFF235347),
-                bgTint: const Color(0xFFE4F0E8),
+                tint: const Color(0xFF0D9488),
+                bgTint: AppColors.isDark
+                    ? const Color(0xFF134E4A)
+                    : const Color(0xFFCCFBF1),
                 onTap: () => AppShell.switchTab(context, AppTab.seats),
               ),
             ),
@@ -1207,8 +1220,10 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.confirmation_number_rounded,
                 label: 'Bookings',
-                tint: const Color(0xFF806B59),
-                bgTint: const Color(0xFFF0E8DD),
+                tint: const Color(0xFF4F46E5),
+                bgTint: AppColors.isDark
+                    ? const Color(0xFF312E81)
+                    : const Color(0xFFEEF2FF),
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
               ),
             ),
@@ -1217,8 +1232,10 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.qr_code_2_rounded,
                 label: 'QR Pass',
-                tint: const Color(0xFFD99246),
-                bgTint: const Color(0xFFFBE4C8),
+                tint: const Color(0xFFE11D48),
+                bgTint: AppColors.isDark
+                    ? const Color(0xFF881337)
+                    : const Color(0xFFFFE4E6),
                 onTap: () {
                   final booking = AppScope.read(context).todayBooking;
                   if (booking != null) {
@@ -1265,12 +1282,10 @@ class _CategoryPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+            color: isDark ? const Color(0xFF1F1714) : Colors.white,
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
-              color: isDark
-                  ? const Color(0xFF163832)
-                  : const Color(0xFFD8C9B6).withValues(alpha: 0.6),
+              color: AppColors.border,
             ),
             boxShadow: [
               BoxShadow(
@@ -1293,7 +1308,7 @@ class _CategoryPill extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 22,
-                  color: isDark ? const Color(0xFF8EB69B) : tint,
+                  color: isDark ? const Color(0xFFD3A376) : tint,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1351,7 +1366,7 @@ class _SanctuaryShowcase extends StatelessWidget {
                 subtitle: 'Private tinted deep focus rooms',
                 tag: 'PODS 01-05',
                 imageAsset: 'assets/images/zone_glass_pods.png',
-                accentColor: const Color(0xFFD99246),
+                accentColor: const Color(0xFFD3A376),
                 onTap: () =>
                     AppRoute.push(context, const PodBookingScreen()),
               ),
@@ -1401,7 +1416,7 @@ class _SanctuaryShowcase extends StatelessWidget {
                 subtitle: 'Quotes & rowboat journey',
                 tag: 'JOURNAL',
                 imageAsset: 'assets/images/dual_island.png',
-                accentColor: const Color(0xFFDAF1DE),
+                accentColor: const Color(0xFFFFE0B2),
                 onTap: () =>
                     AppRoute.push(context, const ReadingJournalScreen()),
               ),
@@ -1479,7 +1494,7 @@ class _SanctuaryCard extends StatelessWidget {
                   imageAsset,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: const Color(0xFF163832),
+                    color: const Color(0xFF1E293B),
                   ),
                 ),
               ),

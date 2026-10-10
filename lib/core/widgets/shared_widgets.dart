@@ -194,8 +194,8 @@ class GradientHero extends StatelessWidget {
         borderRadius: r,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4A2410)
-                .withValues(alpha: AppColors.isDark ? 0.40 : 0.28),
+            color: (AppColors.isDark ? Colors.black : const Color(0xFF0F172A))
+                .withValues(alpha: AppColors.isDark ? 0.40 : 0.16),
             blurRadius: 28,
             spreadRadius: -4,
             offset: const Offset(0, 14),
@@ -316,7 +316,12 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: AppText.overline(11, color: color ?? AppColors.textFaint),
+      style: AppText.overline(
+        11.5,
+        w: FontWeight.w700,
+        ls: 1.3,
+        color: color ?? AppColors.textSecondary,
+      ),
     );
   }
 }
@@ -345,12 +350,16 @@ class SectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppText.title(17, w: FontWeight.w700)),
+              Text(title, style: AppText.title(18, w: FontWeight.w700)),
               if (subtitle != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   subtitle!,
-                  style: AppText.body(13, color: AppColors.textSecondary),
+                  style: AppText.body(
+                    13.5,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
                 ),
               ],
             ],
@@ -1981,12 +1990,13 @@ class TicketCard extends StatelessWidget {
     );
     return Material(
       color: AppColors.isDark
-          ? const Color(0xFF2B1D14).withValues(alpha: 0.86)
-          : const Color(0xFFFFF4E2).withValues(alpha: 0.9),
+          ? const Color(0xFF1F1714).withValues(alpha: 0.94)
+          : Colors.white,
       shape: shape,
       clipBehavior: Clip.antiAlias,
       elevation: AppColors.isDark ? 0 : 5,
-      shadowColor: const Color(0xFF4A2410).withValues(alpha: 0.2),
+      shadowColor: (AppColors.isDark ? Colors.black : const Color(0xFF0F172A))
+          .withValues(alpha: 0.12),
       child: Opacity(
         opacity: dimmed ? 0.35 : 1,
         child: DecoratedBox(

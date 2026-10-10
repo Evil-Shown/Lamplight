@@ -49,7 +49,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
     final active = _rooms[_selectedRoom];
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF051F20) : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -123,7 +123,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
                               r.imageAsset,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => Container(
-                                color: const Color(0xFF163832),
+                                color: AppColors.surfaceMuted,
                               ),
                             ),
                           ),
@@ -178,10 +178,10 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+              color: isDark ? const Color(0xFF1F1714) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
-                color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                color: AppColors.border,
               ),
             ),
             child: Row(
@@ -238,10 +238,10 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+              color: isDark ? const Color(0xFF1F1714) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
-                color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                color: AppColors.border,
               ),
             ),
             child: Column(
@@ -258,7 +258,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
                       child: TextField(
                         controller: _idController,
                         decoration: InputDecoration(
-                          hintText: 'e.g. IT-20491',
+                           hintText: 'e.g. IT-20491',
                           isDense: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadii.md),
@@ -285,12 +285,12 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF163832).withValues(alpha: 0.12),
+                          color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           m,
-                          style: AppText.label(11, w: FontWeight.w700, color: const Color(0xFF163832)),
+                          style: AppText.label(11, w: FontWeight.w700, color: AppColors.primary),
                         ),
                       ),
                   ],
@@ -314,7 +314,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF163832),
+                color: isDark ? const Color(0xFF1F1714) : const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               child: Column(

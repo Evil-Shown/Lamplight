@@ -61,7 +61,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
       category: 'Tech Workshop',
       floor: 1,
       isAvailable: true,
-      color: Color(0xFF163832),
+      color: Color(0xFF6366F1),
     ),
     _ScoutSeat(
       section: 'Section 05 · East Stacks',
@@ -71,7 +71,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
       category: 'Deep Silence',
       floor: 2,
       isAvailable: true,
-      color: Color(0xFF235347),
+      color: Color(0xFF10B981),
     ),
   ];
 
@@ -80,7 +80,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
     final isDark = AppColors.isDark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF051F20) : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -114,18 +114,18 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+              color: isDark ? const Color(0xFF1F1714) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.full),
-              border: Border.all(color: const Color(0xFF8EB69B)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.6)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF163832)),
+                Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   '3 FLOORS',
-                  style: AppText.overline(10, color: const Color(0xFF163832)),
+                  style: AppText.overline(10, color: AppColors.primary),
                 ),
               ],
             ),
@@ -148,7 +148,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFE56A2B), Color(0xFFD99246)],
+                    colors: [Color(0xFFE56A2B), Color(0xFFD3A376)],
                   ),
                   borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
@@ -173,10 +173,10 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
               Container(
                 height: 240,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+                  color: isDark ? const Color(0xFF1F1714) : Colors.white,
                   borderRadius: BorderRadius.circular(AppRadii.card),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                    color: AppColors.border,
                   ),
                 ),
                 child: Stack(
@@ -195,11 +195,11 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                       width: 76,
                       height: 76,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF163832),
+                        color: isDark ? const Color(0xFF140F0D) : const Color(0xFF1E293B),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF8EB69B).withValues(alpha: 0.3),
+                            color: const Color(0xFFD3A376).withValues(alpha: 0.3),
                             blurRadius: 10,
                           ),
                         ],
@@ -207,11 +207,11 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.park_rounded, color: Color(0xFFDAF1DE), size: 20),
+                          const Icon(Icons.park_rounded, color: Color(0xFFFFE0B2), size: 20),
                           const SizedBox(height: 2),
                           Text(
                             'ATRIUM',
-                            style: AppText.overline(8.5, color: const Color(0xFFDAF1DE)),
+                            style: AppText.overline(8.5, color: const Color(0xFFFFE0B2)),
                           ),
                         ],
                       ),
@@ -242,19 +242,19 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+                        color: isDark ? const Color(0xFF1F1714) : Colors.white,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFF163832)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             _selectedSort,
-                            style: AppText.label(12, w: FontWeight.w700, color: const Color(0xFF163832)),
+                            style: AppText.label(12, w: FontWeight.w700, color: AppColors.textPrimary),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.arrow_drop_down_rounded, size: 18, color: Color(0xFF163832)),
+                          Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.textPrimary),
                         ],
                       ),
                     ),
@@ -262,10 +262,10 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+                      color: isDark ? const Color(0xFF1F1714) : Colors.white,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                        color: AppColors.border,
                       ),
                     ),
                     child: Row(
@@ -312,7 +312,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFE56A2B), Color(0xFFD99246)],
+                    colors: [Color(0xFFE56A2B), Color(0xFFD3A376)],
                   ),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                   boxShadow: [
@@ -356,12 +356,12 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
       builder: (ctx) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F332D) : Colors.white,
+            color: isDark ? const Color(0xFF1F1714) : Colors.white,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppRadii.lg + 4),
             ),
             border: Border.all(
-              color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+              color: AppColors.border,
             ),
           ),
           padding: EdgeInsets.fromLTRB(
@@ -446,7 +446,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Reserved ${seat.rowSeat} on Floor ${seat.floor}!'),
-                      backgroundColor: const Color(0xFF163832),
+                      backgroundColor: isDark ? const Color(0xFF140F0D) : const Color(0xFF1E293B),
                     ),
                   );
                 },
@@ -502,13 +502,13 @@ class _ScoutSeatTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? const Color(0xFF163832) : const Color(0xFFE4F0E8))
-              : (isDark ? const Color(0xFF0B2B26) : Colors.white),
+              ? (isDark ? const Color(0xFF4A2810) : const Color(0xFFFEF3C7))
+              : (isDark ? const Color(0xFF1F1714) : Colors.white),
           borderRadius: BorderRadius.circular(AppRadii.card),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF8EB69B)
-                : (isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6).withValues(alpha: 0.7)),
+                ? AppColors.primary
+                : AppColors.border,
             width: isSelected ? 1.8 : 1,
           ),
         ),
@@ -520,7 +520,7 @@ class _ScoutSeatTile extends StatelessWidget {
               height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF163832) : const Color(0xFF0D7EE8),
+                color: isSelected ? AppColors.primary : const Color(0xFF0D7EE8),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -587,8 +587,8 @@ class _ModalPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF163832).withValues(alpha: 0.5)
-            : const Color(0xFFF0EBE1),
+            ? const Color(0xFF241B17)
+            : AppColors.scheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -624,7 +624,7 @@ class _RadialCampusMapPainter extends CustomPainter {
     final trackPaint = Paint()
       ..color = (isDark
           ? Colors.white.withValues(alpha: 0.12)
-          : const Color(0xFFD8C9B6).withValues(alpha: 0.5))
+          : const Color(0xFFCBD5E1))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -643,7 +643,7 @@ class _RadialCampusMapPainter extends CustomPainter {
       const Color(0xFF0D7EE8), // Sector 01: Glass Pods (Cyan)
       const Color(0xFFE56A2B), // Sector 02: Design Studio (Tangerine)
       const Color(0xFFD4A017), // Sector 03: Knowledge Line (Gold)
-      const Color(0xFF235347), // Sector 04: Startup Lab (Emerald)
+      const Color(0xFF10B981), // Sector 04: Startup Lab (Emerald)
     ];
 
     const double arcGap = 0.18; // gap between sector arcs in radians
@@ -719,7 +719,7 @@ class _RadialCampusMapPainter extends CustomPainter {
       final isSeatAvailable = j % 2 == 0;
 
       nodeFillPaint.color = isSeatAvailable
-          ? const Color(0xFF8EB69B)
+          ? const Color(0xFFD3A376)
           : (isDark ? Colors.white12 : Colors.black12);
       canvas.drawCircle(pos, 3.5, nodeFillPaint);
     }

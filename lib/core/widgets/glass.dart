@@ -222,8 +222,22 @@ class _NaturePainter extends CustomPainter {
     _foregroundHills(canvas, w, h);
 
     // 4. Foreground framing pine silhouettes
-    _pineTree(canvas, w * 0.10, h * 0.88, h * 0.12, dark ? const Color(0xFF021011) : const Color(0xFF0F2622));
-    _pineTree(canvas, w * 0.88, h * 0.86, h * 0.14, dark ? const Color(0xFF031415) : const Color(0xFF163832));
+    _pineTree(
+      canvas,
+      w * 0.10,
+      h * 0.88,
+      h * 0.12,
+      (dark ? const Color(0xFF160F0C) : const Color(0xFF64748B))
+          .withValues(alpha: dark ? 0.28 : 0.15),
+    );
+    _pineTree(
+      canvas,
+      w * 0.88,
+      h * 0.86,
+      h * 0.14,
+      (dark ? const Color(0xFF160F0C) : const Color(0xFF64748B))
+          .withValues(alpha: dark ? 0.28 : 0.15),
+    );
 
     // 5. Subtle bottom depth scrim
     final foot = Rect.fromLTWH(0, h * 0.80, w, h * 0.20);
@@ -234,10 +248,10 @@ class _NaturePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            (dark ? const Color(0xFF031415) : const Color(0xFFE2D7C8))
+            (dark ? const Color(0xFF160F0C) : const Color(0xFFF1F5F9))
                 .withValues(alpha: 0),
-            (dark ? const Color(0xFF031415) : const Color(0xFFE2D7C8))
-                .withValues(alpha: dark ? 0.65 : 0.35),
+            (dark ? const Color(0xFF160F0C) : const Color(0xFFF1F5F9))
+                .withValues(alpha: dark ? 0.65 : 0.45),
           ],
         ).createShader(foot),
     );
@@ -253,9 +267,9 @@ class _NaturePainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFFDEFD9).withValues(alpha: 0.75),
-            const Color(0xFFFBE4C8).withValues(alpha: 0.28),
-            const Color(0xFFFBE4C8).withValues(alpha: 0),
+            const Color(0xFFFEF3C7).withValues(alpha: 0.45),
+            const Color(0xFFE0F2FE).withValues(alpha: 0.20),
+            const Color(0xFFE0F2FE).withValues(alpha: 0),
           ],
           stops: const [0, 0.45, 1],
         ).createShader(Rect.fromCircle(center: c, radius: glowR)),
@@ -264,7 +278,7 @@ class _NaturePainter extends CustomPainter {
     canvas.drawCircle(
       c,
       w * 0.068,
-      Paint()..color = const Color(0xFFFFF7EB).withValues(alpha: 0.95),
+      Paint()..color = const Color(0xFFFFFBEB).withValues(alpha: 0.85),
     );
   }
 
@@ -277,8 +291,8 @@ class _NaturePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF163832).withValues(alpha: 0),
-            const Color(0xFF163832).withValues(alpha: 0.22),
+            const Color(0xFF3E2522).withValues(alpha: 0),
+            const Color(0xFF3E2522).withValues(alpha: 0.22),
           ],
         ).createShader(glow),
     );
@@ -295,7 +309,7 @@ class _NaturePainter extends CustomPainter {
       final y = next() * h * 0.58;
       final fade = 1 - (y / (h * 0.58)) * 0.5;
       final r = 0.5 + next() * 1.0;
-      starPaint.color = const Color(0xFFDAF1DE)
+      starPaint.color = const Color(0xFFFFE0B2)
           .withValues(alpha: (0.35 + next() * 0.55) * fade);
       canvas.drawCircle(Offset(x, y), r, starPaint);
     }
@@ -325,8 +339,8 @@ class _NaturePainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF8EB69B).withValues(alpha: 0.20),
-            const Color(0xFF8EB69B).withValues(alpha: 0),
+            const Color(0xFFD3A376).withValues(alpha: 0.20),
+            const Color(0xFFD3A376).withValues(alpha: 0),
           ],
         ).createShader(Rect.fromCircle(center: mc, radius: haloR)),
     );
@@ -340,7 +354,7 @@ class _NaturePainter extends CustomPainter {
   }
 
   void _mountains(Canvas canvas, double w, double h) {
-    final backColor = dark ? const Color(0xFF0C2422) : const Color(0xFFD6E3D8);
+    final backColor = dark ? const Color(0xFF1F1714) : const Color(0xFFE2E8F0);
     final backPath = Path()
       ..moveTo(0, h * 0.69)
       ..cubicTo(w * 0.22, h * 0.63, w * 0.38, h * 0.66, w * 0.58, h * 0.61)
@@ -350,7 +364,7 @@ class _NaturePainter extends CustomPainter {
       ..close();
     canvas.drawPath(backPath, Paint()..color = backColor);
 
-    final midColor = dark ? const Color(0xFF081E1C) : const Color(0xFFBFD2C3);
+    final midColor = dark ? const Color(0xFF160F0C) : const Color(0xFFCBD5E1);
     final midPath = Path()
       ..moveTo(0, h * 0.73)
       ..cubicTo(w * 0.18, h * 0.68, w * 0.35, h * 0.74, w * 0.52, h * 0.69)
@@ -362,7 +376,9 @@ class _NaturePainter extends CustomPainter {
   }
 
   void _pineTreeline(Canvas canvas, double w, double h) {
-    final treelineColor = dark ? const Color(0xFF051716) : const Color(0xFFA5BDAA);
+    final treelineColor = dark
+        ? const Color(0xFF120C0A)
+        : const Color(0xFF94A3B8).withValues(alpha: 0.45);
     final ridgePath = Path()
       ..moveTo(0, h * 0.78)
       ..cubicTo(w * 0.3, h * 0.75, w * 0.65, h * 0.79, w, h * 0.76)
@@ -381,7 +397,9 @@ class _NaturePainter extends CustomPainter {
   }
 
   void _foregroundHills(Canvas canvas, double w, double h) {
-    final hillColor = dark ? const Color(0xFF031011) : const Color(0xFF8EB69B).withValues(alpha: 0.65);
+    final hillColor = dark
+        ? const Color(0xFF0D0A08)
+        : const Color(0xFFCBD5E1).withValues(alpha: 0.35);
     final hillPath = Path()
       ..moveTo(0, h * 0.84)
       ..cubicTo(w * 0.35, h * 0.81, w * 0.70, h * 0.86, w, h * 0.83)

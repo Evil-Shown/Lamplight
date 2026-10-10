@@ -79,9 +79,7 @@ class _ReadingJournalScreenState extends State<ReadingJournalScreen> {
                 top: Radius.circular(AppRadii.xl),
               ),
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF163832)
-                    : const Color(0xFFD8C9B6).withValues(alpha: 0.6),
+                color: AppColors.border,
               ),
             ),
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -258,9 +256,7 @@ class _ReadingJournalScreenState extends State<ReadingJournalScreen> {
                           border: Border.all(
                             color: _selectedFilter == f
                                 ? Colors.transparent
-                                : (isDark
-                                    ? const Color(0xFF163832)
-                                    : const Color(0xFFD8C9B6)),
+                                : AppColors.border,
                           ),
                         ),
                         child: Text(
@@ -527,9 +523,7 @@ class _RowboatProgressBar extends StatelessWidget {
         color: isDark ? const Color(0xFF0B2B26) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF163832)
-              : const Color(0xFFD8C9B6).withValues(alpha: 0.6),
+          color: AppColors.border,
         ),
         boxShadow: [
           BoxShadow(
@@ -626,9 +620,7 @@ class _JournalCard extends StatelessWidget {
         color: isDark ? const Color(0xFF0B2B26) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF163832)
-              : const Color(0xFFD8C9B6).withValues(alpha: 0.6),
+          color: AppColors.border,
         ),
         boxShadow: [
           BoxShadow(
