@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/feedback/app_feedback.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 
 /// Zen Focus & Study Sanctuary screen inspired by Image 1 (Ekko and the Firefly canyon).
@@ -105,7 +104,6 @@ class _FocusSanctuaryScreenState extends State<FocusSanctuaryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark;
     final progress = 1.0 -
         (_secondsRemaining / (_selectedDurationMinutes * 60).clamp(1, 999999));
 

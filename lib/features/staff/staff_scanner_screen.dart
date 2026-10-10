@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
@@ -20,7 +21,10 @@ const Color _frameColor = Colors.white;
 /// (torch + the manual-code escape hatch). Every scanned or typed code is
 /// verified against Firestore before the result screen is shown.
 class StaffScannerScreen extends StatefulWidget {
-  const StaffScannerScreen({super.key});
+  const StaffScannerScreen({super.key, this.embedded = false});
+
+  /// True when shown as a shell tab (no back button); false when pushed.
+  final bool embedded;
 
   @override
   State<StaffScannerScreen> createState() => _StaffScannerScreenState();
@@ -36,7 +40,15 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
   final _manualController = TextEditingController();
   MobileScannerController? _camera;
   bool _handling = false;
-  bool get _cameraSupported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  String? _error;
+  bool get _cameraSupported =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_cameraSupported) _camera = MobileScannerController();
+  }
 
   @override
   void dispose() {
@@ -51,11 +63,33 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
     _handling = true;
     if (mounted) setState(() {});
     FocusScope.of(context).unfocus();
+    setState(() => _error = null);
     Map<String, dynamic>? result;
     try {
-      result = await FirestoreService.instance.verifyCode(code);
+      result = await FirestoreService.instance.verifyCodeStrict(code);
+    } on QrVerifyException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _handling = false;
+        _error = switch (e.failure) {
+          QrVerifyFailure.network =>
+            "You're offline. Check the connection and scan again.",
+          QrVerifyFailure.permissionDenied =>
+            "This account can't verify passes.",
+          QrVerifyFailure.other =>
+            'Could not verify this pass. Try again in a moment.',
+        };
+      });
+      AppFeedback.error();
+      return;
     } catch (_) {
-      // Treated like an unrecognised code; the result screen says so.
+      if (!mounted) return;
+      setState(() {
+        _handling = false;
+        _error = 'Could not verify this pass. Try again in a moment.';
+      });
+      AppFeedback.error();
+      return;
     }
     if (!mounted) return;
     AppRoute.push(
@@ -81,20 +115,19 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
 
     return AppScaffold(
       title: 'Staff QR Scanner',
+      showBack: !widget.embedded,
       contentUnderBar: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
           // Full-bleed camera, over a dark plate for the fallback.
           ColoredBox(color: AppColors.textPrimary),
-          if (_cameraSupported)
+          if (_camera != null)
             MobileScanner(
-              controller: _camera ??= MobileScannerController(),
+              controller: _camera,
               errorBuilder: (context, error) => const _CameraFallback(),
               onDetect: (capture) {
-                final code = capture.barcodes
-                    .map((b) => b.rawValue)
-                    .firstWhere(
+                final code = capture.barcodes.map((b) => b.rawValue).firstWhere(
                       (v) => v != null && v.trim().isNotEmpty,
                       orElse: () => null,
                     );
@@ -202,12 +235,20 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
                               ),
                             ),
                           ),
-                          if (_cameraSupported) ...[
+                          if (_camera != null) ...[
                             const SizedBox(width: AppSpacing.md),
                             _TorchButton(controller: _camera),
                           ],
                         ],
                       ),
+                      if (_error != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Callout(
+                          tone: CalloutTone.danger,
+                          icon: Icons.error_outline_rounded,
+                          message: _error!,
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.md),
                       PrimaryButton(
                         label: 'Verify Entered Code',
@@ -248,12 +289,13 @@ class _TorchButtonState extends State<_TorchButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.controller == null) return const SizedBox.shrink();
     return Tooltip(
       message: _on ? 'Turn torch off' : 'Turn torch on',
       child: PressScale(
         feedback: PressFeedback.toggle,
         onTap: () {
-          widget.controller?.toggleTorch();
+          widget.controller!.toggleTorch();
           setState(() => _on = !_on);
         },
         child: Container(
@@ -339,14 +381,9 @@ class _ViewfinderFrame extends StatelessWidget {
       height: 240,
       child: Stack(
         children: [
+          corner(left: 0, top: 0, border: const Border(top: side, left: side)),
           corner(
-              left: 0,
-              top: 0,
-              border: const Border(top: side, left: side)),
-          corner(
-              right: 0,
-              top: 0,
-              border: const Border(top: side, right: side)),
+              right: 0, top: 0, border: const Border(top: side, right: side)),
           corner(
               left: 0,
               bottom: 0,

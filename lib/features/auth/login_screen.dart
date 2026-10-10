@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -92,9 +91,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleEmailAuth() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
     final fullName = _fullNameController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text;
 
     setState(() {
       _emailError = null;
@@ -195,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final notice = state.roleNotice;
     if (notice != null) {
       messenger.showSnackBar(SnackBar(content: Text(notice)));
-    } else if (_role == UserRole.staff && state.role != UserRole.staff) {
+    } else if (_role == UserRole.staff && !state.isStaff) {
       messenger.showSnackBar(const SnackBar(
         content: Text('Signed in as a student. This account is not on the '
             'library staff list.'),
@@ -255,14 +254,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
     if (email == null || !mounted) return;
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      await AppScope.read(context).sendPasswordReset(email);
       if (mounted) {
         _showSnackBar('If an account exists for $email, a reset link is on '
             'its way.');
       }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) _showSnackBar(AuthFailure.fromAuth(e).message);
     } catch (_) {
+      // Neutral on purpose: do not reveal whether the account exists.
       if (mounted) {
         _showSnackBar("Couldn't send a reset link right now. Try again later.");
       }

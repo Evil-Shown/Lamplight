@@ -406,19 +406,19 @@ class _HomeGreeting extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD3A376).withValues(alpha: 0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                   border: Border.all(
-                    color: const Color(0xFFD3A376).withValues(alpha: 0.35),
+                    color: AppColors.primary.withValues(alpha: 0.35),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.electric_bolt_rounded,
                       size: 13,
-                      color: Color(0xFFD3A376),
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -429,7 +429,7 @@ class _HomeGreeting extends StatelessWidget {
                         style: AppText.label(
                           11,
                           w: FontWeight.w700,
-                          color: const Color(0xFFD3A376),
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -1045,16 +1045,16 @@ class _GoalCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF241B17) : const Color(0xFF1E293B),
+            color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
               color: isDark
-                  ? const Color(0xFFE0A050).withValues(alpha: 0.3)
+                  ? const Color(0xFF334155).withValues(alpha: 0.8)
                   : const Color(0xFFE2E8F0).withValues(alpha: 0.25),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -1069,13 +1069,13 @@ class _GoalCard extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD3A376).withValues(alpha: 0.22),
+                      color: AppColors.primary.withValues(alpha: 0.20),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.adjust_rounded,
                       size: 22,
-                      color: Color(0xFFFFE0B2),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -1088,7 +1088,7 @@ class _GoalCard extends StatelessWidget {
                           style: AppText.overline(
                             11,
                             ls: 1.0,
-                            color: const Color(0xFFD3A376),
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1106,10 +1106,10 @@ class _GoalCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD3A376).withValues(alpha: 0.22),
+                      color: Colors.white.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                       border: Border.all(
-                        color: const Color(0xFFD3A376).withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.20),
                       ),
                     ),
                     child: Row(
@@ -1122,7 +1122,7 @@ class _GoalCard extends StatelessWidget {
                           style: AppText.label(
                             11,
                             w: FontWeight.w800,
-                            color: const Color(0xFFFFAA2A),
+                            color: const Color(0xFFFBBF24),
                           ),
                         ),
                       ],
@@ -1141,7 +1141,7 @@ class _GoalCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppText.body(
                         12,
-                        color: const Color(0xFFFFE0B2).withValues(alpha: 0.8),
+                        color: const Color(0xFFCBD5E1),
                       ),
                     ),
                   ),
@@ -1151,7 +1151,7 @@ class _GoalCard extends StatelessWidget {
                     style: AppText.label(
                       12,
                       w: FontWeight.w700,
-                      color: const Color(0xFFFFE0B2),
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -1164,8 +1164,8 @@ class _GoalCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     backgroundColor: Colors.white.withValues(alpha: 0.18),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFFD3A376),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
                     ),
                   ),
                 ),
@@ -1198,7 +1198,7 @@ class _QuickCategories extends StatelessWidget {
                 label: 'Read',
                 tint: AppColors.primary,
                 bgTint: AppColors.isDark
-                    ? const Color(0xFF4A2810)
+                    ? const Color(0xFF451A03)
                     : const Color(0xFFFEF3C7),
                 onTap: () => AppShell.switchTab(context, AppTab.books),
               ),
@@ -1282,7 +1282,7 @@ class _CategoryPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1F1714) : Colors.white,
+            color: isDark ? const Color(0xFF111827) : Colors.white,
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
               color: AppColors.border,
@@ -1308,7 +1308,7 @@ class _CategoryPill extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 22,
-                  color: isDark ? const Color(0xFFD3A376) : tint,
+                  color: tint,
                 ),
               ),
               const SizedBox(height: 8),

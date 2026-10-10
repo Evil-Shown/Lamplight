@@ -2,9 +2,9 @@ rules_version = '2';
 
 // Lamplight (SLIIT Quick Book) Firestore rules.
 //
-// Roles come from the Firebase Auth custom claim `role` ('staff' | 'student'),
-// assigned server-side by the `claimRole` Cloud Function from the allowlist in
-// config/staffAllowlist. Clients can never write the role.
+// Roles come from the Firebase Auth custom claim `role` ('admin' | 'staff' | 'student'),
+// assigned server-side by the `claimRole` Cloud Function from the allow-lists in
+// config/adminAllowlist and config/staffAllowlist. Clients can never write the role.
 //
 // Anything that crosses users (waitlist promotion, copy accounting, no-show
 // release, QR consumption, fines, reminders) is done by Cloud Functions with
@@ -24,7 +24,11 @@ service cloud.firestore {
 
     // `.get` keeps this safe (false, not an error) when the claim is missing.
     function isStaff() {
-      return isSignedIn() && request.auth.token.get('role', '') == 'staff';
+      return isSignedIn() && request.auth.token.get('role', '') in ['staff', 'admin'];
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.get('role', '') == 'admin';
     }
 
     // Every status the app knows about (lib/models ReservationStatus + the
@@ -49,10 +53,24 @@ service cloud.firestore {
 
     // ------------------------------------------------------------------ config
 
-    // Only the fine/loan policy is visible to clients. config/staffAllowlist
-    // and every other config doc fall through to the default deny below.
+    // The fine/loan policy is visible to every signed-in user. The staff
+    // allow-list is admin-only; the admin allow-list is admin-read and
+    // server-write only. Other config docs fall through to the default deny.
     match /config/library {
       allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /config/staffAllowlist {
+      allow read: if isAdmin();
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['emails'])
+        && request.resource.data.emails is list
+        && request.resource.data.emails.size() <= 200;
+    }
+
+    match /config/adminAllowlist {
+      allow read: if isAdmin();
       allow write: if false;
     }
 
@@ -70,13 +88,13 @@ service cloud.firestore {
       allow create, delete: if false;
 
       allow update: if isStaff()
-        || (isSignedIn() && seatBookingTransition());
+        || (isSignedIn() && seatBookingTransition(seatId));
     }
 
     // A student may only (a) take an available/limited seat that is not held
     // for somebody else, marking themselves as holder, or (b) release the seat
     // they hold. `heldFor` / `heldUntil` are server-managed (waitlist holds).
-    function seatBookingTransition() {
+    function seatBookingTransition(seatId) {
       let after = request.resource.data;
       let before = resource.data;
       return changed(['status', 'heldBy', 'bookingId'])
@@ -86,6 +104,8 @@ service cloud.firestore {
             && after.status == 'occupied'
             && after.heldBy == request.auth.uid
             && after.bookingId is string
+            && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/bookings/$(after.bookingId)).data.seatId
+                 == seatId
             && before.get('heldBy', null) == null
             && before.get('heldFor', request.auth.uid) == request.auth.uid)
           ||
@@ -178,6 +198,7 @@ service cloud.firestore {
           && request.resource.data.get('checkedInAt', null) == null
           && request.resource.data.startTime is timestamp
           && request.resource.data.endTime is timestamp
+          && request.resource.data.startTime >= request.time - duration.value(10, 'm')
           && request.resource.data.endTime > request.resource.data.startTime;
 
         // Owner: cancel an open booking, or complete (early checkout) one that

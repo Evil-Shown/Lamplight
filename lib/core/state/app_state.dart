@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
 
 import '../../data/book_search.dart';
@@ -21,6 +23,31 @@ import 'test_env.dart';
 export '../../data/book_search.dart' show BookPage, BookSort;
 export 'sync_status.dart' show DataSource, SyncError, SyncStatus;
 
+/// Why a seat booking did not go through.
+enum SeatBookFailure { taken, failed }
+
+/// Outcome of [AppState.reserveSeat]: a booking, or the reason it failed.
+class SeatBookResult {
+  const SeatBookResult.success(SeatBooking this.booking) : failure = null;
+  const SeatBookResult.failure(SeatBookFailure this.failure) : booking = null;
+  final SeatBooking? booking;
+  final SeatBookFailure? failure;
+}
+
+/// Outcome of [AppState.endSeatSession]. [message] is user-ready on failure.
+class EndSessionResult {
+  const EndSessionResult.success({this.alreadyEnded = false})
+      : ok = true,
+        message = null;
+  const EndSessionResult.failure(String this.message)
+      : ok = false,
+        alreadyEnded = false;
+
+  final bool ok;
+  final bool alreadyEnded;
+  final String? message;
+}
+
 /// Single source of truth for everything the app shows across screens.
 /// Backed by Firebase Auth + Cloud Firestore: the catalog, seat map and every
 /// user collection stream in real time, and writes below are persisted
@@ -37,11 +64,13 @@ class AppState extends ChangeNotifier {
       s.cancel();
     }
     _subscriptions.clear();
+    _authSub?.cancel();
     super.dispose();
   }
 
   final FirestoreService _service = FirestoreService.instance;
   final List<StreamSubscription> _subscriptions = [];
+  StreamSubscription<User?>? _authSub;
 
   UserProfile? _profile;
   List<Book> _books = mockDataAllowed ? MockData.books : [];
@@ -163,7 +192,9 @@ class AppState extends ChangeNotifier {
   /// Privileges come from the server-issued token claim, never from the
   /// role pills on the sign-in screen.
   UserRole get role => _profile?.role ?? UserRole.student;
-  bool get isStaff => _profile?.role == UserRole.staff;
+  bool get isStaff =>
+      _profile?.role == UserRole.staff || _profile?.role == UserRole.admin;
+  bool get isAdmin => _profile?.role == UserRole.admin;
 
   /// Set when the role claim could not be verified at sign-in (the user was
   /// signed in as a student). Show it once, then call [clearRoleNotice].
@@ -205,14 +236,20 @@ class AppState extends ChangeNotifier {
   /// Books waiting for collection, newest deadline first.
   List<BookReservation> get activeReservations => _uniqueReservations(
         _reservations
-            .where((r) => r.status != ReservationStatus.cancelled)
+            .where((r) =>
+                r.status != ReservationStatus.cancelled &&
+                r.status != ReservationStatus.completed)
             .toList()
           ..sort((a, b) => a.pickupBy.compareTo(b.pickupBy)),
         (reservation) => reservation.book.id,
       );
 
+  /// Collected or cancelled holds (the server's `expired` / `noShow` map to
+  /// cancelled when read).
   List<BookReservation> get reservationHistory => _reservations
-      .where((r) => r.status == ReservationStatus.cancelled)
+      .where((r) =>
+          r.status == ReservationStatus.cancelled ||
+          r.status == ReservationStatus.completed)
       .toList();
 
   SeatBooking? get todayBooking {
@@ -227,6 +264,7 @@ class AppState extends ChangeNotifier {
 
   /// Populates sample seats if the inventory is empty.
   void seedSampleSeats() {
+    if (!mockDataAllowed) return;
     _seats = MockData.seats;
     _demoFallbackActive = true;
     _hydrated = true;
@@ -305,13 +343,16 @@ class AppState extends ChangeNotifier {
     required UserRole role,
     String? studentId,
   }) =>
-      _completeSignIn(_service.signUpWithEmail(
-        email: email,
-        password: password,
-        fullName: fullName,
-        role: role,
-        studentId: studentId,
-      ));
+      _completeSignIn(
+        _service.signUpWithEmail(
+          email: email,
+          password: password,
+          fullName: fullName,
+          role: role,
+          studentId: studentId,
+        ),
+        signUp: true,
+      );
 
   Future<void> signInWithEmail({
     required String email,
@@ -324,12 +365,22 @@ class AppState extends ChangeNotifier {
         role: role,
       ));
 
-  Future<void> _completeSignIn(Future<UserProfile> pending) async {
+  Future<void> _completeSignIn(Future<UserProfile> pending,
+      {bool signUp = false}) async {
     final p = await pending; // throws AuthFailure on error
     _profile = p;
     _roleNotice = _service.roleNotice;
+    if (signUp && _service.signUpNotice != null) {
+      _roleNotice = _roleNotice == null
+          ? _service.signUpNotice
+          : '${_service.signUpNotice} $_roleNotice';
+    }
     _afterProfileSet();
   }
+
+  /// Sends a password-reset email; throws on failure.
+  Future<void> sendPasswordReset(String email) =>
+      _service.sendPasswordReset(email);
 
   /// Restores the Firebase session on cold start.
   Future<void> restoreSession() async {
@@ -353,16 +404,33 @@ class AppState extends ChangeNotifier {
     _queue = mockOnly && mockDataAllowed ? MockData.buildQueue() : [];
     if (mockOnly && !isRunningInTest) _hydrated = true;
     _startListeners();
+    _watchAuth();
     notifyListeners();
     unawaited(NotificationService.instance.init().then((_) {
       _rescheduleReminders();
     }));
   }
 
+  /// Clears local state if Firebase drops the session behind our back
+  /// (token revoked, account deleted elsewhere). Does nothing without Firebase.
+  void _watchAuth() {
+    if (_authSub != null || !_service.isReady || !_isLive) return;
+    _authSub = _service.authStateChanges().listen((user) {
+      if (user == null && _profile != null) {
+        unawaited(_clearLocal().then((_) => notifyListeners()));
+      }
+    }, onError: (_) {});
+  }
+
+  bool get _isLive => _service.isReady && !isRunningInTest;
+
   Future<void> signOut() async {
-    await _service.signOut();
-    await _clearLocal();
-    notifyListeners();
+    try {
+      await _service.signOut();
+    } finally {
+      await _clearLocal();
+      notifyListeners();
+    }
   }
 
   Future<void> _clearLocal() async {
@@ -392,6 +460,8 @@ class AppState extends ChangeNotifier {
     _lastSyncedAt = null;
     _hydrated = false;
     _roleNotice = null;
+    _demoFallbackActive = false;
+    _preferences = const NotificationPreferences();
     _profile = null;
     unawaited(NotificationService.instance.syncReminders(const []));
   }
@@ -500,7 +570,7 @@ class AppState extends ChangeNotifier {
     _listen('waitlist', _service.userWaitlistSnapshot());
     _listen('loans', _service.userLoansSnapshot());
 
-    if (_profile?.role == UserRole.staff) {
+    if (isStaff) {
       _listen('queue', _service.queueSnapshot());
       _listen('allReservations', _service.allReservationsSnapshot());
       _listen('allBookings', _service.allBookingsSnapshot());
@@ -517,7 +587,7 @@ class AppState extends ChangeNotifier {
     switch (key) {
       case 'books':
         final live = [for (final d in snap.docs) _service.bookFromDocPublic(d)];
-        if (live.isEmpty) {
+        if (live.isEmpty && mockDataAllowed) {
           _demoFallbackActive = true;
           _books = MockData.books;
         } else {
@@ -527,7 +597,7 @@ class AppState extends ChangeNotifier {
         _rejoin();
       case 'seats':
         final live = [for (final d in snap.docs) _service.seatFromDocPublic(d)];
-        if (live.isEmpty) {
+        if (live.isEmpty && mockDataAllowed) {
           _demoFallbackActive = true;
           _seats = MockData.seats;
         } else {
@@ -700,31 +770,55 @@ class AppState extends ChangeNotifier {
 
   // ------------------------------------------------------------ reservations
 
-  BookReservation? reserveBook(Book book) {
-    if (_reservations.any((reservation) =>
-        reservation.book.id == book.id &&
-        reservation.status != ReservationStatus.cancelled)) {
-      return null;
-    }
+  /// Random base32 suffix (no look-alike characters) for unique ids.
+  static String _randomSuffix([int length = 6]) {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rng = Random.secure();
+    return String.fromCharCodes([
+      for (var i = 0; i < length; i++)
+        alphabet.codeUnitAt(rng.nextInt(alphabet.length)),
+    ]);
+  }
+
+  /// True when the user already holds an open reservation for the book.
+  bool hasOpenReservation(String bookId) => _reservations.any((r) =>
+      r.book.id == bookId &&
+      r.status != ReservationStatus.cancelled &&
+      r.status != ReservationStatus.completed);
+
+  /// Reserves a book. Returns null when the user already holds it or the
+  /// write failed (the optimistic entry is rolled back then).
+  Future<BookReservation?> reserveBook(Book book) async {
+    if (hasOpenReservation(book.id)) return null;
 
     final now = DateTime.now();
-    final index = 100 + _reservations.length;
+    final suffix = _randomSuffix();
     final reservation = BookReservation(
-      id: 'BR-2026-$index',
+      id: 'BR-2026-$suffix',
       book: book,
       reservedAt: now,
       pickupBy: now.add(const Duration(days: 7)),
       pickupLocation: 'Main Library',
-      qrCode: 'LIB-BR-2026-$index',
+      qrCode: 'LIB-BR-2026-$suffix',
       status: ReservationStatus.ready,
     );
     _reservations.insert(0, reservation);
+    notifyListeners();
+    try {
+      // Offline writes queue and never ack, so a timeout keeps the entry.
+      await _service
+          .addReservation(reservation)
+          .timeout(const Duration(seconds: 10), onTimeout: () {});
+    } catch (e) {
+      _reservations.removeWhere((r) => r.id == reservation.id);
+      _recordWriteError(e);
+      return null;
+    }
     _notify(BannerToneKind.success, 'Book Reservation Confirmed',
         '${book.title} has been reserved successfully.',
         icon: Icons.check_circle_outline_rounded,
         type: NotificationType.reservation,
         targetId: reservation.id);
-    _bg(_service.addReservation(reservation));
     notifyListeners();
     _rescheduleReminders();
     return reservation;
@@ -768,40 +862,63 @@ class AppState extends ChangeNotifier {
     ));
   }
 
-  /// Returns null when the seat was just taken by someone else.
-  SeatBooking? reserveSeat(
+  /// Books a seat. The optimistic entry is rolled back and a failure
+  /// returned when the seat was just taken or the write was rejected; only a
+  /// genuine offline error keeps it.
+  Future<SeatBookResult> reserveSeat(
     Seat seat, {
     DateTime? start,
     DateTime? end,
-  }) {
+  }) async {
     final current = _seats.where((s) => s.id == seat.id).firstOrNull;
     if (current != null && _seatStatus[current.id] == SeatStatus.occupied) {
-      return null;
+      return const SeatBookResult.failure(SeatBookFailure.taken);
     }
     final now = DateTime.now();
     final startTime = start ?? DateTime(now.year, now.month, now.day, 14);
     final endTime = end ?? DateTime(now.year, now.month, now.day, 17);
+    final suffix = _randomSuffix();
     final booking = SeatBooking(
-      id: 'LIB-2026-${4851 + _bookings.length}',
+      id: 'LIB-2026-$suffix',
       seat: seat,
       date: DateTime(startTime.year, startTime.month, startTime.day),
       startTime: startTime,
       endTime: endTime,
-      qrCode: 'LIB-2026-${4851 + _bookings.length}',
+      qrCode: 'LIB-2026-$suffix',
       status: ReservationStatus.active,
     );
     _bookings.insert(0, booking);
     _seatStatus[seat.id] = SeatStatus.occupied;
+    notifyListeners();
+
+    // Atomic on the server: a losing racer gets false, not a ghost booking.
+    var ok = false;
+    Object? error;
+    try {
+      ok = await _service
+          .addBooking(booking, SeatStatus.occupied)
+          .timeout(const Duration(seconds: 15), onTimeout: () => true);
+    } catch (e) {
+      error = e;
+    }
+    if (!ok) {
+      _bookings.removeWhere((b) => b.id == booking.id);
+      if (error != null) {
+        _seatStatus.remove(seat.id);
+        _recordWriteError(error);
+      }
+      notifyListeners();
+      return SeatBookResult.failure(
+          error == null ? SeatBookFailure.taken : SeatBookFailure.failed);
+    }
     _notify(BannerToneKind.success, 'Seat Reservation Confirmed',
         'Seat ${seat.label} is reserved for today.',
         icon: Icons.event_seat_rounded,
         type: NotificationType.booking,
         targetId: booking.id);
-    // Atomic on the server: a losing racer gets reverted by the snapshot.
-    _bg(_service.addBooking(booking, SeatStatus.occupied));
     notifyListeners();
     _rescheduleReminders();
-    return booking;
+    return SeatBookResult.success(booking);
   }
 
   void cancelSeatBooking(String id) {
@@ -823,6 +940,43 @@ class AppState extends ChangeNotifier {
       resourceSubtitle: 'Floor ${booking.seat.floor} – '
           '${booking.seat.section}',
     ));
+  }
+
+  /// Ends a checked-in seat session through the `endSeatSession` callable.
+  /// Pass [ownerUid] when staff end another student's session. On success the
+  /// booking is dropped from local state and the seat shows as free.
+  Future<EndSessionResult> endSeatSession(SeatBooking booking,
+      {String? ownerUid}) async {
+    final isOwn = ownerUid == null || ownerUid == _service.uid;
+    if (!_service.isReady) {
+      // Demo / tests: no server, so emulate locally for the owner only.
+      if (!isOwn) {
+        return const EndSessionResult.failure(
+            "Ending another student's session needs a live connection.");
+      }
+      cancelSeatBooking(booking.id);
+      return const EndSessionResult.success();
+    }
+    try {
+      final result = await FunctionsService.instance
+          .endSeatSession(booking.id, uid: isOwn ? null : ownerUid);
+      if (isOwn) {
+        _bookings.removeWhere((b) => b.id == booking.id);
+      }
+      _seatStatus[booking.seat.id] = SeatStatus.available;
+      notifyListeners();
+      if (isOwn) _rescheduleReminders();
+      return EndSessionResult.success(alreadyEnded: result == 'alreadyEnded');
+    } on CallableFailure catch (e) {
+      if (e.code == 'not-found' || e.code == 'unimplemented') {
+        return const EndSessionResult.failure(
+            'This feature needs the latest server update.');
+      }
+      return EndSessionResult.failure(e.message);
+    } catch (_) {
+      return const EndSessionResult.failure(
+          'Could not end the session. Check the connection and try again.');
+    }
   }
 
   /// Demo/test shortcut. With a live backend, check-in happens when staff

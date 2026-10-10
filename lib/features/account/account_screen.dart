@@ -11,6 +11,7 @@ import '../../models/models.dart';
 import '../help/help_screen.dart';
 import '../loans/loans_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../staff/admin/staff_management_screen.dart';
 import '../settings/settings_screen.dart';
 
 /// The word the user must type to confirm deleting their account.
@@ -63,6 +64,7 @@ class AccountScreen extends StatelessWidget {
     final profile = state.activeProfile;
     final overdue = state.overdueLoans.length;
     final notice = state.roleNotice;
+    final staff = state.isStaff;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -95,7 +97,7 @@ class AccountScreen extends StatelessWidget {
               ),
             ],
             StaggeredEntrance(
-              child: Text('Profile',
+              child: Text(staff ? 'Account' : 'Profile',
                   style: AppText.title(30, w: FontWeight.w800, ls: -0.8)),
             ),
             const SizedBox(height: 18),
@@ -103,6 +105,9 @@ class AccountScreen extends StatelessWidget {
               index: 1,
               child: _IdentityCard(
                 profile: profile,
+                roleLabel: staff
+                    ? (state.isAdmin ? 'Administrator' : 'Library staff')
+                    : null,
                 onEdit: () => showGlassSheet<void>(
                   context,
                   builder: (_) => EditProfileSheet(profile: profile),
@@ -110,26 +115,47 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sectionGap),
-            const _MemberStats(),
-            const SizedBox(height: AppSpacing.sectionGap),
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 10),
-              child: SectionLabel('Library'),
-            ),
-            StaggeredEntrance(
-              index: 2,
-              child: SurfaceCard(
-                padding: EdgeInsets.zero,
-                child: SettingRow(
-                  label: 'My loans',
-                  icon: Icons.menu_book_outlined,
-                  value: overdue > 0 ? '$overdue overdue' : null,
-                  valueColor: overdue > 0 ? AppColors.error : null,
-                  onTap: () => AppRoute.push(context, const LoansScreen()),
+            if (!staff) ...[
+              const _MemberStats(),
+              const SizedBox(height: AppSpacing.sectionGap),
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 10),
+                child: SectionLabel('Library'),
+              ),
+              StaggeredEntrance(
+                index: 2,
+                child: SurfaceCard(
+                  padding: EdgeInsets.zero,
+                  child: SettingRow(
+                    label: 'My loans',
+                    icon: Icons.menu_book_outlined,
+                    value: overdue > 0 ? '$overdue overdue' : null,
+                    valueColor: overdue > 0 ? AppColors.error : null,
+                    onTap: () => AppRoute.push(context, const LoansScreen()),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sectionGap),
+              const SizedBox(height: AppSpacing.sectionGap),
+            ],
+            if (state.isAdmin) ...[
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 10),
+                child: SectionLabel('Administration'),
+              ),
+              StaggeredEntrance(
+                index: 2,
+                child: SurfaceCard(
+                  padding: EdgeInsets.zero,
+                  child: SettingRow(
+                    label: 'Staff management',
+                    icon: Icons.admin_panel_settings_outlined,
+                    onTap: () => AppRoute.push(
+                        context, const StaffManagementScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap),
+            ],
             const Padding(
               padding: EdgeInsets.only(left: 4, bottom: 10),
               child: SectionLabel('Privacy'),
@@ -141,23 +167,26 @@ class AccountScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SettingRow(
-                      label: 'Staff-only visibility',
-                      icon: Icons.visibility_off_outlined,
-                      switchValue: profile.reservationsVisibleToStaffOnly,
-                      onSwitchChanged: (v) => _setVisibility(context, state, v),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(66, 0, 16, 14),
-                      child: Text(
-                        'Only library staff can see your active reservations.',
-                        style: AppText.body(
-                          12.5,
-                          color: AppColors.textSecondary,
+                    if (!staff) ...[
+                      SettingRow(
+                        label: 'Staff-only visibility',
+                        icon: Icons.visibility_off_outlined,
+                        switchValue: profile.reservationsVisibleToStaffOnly,
+                        onSwitchChanged: (v) =>
+                            _setVisibility(context, state, v),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(66, 0, 16, 14),
+                        child: Text(
+                          'Only library staff can see your active reservations.',
+                          style: AppText.body(
+                            12.5,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
-                    ),
-                    const Divider(height: 1, indent: 66, endIndent: 16),
+                      const Divider(height: 1, indent: 66, endIndent: 16),
+                    ],
                     SettingRow(
                       label: 'Download my data',
                       icon: Icons.download_rounded,
@@ -166,13 +195,15 @@ class AccountScreen extends StatelessWidget {
                         builder: (_) => const ExportDataSheet(),
                       ),
                     ),
-                    const Divider(height: 1, indent: 66, endIndent: 16),
-                    SettingRow(
-                      label: 'Delete my account',
-                      icon: Icons.delete_outline_rounded,
-                      valueColor: AppColors.error,
-                      onTap: () => _deleteAccount(context, state),
-                    ),
+                    if (!staff) ...[
+                      const Divider(height: 1, indent: 66, endIndent: 16),
+                      SettingRow(
+                        label: 'Delete my account',
+                        icon: Icons.delete_outline_rounded,
+                        valueColor: AppColors.error,
+                        onTap: () => _deleteAccount(context, state),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -259,9 +290,11 @@ String deleteFailureMessage(Object error) {
 }
 
 class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({required this.profile, required this.onEdit});
+  const _IdentityCard(
+      {required this.profile, required this.onEdit, this.roleLabel});
 
   final UserProfile profile;
+  final String? roleLabel;
   final VoidCallback onEdit;
 
   @override
@@ -286,6 +319,17 @@ class _IdentityCard extends StatelessWidget {
                     w: FontWeight.w700,
                   ),
                 ),
+                if (roleLabel != null) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: StatusPill(
+                      label: roleLabel!,
+                      color: AppColors.primary,
+                      compact: true,
+                    ),
+                  ),
+                ],
                 if (profile.studentId.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(

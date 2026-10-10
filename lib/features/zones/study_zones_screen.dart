@@ -134,7 +134,7 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
                       decoration: BoxDecoration(
                         color: _selectedVibe == vibe
                             ? AppColors.primary
-                            : (isDark ? const Color(0xFF1F1714) : Colors.white),
+                            : (isDark ? const Color(0xFF111827) : Colors.white),
                         borderRadius: BorderRadius.circular(AppRadii.full),
                         border: Border.all(
                           color: _selectedVibe == vibe
@@ -147,9 +147,7 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
                         style: AppText.label(
                           12,
                           w: FontWeight.w700,
-                          color: _selectedVibe == vibe
-                              ? (isDark ? const Color(0xFF140F0D) : Colors.white)
-                              : AppColors.textPrimary,
+                          color: _selectedVibe == vibe ? (isDark ? const Color(0xFF0F172A) : Colors.white) : AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -211,7 +209,7 @@ class _ZoneCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F1714) : Colors.white,
+        color: isDark ? const Color(0xFF111827) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
           color: AppColors.border,
@@ -416,3 +414,4 @@ class _ZoneCard extends StatelessWidget {
     );
   }
 }
+

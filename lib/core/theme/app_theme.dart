@@ -79,39 +79,39 @@ class AppColors {
     surfaceBright: Color(0xFFFFFFFF),
   );
 
-  /// Lamplight by night: deep espresso surfaces, glowing amber and warm cream text.
+  /// Lamplight by night: deep nocturnal midnight obsidian, radiant golden lamplight, and crisp slate typography.
   static const ColorScheme _darkScheme = ColorScheme.dark(
-    primary: Color(0xFFE0A050),
-    onPrimary: Color(0xFF1A0F08),
-    primaryContainer: Color(0xFF4A2810),
-    onPrimaryContainer: Color(0xFFFFE0B2),
-    secondary: Color(0xFFCBD5E1),
-    onSecondary: Color(0xFF1E293B),
-    secondaryContainer: Color(0xFF334155),
+    primary: Color(0xFFF59E0B),
+    onPrimary: Color(0xFF0F172A),
+    primaryContainer: Color(0xFF451A03),
+    onPrimaryContainer: Color(0xFFFDE68A),
+    secondary: Color(0xFF94A3B8),
+    onSecondary: Color(0xFF0F172A),
+    secondaryContainer: Color(0xFF1E293B),
     onSecondaryContainer: Color(0xFFF1F5F9),
     tertiary: Color(0xFF2DD4BF),
     onTertiary: Color(0xFF042F2E),
     tertiaryContainer: Color(0xFF134E4A),
     onTertiaryContainer: Color(0xFF99F6E4),
-    error: Color(0xFFFFB4AB),
-    onError: Color(0xFF690005),
-    errorContainer: Color(0xFF93000A),
-    onErrorContainer: Color(0xFFFFDAD6),
-    surface: Color(0xFF140F0D),
-    onSurface: Color(0xFFFFF7ED),
-    onSurfaceVariant: Color(0xFFD4C7B8),
-    outline: Color(0xFF785E4E),
-    outlineVariant: Color(0xFF3D2E24),
-    inverseSurface: Color(0xFFFFF7ED),
-    onInverseSurface: Color(0xFF140F0D),
+    error: Color(0xFFF87171),
+    onError: Color(0xFF450A0A),
+    errorContainer: Color(0xFF7F1D1D),
+    onErrorContainer: Color(0xFFFECACA),
+    surface: Color(0xFF0B0F19),
+    onSurface: Color(0xFFF8FAFC),
+    onSurfaceVariant: Color(0xFF94A3B8),
+    outline: Color(0xFF475569),
+    outlineVariant: Color(0xFF1E293B),
+    inverseSurface: Color(0xFFF8FAFC),
+    onInverseSurface: Color(0xFF0B0F19),
     inversePrimary: Color(0xFFB45309),
-    surfaceContainerLowest: Color(0xFF0D0A08),
-    surfaceContainerLow: Color(0xFF1F1714),
-    surfaceContainer: Color(0xFF281E1A),
-    surfaceContainerHigh: Color(0xFF332722),
-    surfaceContainerHighest: Color(0xFF3E302A),
-    surfaceDim: Color(0xFF140F0D),
-    surfaceBright: Color(0xFF332722),
+    surfaceContainerLowest: Color(0xFF060910),
+    surfaceContainerLow: Color(0xFF111827),
+    surfaceContainer: Color(0xFF1E293B),
+    surfaceContainerHigh: Color(0xFF263346),
+    surfaceContainerHighest: Color(0xFF334155),
+    surfaceDim: Color(0xFF0B0F19),
+    surfaceBright: Color(0xFF263346),
   );
 
   /// Selected seats, nav pill, focus rings.
@@ -160,7 +160,7 @@ class AppColors {
   static Color get textPrimary => scheme.onSurface;
   static Color get textSecondary => scheme.onSurfaceVariant;
   static Color get textFaint =>
-      isDark ? const Color(0xFFBFADA0) : const Color(0xFF64748B);
+      const Color(0xFF64748B);
   static Color get textInverse => scheme.onPrimary;
 
   // Lines — M3 outline roles.
@@ -325,28 +325,28 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF1F1714).withValues(alpha: 0.96)
+      ? const Color(0xFF111827).withValues(alpha: 0.95)
       : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
 
   static Color chromeFillFor(bool dark) => dark
-      ? const Color(0xFF140F0D).withValues(alpha: 0.94)
+      ? const Color(0xFF0B0F19).withValues(alpha: 0.92)
       : const Color(0xFFFFFFFF).withValues(alpha: 0.95);
 
-  /// Floating dock: chrome fill, crisp in light mode.
+  /// Floating dock: chrome fill, crisp in light and dark mode.
   static Color dockFillFor(bool dark) =>
-      dark ? chromeFillFor(dark) : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
+      dark ? const Color(0xFF111827).withValues(alpha: 0.95) : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
 
   static Color borderFor(bool dark) => dark
-      ? const Color(0xFFE0A050).withValues(alpha: 0.28)
+      ? const Color(0xFF334155).withValues(alpha: 0.65)
       : const Color(0xFFE2E8F0);
 
   /// Bright rim light on the top/left edge.
   static Color rimFor(bool dark) => dark
-      ? Colors.white.withValues(alpha: 0.22)
+      ? Colors.white.withValues(alpha: 0.14)
       : Colors.white.withValues(alpha: 0.95);
 
   static Color shadowFor(bool dark) => dark
-      ? Colors.black.withValues(alpha: 0.45)
+      ? Colors.black.withValues(alpha: 0.65)
       : const Color(0xFF0F172A).withValues(alpha: 0.07);
 
   /// Translucent card fill (frosted cards, chips, inputs).
@@ -404,22 +404,22 @@ class AppAurora {
   ];
 
   static const List<Color> dark = [
-    Color(0x38D99246), // amber glow
-    Color(0x2E8A4F10), // ember shadow
-    Color(0x28E5A65D), // lamplight
-    Color(0x202A1B12), // walnut
+    Color(0x35F59E0B), // warm glowing amber lamplight 21%
+    Color(0x226366F1), // midnight indigo sky glow 13%
+    Color(0x1C0D9488), // quiet teal stack ember 11%
+    Color(0x25D97706), // golden hearth glow 15%
   ];
 
   static List<Color> get colors => AppColors.isDark ? dark : light;
 
   /// Canvas colour the blobs float over.
   static Color get base => AppColors.isDark
-      ? const Color(0xFF140F0D)
+      ? const Color(0xFF0B0F19)
       : const Color(0xFFF8FAFC);
 
   /// Top-to-bottom sky gradient stops.
   static List<Color> get sky => AppColors.isDark
-      ? const [Color(0xFF0D0A08), Color(0xFF140F0D), Color(0xFF281E1A)]
+      ? const [Color(0xFF060910), Color(0xFF0B0F19), Color(0xFF111827)]
       : const [Color(0xFFF8FAFC), Color(0xFFF1F5F9), Color(0xFFE2E8F0)];
 }
 
@@ -501,16 +501,16 @@ class AppGradients {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: AppColors.isDark
-            ? const [Color(0xFFE0A050), Color(0xFFB45309)]
+            ? const [Color(0xFFF59E0B), Color(0xFFD97706)]
             : const [Color(0xFFF59E0B), Color(0xFFB45309)],
       );
 
-  /// Depth hero: rich Midnight Slate in light mode, deep warm espresso in dark mode.
+  /// Depth hero: rich Midnight Slate in both brightnesses.
   static Gradient get hero => AppColors.isDark
       ? const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2A1C16), Color(0xFF140F0D)],
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
         )
       : const LinearGradient(
           begin: Alignment.topLeft,

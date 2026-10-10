@@ -165,9 +165,9 @@ class _BookHolds extends StatelessWidget {
     if (reservations.isEmpty) {
       return _PullEmpty(
         icon: Icons.bookmark_border_rounded,
-        title: history ? 'No cancelled holds' : 'No active holds',
+        title: history ? 'No past holds' : 'No active holds',
         message: history
-            ? 'Cancelled book reservations will be listed here.'
+            ? 'Collected and cancelled book reservations will be listed here.'
             : 'Search the catalog and reserve a book to see it listed here.',
         actionLabel: history ? null : 'Browse books',
         onAction:
@@ -237,16 +237,19 @@ class _BookHoldCard extends StatelessWidget {
                     StatusPill(
                       label: switch (reservation.status) {
                         ReservationStatus.cancelled => 'Cancelled',
+                        ReservationStatus.completed => 'Collected',
                         ReservationStatus.ready => 'Ready for pickup',
                         _ => 'Active',
                       },
                       color: switch (reservation.status) {
                         ReservationStatus.cancelled => AppColors.error,
+                        ReservationStatus.completed => AppColors.neutral,
                         ReservationStatus.ready => AppColors.success,
                         _ => AppColors.primary,
                       },
                       icon: switch (reservation.status) {
                         ReservationStatus.cancelled => Icons.close_rounded,
+                        ReservationStatus.completed => Icons.done_all_rounded,
                         ReservationStatus.ready => Icons.check_rounded,
                         _ => Icons.schedule_rounded,
                       },
@@ -375,9 +378,21 @@ class _SeatBookingCard extends StatelessWidget {
                 ),
               ),
               StatusPill(
-                label: history ? 'Completed' : 'Active',
-                color: history ? AppColors.neutral : AppColors.success,
-                icon: history ? Icons.done_all_rounded : Icons.check_rounded,
+                label: history
+                    ? (booking.status == ReservationStatus.cancelled
+                        ? 'Cancelled'
+                        : 'Completed')
+                    : 'Active',
+                color: !history
+                    ? AppColors.success
+                    : (booking.status == ReservationStatus.cancelled
+                        ? AppColors.error
+                        : AppColors.neutral),
+                icon: !history
+                    ? Icons.check_rounded
+                    : (booking.status == ReservationStatus.cancelled
+                        ? Icons.close_rounded
+                        : Icons.done_all_rounded),
                 compact: true,
                 pulse: !history,
               ),
@@ -567,8 +582,9 @@ class _WaitlistCard extends StatelessWidget {
 }
 
 /// Navigates to the cancelled-receipt screen after a cancel is confirmed.
-void openReservationCancelled(BuildContext context) {
-  AppRoute.push(context, const ReservationCancelledScreen());
+void openReservationCancelled(
+    BuildContext context, BookReservation reservation) {
+  AppRoute.push(context, ReservationCancelledScreen(reservation: reservation));
 }
 
 /// [EmptyState] inside a scroll view so pull-to-refresh still works.

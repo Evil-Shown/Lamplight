@@ -47,16 +47,35 @@ void main() {
   testWidgets('staff shell swaps in the staff navigation', (tester) async {
     await _signIn(tester, role: UserRole.staff);
 
-    expect(find.text('Catalog'), findsOneWidget);
-    expect(find.text('Staff'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Scan'), findsOneWidget);
+    expect(find.text('Manage'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Catalog'), findsNothing);
     expect(find.text('Staff Dashboard'), findsOneWidget);
+
+    await tester.tap(find.text('Manage'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.text('Reservations'), findsOneWidget);
+    expect(find.text('Waiting list'), findsOneWidget);
+    expect(find.text('Books'), findsOneWidget);
+    expect(find.text('Seats'), findsOneWidget);
+
+    await tester.tap(find.text('Account'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.text('Library staff'), findsOneWidget);
+    expect(find.text('My loans'), findsNothing);
   });
 
   testWidgets('reserving a book adds it to state', (tester) async {
     final state = await _signIn(tester);
     final before = state.reservations.length;
 
-    state.reserveBook(state.books.first);
+    await state.reserveBook(state.books.first);
 
     expect(state.reservations.length, before + 1);
   });

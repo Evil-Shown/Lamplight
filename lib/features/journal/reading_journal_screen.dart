@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/feedback/app_feedback.dart';
-import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 
 /// Reading Journal & Reflections screen inspired by Image 3 (Dual split linen & emerald island).
@@ -201,9 +199,7 @@ class _ReadingJournalScreenState extends State<ReadingJournalScreen> {
     final isDark = AppColors.isDark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF051F20)
-          : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
           // Split-Tone Scenic Header inspired by Image 3
@@ -711,3 +707,4 @@ class _JournalCard extends StatelessWidget {
     );
   }
 }
+

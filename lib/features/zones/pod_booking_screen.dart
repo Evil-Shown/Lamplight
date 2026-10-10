@@ -154,7 +154,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                       decoration: BoxDecoration(
                         color: _selectedPodIndex == i
                             ? _pods[i].tintColor.withValues(alpha: isDark ? 0.35 : 0.15)
-                            : (isDark ? const Color(0xFF1F1714) : Colors.white),
+                            : (isDark ? const Color(0xFF111827) : Colors.white),
                         borderRadius: BorderRadius.circular(AppRadii.card),
                         border: Border.all(
                           color: _selectedPodIndex == i
@@ -200,7 +200,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1F1714) : Colors.white,
+              color: isDark ? const Color(0xFF111827) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
                 color: AppColors.border,
@@ -309,9 +309,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark
-                      ? const [Color(0xFF241B17), Color(0xFF140F0D)]
-                      : const [Color(0xFF1E293B), Color(0xFF0F172A)],
+                  colors: const [Color(0xFF1E293B), Color(0xFF0F172A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -375,3 +373,4 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
     );
   }
 }
+

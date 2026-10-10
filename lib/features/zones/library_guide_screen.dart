@@ -70,7 +70,7 @@ class LibraryGuideScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            (isDark ? const Color(0xFF140F0D) : const Color(0xFF1E293B))
+                            const Color(0xFF1E293B)
                                 .withValues(alpha: 0.9),
                             Colors.transparent,
                           ],
@@ -169,7 +169,7 @@ class LibraryGuideScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.isDark ? const Color(0xFF2A201C) : Colors.white,
+        color: AppColors.isDark ? const Color(0xFF111827) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
@@ -205,7 +205,7 @@ class LibraryGuideScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.isDark ? const Color(0xFF1F1714) : Colors.white,
+        color: AppColors.isDark ? const Color(0xFF111827) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
           color: AppColors.border,
@@ -239,3 +239,4 @@ class LibraryGuideScreen extends StatelessWidget {
     );
   }
 }
+

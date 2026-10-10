@@ -5,7 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
-import '../../screens/my_reservations_screen.dart';
+import '../reservations/reservations_screen.dart';
 import 'pickup_countdown.dart';
 
 /// reservation-success "Reservation Successful".
@@ -161,7 +161,8 @@ class ReservationConfirmationScreen extends StatelessWidget {
             label: 'View my reservations',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => const MyReservationsScreen(),
+                builder: (_) =>
+                    const AuroraBackground(child: ReservationsScreen()),
               ),
             ),
           ),

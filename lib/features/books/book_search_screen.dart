@@ -192,15 +192,23 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
     AppRoute.push(context, BookDetailScreen(book: book));
   }
 
-  void _reserve(Book book) {
+  Future<void> _reserve(Book book) async {
     final state = AppScope.read(context);
-    final reservation = state.reserveBook(book);
+    final messenger = ScaffoldMessenger.of(context);
+    final already = state.hasOpenReservation(book.id);
+    final reservation = await state.reserveBook(book);
     if (reservation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have already reserved this book')),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(already
+              ? 'You have already reserved this book'
+              : "Couldn't reserve the book. Check your connection and "
+                  'try again.'),
+        ),
       );
       return;
     }
+    if (!mounted) return;
     AppRoute.push(
       context,
       ReservationConfirmationScreen(
@@ -451,7 +459,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                     gradient: LinearGradient(
                                       colors: [
                                         (AppColors.isDark
-                                                ? const Color(0xFF140F0D)
+                                                ? const Color(0xFF0F172A)
                                                 : const Color(0xFF1E293B))
                                             .withValues(alpha: 0.9),
                                         Colors.transparent,
@@ -477,7 +485,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                         vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFD3A376)
+                                        color: AppColors.primary
                                             .withValues(alpha: 0.25),
                                         borderRadius:
                                             BorderRadius.circular(AppRadii.full),
@@ -487,7 +495,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                         style: AppText.overline(
                                           10,
                                           ls: 1.0,
-                                          color: const Color(0xFFFFE0B2),
+                                          color: const Color(0xFFFDE68A),
                                         ),
                                       ),
                                     ),
@@ -505,8 +513,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                       'Over 12,000 academic titles by lamplight',
                                       style: AppText.body(
                                         11.5,
-                                        color: const Color(0xFFFFE0B2)
-                                            .withValues(alpha: 0.85),
+                                        color: const Color(0xFFCBD5E1),
                                       ),
                                     ),
                                   ],
@@ -755,7 +762,7 @@ class _CatalogCard extends StatelessWidget {
       BookAvailability.onLoan => (AppColors.error, 'On loan'),
       BookAvailability.waitlisted => (AppColors.warning, 'Waitlist'),
     };
-    final canReserve = book.availability == BookAvailability.available;
+    final canReserve = book.availability == BookAvailability.available && book.copiesAvailable > 0;
 
     return SurfaceCard(
       onTap: onOpen,
@@ -879,3 +886,6 @@ class _CatalogCard extends StatelessWidget {
     );
   }
 }
+
+
+

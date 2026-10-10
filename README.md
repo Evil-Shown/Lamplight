@@ -330,8 +330,49 @@ flutter run                 # picks your connected device/emulator
 flutter run -d windows      # Windows desktop
 ```
 
-Demo sign-in: any email + password (accounts auto-provision; choose the **Staff**
-segment on the login screen to see the staff shell).
+## Sample logins and roles
+
+Roles are never chosen on the login screen. After sign-in the app calls the
+`claimRole` Cloud Function, which sets the `role` custom claim
+(`admin` > `staff` > `student`) from two Firestore allow-lists and only when
+the account's email is **verified**:
+
+- `config/staffAllowlist` (`emails`) grants `staff`; admins manage it from the app
+  through the `setStaffAllowlist` / `listStaff` callables.
+- `config/adminAllowlist` (`emails`) grants `admin`; it is server/seed-written only.
+- Everyone else is a `student`.
+
+`functions/scripts/seed-users.js` creates three verified accounts (plus their
+`users/{uid}` profiles, claims and allow-list entries):
+
+| Role | Email | Name |
+| --- | --- | --- |
+| student | student@lamplight.test | Sam Student |
+| staff | staff@lamplight.test | Lee Librarian |
+| admin | admin@lamplight.test | Ada Admin |
+
+Passwords come from `SEED_STUDENT_PASSWORD` / `SEED_STAFF_PASSWORD` /
+`SEED_ADMIN_PASSWORD`; the default `Lamplight#2026` is for development only.
+
+```powershell
+cd functions
+# Emulator (safe)
+$env:FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099"; $env:FIRESTORE_EMULATOR_HOST="127.0.0.1:8080"
+$env:GCLOUD_PROJECT="demo-library"; npm run seed:users
+# Real project: needs credentials and an explicit flag
+$env:GCLOUD_PROJECT="<project-id>"; npm run seed:users -- --i-understand-this-is-a-real-project
+```
+
+### Deploying the backend changes
+
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
+firebase deploy --only functions
+```
+
+Run the rules tests with `cd rules-tests && npm run test:emulator` and the
+functions unit tests with `cd functions && npm test`.
 
 ---
 

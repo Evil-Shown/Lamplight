@@ -74,6 +74,32 @@ class FunctionsService {
   Future<Map<String, dynamic>> verifyQrPass(String code) =>
       call('verifyQrPass', {'code': code});
 
+  /// Ends a seat session. Without [uid] it is the caller's own booking;
+  /// with another user's uid it is staff/admin only. Returns "ended" or
+  /// "alreadyEnded".
+  Future<String> endSeatSession(String bookingId, {String? uid}) async {
+    final res = await call('endSeatSession', {
+      'bookingId': bookingId,
+      if (uid != null) 'uid': uid,
+    });
+    return (res['result'] as String?) ?? 'ended';
+  }
+
+  /// Admin only: replaces the staff allowlist with [emails].
+  Future<Map<String, dynamic>> setStaffAllowlist(List<String> emails) =>
+      call('setStaffAllowlist', {'emails': emails});
+
+  /// Admin only: the allowlist with sign-up status per email.
+  Future<List<Map<String, dynamic>>> listStaff() async {
+    final res = await call('listStaff');
+    final raw = res['staff'];
+    if (raw is! List) return const [];
+    return [
+      for (final e in raw)
+        if (e is Map) Map<String, dynamic>.from(e),
+    ];
+  }
+
   Future<void> deleteAccountData() => call('deleteAccountData');
 
   Future<Map<String, dynamic>> exportAccountData() =>
