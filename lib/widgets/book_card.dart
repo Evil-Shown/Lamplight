@@ -147,6 +147,8 @@ class _BookCover extends StatelessWidget {
       cover = Image.network(
         coverUrl,
         fit: BoxFit.cover,
+        headers: const {'Accept': 'image/*'},
+        webHtmlElementStrategy: WebHtmlElementStrategy.always,
         errorBuilder: (_, __, ___) => placeholder,
         loadingBuilder: (context, child, progress) {
           if (progress == null) return child;

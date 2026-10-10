@@ -77,6 +77,7 @@ class ReservationDetailScreen extends StatelessWidget {
                         title: book.title,
                         color: book.coverColor,
                         isbn: book.isbn,
+                        coverUrl: book.coverUrl,
                         width: 64,
                         height: 90,
                         heroTag: 'book-${book.id}',
