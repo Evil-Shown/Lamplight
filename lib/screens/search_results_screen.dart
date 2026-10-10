@@ -35,7 +35,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       description: 'Mock search result for clean code.',
       availableCopies: 3,
       shelfLocation: 'B2-14',
-      coverUrl: '',
+      coverUrl:
+          'https://m.media-amazon.com/images/I/41xShlnTZTL._SX376_BO1,204,203,200_.jpg',
     ),
     BookModel(
       id: 'pragmatic-programmer',
@@ -46,7 +47,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       description: 'Mock search result for pragmatic programmer.',
       availableCopies: 0,
       shelfLocation: 'A1-08',
-      coverUrl: '',
+      coverUrl:
+          'https://m.media-amazon.com/images/I/51A8l+FtCEL._SX379_BO1,204,203,200_.jpg',
     ),
   ];
 

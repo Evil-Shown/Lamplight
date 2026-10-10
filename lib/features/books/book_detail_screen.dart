@@ -80,6 +80,7 @@ class BookDetailScreen extends StatelessWidget {
                             title: book.title,
                             color: book.coverColor,
                             isbn: book.isbn,
+                            coverUrl: book.coverUrl,
                             width: 132,
                             height: 188,
                             radius: AppRadii.sm,

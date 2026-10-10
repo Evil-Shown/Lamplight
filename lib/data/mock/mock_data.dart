@@ -36,6 +36,8 @@ class MockData {
       shelfLocation: 'B2-14',
       copiesAvailable: 3,
       coverColor: 0xFF7A2E2B,
+      coverUrl:
+          'https://m.media-amazon.com/images/I/41xShlnTZTL._SX376_BO1,204,203,200_.jpg',
       description:
           'A practical guide to writing clean, readable and maintainable '
           'software. Clean the code, design the principles, and practices '
@@ -51,6 +53,8 @@ class MockData {
       shelfLocation: 'B1-08',
       copiesAvailable: 1,
       coverColor: 0xFF0E7490,
+        coverUrl:
+          'https://m.media-amazon.com/images/I/51A8l+FtCEL._SX379_BO1,204,203,200_.jpg',
       description:
           'The Pragmatic Programmer is a book about software development and '
           'is intended to be an easy read, not a reference manual.',
@@ -65,6 +69,8 @@ class MockData {
       shelfLocation: 'B2-09',
       copiesAvailable: 0,
       coverColor: 0xFFB45309,
+        coverUrl:
+          'https://covers.openlibrary.org/b/isbn/9780078022159-L.jpg?default=false',
       description:
           'A thorough, well-organized guide to constructing maintainable '
           'software. Reading Code Complete will make you a better programmer.',
@@ -79,6 +85,8 @@ class MockData {
       shelfLocation: 'C3-21',
       copiesAvailable: 5,
       coverColor: 0xFF9D174D,
+        coverUrl:
+          'https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg?default=false',
       description:
           'Tiny changes, remarkable results. A proven framework for improving '
           'little by little, designing good habits, and mastering the art of '
@@ -94,6 +102,8 @@ class MockData {
       shelfLocation: 'B3-02',
       copiesAvailable: 0,
       coverColor: 0xFF5B21B6,
+        coverUrl:
+          'https://covers.openlibrary.org/b/isbn/9780321500883-L.jpg?default=false',
       description:
           'A comprehensive introduction to the design and evaluation of '
           'interactive systems, from the ergonomics of a single screen to '
@@ -109,6 +119,8 @@ class MockData {
       shelfLocation: 'A1-03',
       copiesAvailable: 2,
       coverColor: 0xFF155E75,
+        coverUrl:
+          'https://covers.openlibrary.org/b/isbn/9780262046305-L.jpg?default=false',
       description:
           'A comprehensive introduction to the modern study of computer '
           'algorithms, covering everything from data structures to the '
@@ -124,6 +136,8 @@ class MockData {
       shelfLocation: 'C1-11',
       copiesAvailable: 4,
       coverColor: 0xFF9A3412,
+        coverUrl:
+          'https://covers.openlibrary.org/b/isbn/9780465050659-L.jpg?default=false',
       description:
           'Design is a funny thing. Most people think it is primarily an '
           'aesthetic discipline, but it is really an integral part of '

@@ -74,6 +74,7 @@ class ReservationCancelledScreen extends StatelessWidget {
                           title: last.book.title,
                           color: last.book.coverColor,
                           isbn: last.book.isbn,
+                          coverUrl: last.book.coverUrl,
                           width: 46,
                           height: 65,
                         ),

@@ -240,6 +240,7 @@ class _ReservationCard extends StatelessWidget {
               title: reservation.book.title,
               color: reservation.book.coverColor,
               isbn: reservation.book.isbn,
+              coverUrl: reservation.book.coverUrl,
               width: 60,
               height: 86,
             ),
