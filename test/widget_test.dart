@@ -37,6 +37,10 @@ void main() {
   testWidgets('student shell shows the prototype navigation', (tester) async {
     await _signIn(tester);
 
+    // Temporary role chooser (replaced by authentication later).
+    await tester.tap(find.text('Continue as Student'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Seats'), findsOneWidget);
     expect(find.text('Books'), findsOneWidget);
