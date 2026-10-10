@@ -201,10 +201,13 @@ class AppState extends ChangeNotifier {
             ));
 
   /// Books waiting for collection, newest deadline first.
-  List<BookReservation> get activeReservations => _reservations
-      .where((r) => r.status != ReservationStatus.cancelled)
-      .toList()
-    ..sort((a, b) => a.pickupBy.compareTo(b.pickupBy));
+  List<BookReservation> get activeReservations => _uniqueReservations(
+        _reservations
+            .where((r) => r.status != ReservationStatus.cancelled)
+            .toList()
+          ..sort((a, b) => a.pickupBy.compareTo(b.pickupBy)),
+        (reservation) => reservation.book.id,
+      );
 
   List<BookReservation> get reservationHistory => _reservations
       .where((r) => r.status == ReservationStatus.cancelled)
@@ -695,7 +698,13 @@ class AppState extends ChangeNotifier {
 
   // ------------------------------------------------------------ reservations
 
-  BookReservation reserveBook(Book book) {
+  BookReservation? reserveBook(Book book) {
+    if (_reservations.any((reservation) =>
+        reservation.book.id == book.id &&
+        reservation.status != ReservationStatus.cancelled)) {
+      return null;
+    }
+
     final now = DateTime.now();
     final index = 100 + _reservations.length;
     final reservation = BookReservation(
@@ -717,6 +726,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     _rescheduleReminders();
     return reservation;
+  }
+
+  List<T> _uniqueReservations<T>(
+    List<T> items,
+    String Function(T item) keyOf,
+  ) {
+    final seen = <String>{};
+    final unique = <T>[];
+    for (final item in items) {
+      if (seen.add(keyOf(item))) {
+        unique.add(item);
+      }
+    }
+    return unique;
   }
 
   void cancelReservation(String id) {
