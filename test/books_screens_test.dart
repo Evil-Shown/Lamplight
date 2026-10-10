@@ -17,7 +17,7 @@ void main() {
 
     final state = AppState();
     final book = state.books.first;
-    final reservation = state.reserveBook(book);
+    final reservation = state.reserveBook(book)!;
     final screens = <Widget>[
       const BookSearchScreen(),
       BookDetailScreen(book: book),

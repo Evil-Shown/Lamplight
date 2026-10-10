@@ -10,6 +10,9 @@ import '../../models/models.dart';
 import '../notifications/notifications_screen.dart';
 import '../reservations/live_widgets.dart';
 import '../qr/qr_ticket_screen.dart';
+import '../focus/focus_sanctuary_screen.dart';
+import '../journal/reading_journal_screen.dart';
+import '../sanctuary/night_sanctuary_screen.dart';
 
 /// Nordic Modern Campus home — greeting, session hero, bento, occupancy.
 class HomeScreen extends StatelessWidget {
@@ -80,14 +83,28 @@ class HomeScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenMargin,
                   ),
-                  child: StaggeredEntrance(index: 2, child: _GlanceStrip()),
+                  child: StaggeredEntrance(index: 2, child: _GoalCard()),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
                 const Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenMargin,
                   ),
-                  child: StaggeredEntrance(index: 3, child: _QuickActions()),
+                  child: StaggeredEntrance(index: 3, child: _QuickCategories()),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(index: 4, child: _SanctuaryShowcase()),
+                ),
+                const SizedBox(height: AppSpacing.sectionGap),
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenMargin,
+                  ),
+                  child: StaggeredEntrance(index: 5, child: _GlanceStrip()),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
                 Padding(
@@ -95,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                     horizontal: AppSpacing.screenMargin,
                   ),
                   child: StaggeredEntrance(
-                    index: 4,
+                    index: 6,
                     child: _FloorAvailability(
                       lastSyncedAt: state.lastSyncedAt,
                     ),
@@ -191,11 +208,15 @@ class _SectionTitle extends StatelessWidget {
 class _HomeGreeting extends StatelessWidget {
   const _HomeGreeting();
 
-  String _greeting() {
+  (String, String, String) _greeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) {
+      return ('Good morning', '👋', 'A calmer mind, a brighter day.');
+    }
+    if (hour < 17) {
+      return ('Good afternoon', '☀️', 'Focus on what matters most.');
+    }
+    return ('Quiet evening', '🌙', 'Unwind and read by lamplight.');
   }
 
   @override
@@ -204,6 +225,7 @@ class _HomeGreeting extends StatelessWidget {
     final profile = state.activeProfile;
     final name = profile.firstName;
     final initial = name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
+    final (greeting, icon, tagline) = _greeting();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -232,7 +254,7 @@ class _HomeGreeting extends StatelessWidget {
                   style: AppText.display(
                     24,
                     w: FontWeight.w800,
-                    color: const Color(0xFF2A1503),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -241,19 +263,40 @@ class _HomeGreeting extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _greeting(),
-                      style: AppText.body(
-                        13.5,
-                        w: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            greeting,
+                            style: AppText.body(
+                              13,
+                              w: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(icon, style: const TextStyle(fontSize: 13)),
+                        ],
                       ),
                     ),
                     Text(
                       name,
-                      style: AppText.display(28, w: FontWeight.w800),
+                      style: AppText.display(25, w: FontWeight.w800),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      tagline,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(
+                        11.5,
+                        w: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -798,68 +841,213 @@ class _GlanceCard extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+/// Today's Reading / Focus Goal capsule card, inspired by Image 4.
+class _GoalCard extends StatelessWidget {
+  const _GoalCard();
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    final free =
-        state.seats.where((s) => s.status == SeatStatus.available).length;
-    final ready = state.activeReservations.length;
-    final upcoming = state.bookings.length;
-    final hasBooking = state.todayBooking != null;
+    final hasLoans = state.activeLoans.isNotEmpty;
+    final title = hasLoans ? 'Read 20 pages' : '2h Focus session';
+    final sub = hasLoans
+        ? state.activeLoans.first.title
+        : 'Floor 2 · Quiet Reading Hall';
+    const progress = 0.70;
+    final isDark = AppColors.isDark;
 
+    return Semantics(
+      button: true,
+      label: "Today's Goal: $title, 14 of 20 completed",
+      child: PressScale(
+        onTap: () {
+          AppFeedback.tap();
+          AppShell.switchTab(context, AppTab.books);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F332D) : const Color(0xFF163832),
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF8EB69B).withValues(alpha: 0.25)
+                  : const Color(0xFFDAF1DE).withValues(alpha: 0.2),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : const Color(0xFF163832))
+                    .withValues(alpha: 0.16),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8EB69B).withValues(alpha: 0.22),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.adjust_rounded,
+                      size: 22,
+                      color: Color(0xFFDAF1DE),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's Goal",
+                          style: AppText.overline(
+                            11,
+                            ls: 1.0,
+                            color: const Color(0xFF8EB69B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          title,
+                          style: AppText.title(
+                            16,
+                            w: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(
+                        12,
+                        color: const Color(0xFFDAF1DE).withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '14 / 20',
+                    style: AppText.label(
+                      12,
+                      w: FontWeight.w700,
+                      color: const Color(0xFFDAF1DE),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.full),
+                child: SizedBox(
+                  height: 6,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.white.withValues(alpha: 0.18),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFF8EB69B),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Category exploration chips inspired by Images 3 & 4.
+class _QuickCategories extends StatelessWidget {
+  const _QuickCategories();
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Quick actions'),
+        const _SectionTitle('Explore'),
         const SizedBox(height: AppSpacing.md),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: _ActionTile(
-                icon: Icons.event_seat_rounded,
-                tint: AppColors.primary,
-                label: 'Seats',
-                sub: '$free free now',
-                onTap: () => AppShell.switchTab(context, AppTab.seats),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _ActionTile(
+              child: _CategoryPill(
                 icon: Icons.menu_book_rounded,
-                tint: AppColors.indigo,
-                label: 'Books',
-                sub: ready > 0
-                    ? '$ready ready to collect'
-                    : 'Browse the catalogue',
+                label: 'Read',
+                tint: const Color(0xFF163832),
+                bgTint: const Color(0xFFDAF1DE),
                 onTap: () => AppShell.switchTab(context, AppTab.books),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _ActionTile(
+              child: _CategoryPill(
+                icon: Icons.event_seat_rounded,
+                label: 'Desks',
+                tint: const Color(0xFF235347),
+                bgTint: const Color(0xFFE4F0E8),
+                onTap: () => AppShell.switchTab(context, AppTab.seats),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _CategoryPill(
                 icon: Icons.confirmation_number_rounded,
-                tint: AppColors.gold,
                 label: 'Bookings',
-                sub: upcoming > 0 ? '$upcoming upcoming' : 'No bookings yet',
+                tint: const Color(0xFF806B59),
+                bgTint: const Color(0xFFF0E8DD),
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _ActionTile(
+              child: _CategoryPill(
                 icon: Icons.qr_code_2_rounded,
-                tint: AppColors.scheme.secondary,
-                label: 'QR pass',
-                sub: hasBooking ? 'Show at the desk' : 'Needs a booking',
-                onTap: () => _openQr(context),
+                label: 'QR Pass',
+                tint: const Color(0xFFD99246),
+                bgTint: const Color(0xFFFBE4C8),
+                onTap: () {
+                  final booking = AppScope.read(context).todayBooking;
+                  if (booking != null) {
+                    AppRoute.push(context, QrTicketScreen(booking: booking));
+                  } else {
+                    AppShell.switchTab(context, AppTab.bookings);
+                  }
+                },
               ),
             ),
           ],
@@ -867,69 +1055,263 @@ class _QuickActions extends StatelessWidget {
       ],
     );
   }
-
-  void _openQr(BuildContext context) {
-    final booking = AppScope.read(context).todayBooking;
-    if (booking == null) {
-      AppShell.switchTab(context, AppTab.bookings);
-      return;
-    }
-    AppRoute.push(context, QrTicketScreen(booking: booking));
-  }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({
     required this.icon,
-    required this.tint,
     required this.label,
-    required this.sub,
+    required this.tint,
+    required this.bgTint,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color tint;
   final String label;
-  final String sub;
+  final Color tint;
+  final Color bgTint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     return Semantics(
       button: true,
-      label: '$label, $sub',
-      excludeSemantics: true,
-      child: _HomeCard(
+      label: label,
+      child: PressScale(
         onTap: () {
           AppFeedback.tap();
           onTap();
         },
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            _IconChip(icon: icon, tint: tint, size: 44),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF163832)
+                  : const Color(0xFFD8C9B6).withValues(alpha: 0.6),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDark ? tint.withValues(alpha: 0.25) : bgTint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: isDark ? const Color(0xFF8EB69B) : tint,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
                     label,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.title(15.5, w: FontWeight.w800),
+                    style: AppText.label(
+                      12,
+                      w: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    sub,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.body(11.5, color: AppColors.textSecondary),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Artistic Sanctuaries & Studios carousel inspired by the user images.
+class _SanctuaryShowcase extends StatelessWidget {
+  const _SanctuaryShowcase();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle('Sanctuaries & Studios'),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 190,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            children: [
+              _SanctuaryCard(
+                title: 'Zen Focus Room',
+                subtitle: 'Timer & library rain sounds',
+                tag: 'DEEP WORK',
+                imageAsset: 'assets/images/focus_canyon.png',
+                accentColor: const Color(0xFF7EE0C3),
+                onTap: () =>
+                    AppRoute.push(context, const FocusSanctuaryScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Reading Journal',
+                subtitle: 'Quotes & rowboat journey',
+                tag: 'JOURNAL',
+                imageAsset: 'assets/images/dual_island.png',
+                accentColor: const Color(0xFFDAF1DE),
+                onTap: () =>
+                    AppRoute.push(context, const ReadingJournalScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Night Sanctuary',
+                subtitle: 'Open until 02:00 AM • Light lantern',
+                tag: 'NIGHT OWL',
+                imageAsset: 'assets/images/night_lanterns.png',
+                accentColor: const Color(0xFFFFAA2A),
+                onTap: () =>
+                    AppRoute.push(context, const NightSanctuaryScreen()),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SanctuaryCard extends StatelessWidget {
+  const _SanctuaryCard({
+    required this.title,
+    required this.subtitle,
+    required this.tag,
+    required this.imageAsset,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String tag;
+  final String imageAsset;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
+    return PressScale(
+      onTap: () {
+        AppFeedback.tap();
+        onTap();
+      },
+      child: Container(
+        width: 230,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  imageAsset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: const Color(0xFF163832),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.2),
+                        Colors.black.withValues(alpha: 0.85),
+                      ],
+                      stops: const [0.3, 0.95],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Text(
+                        tag,
+                        style: AppText.overline(
+                          10,
+                          ls: 1.0,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(
+                        16,
+                        w: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(
+                        11.5,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

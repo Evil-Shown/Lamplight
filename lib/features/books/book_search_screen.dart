@@ -414,6 +414,109 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                   padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg, 0, AppSpacing.lg, AppNavInset.bottom),
                   children: [
+                    if (browsing) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        height: 110,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadii.card),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                  alpha: AppColors.isDark ? 0.35 : 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadii.card),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Image.asset(
+                                  'assets/images/ancient_tree.jpg',
+                                  fit: BoxFit.cover,
+                                  alignment: const Alignment(0, -0.3),
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          Container(
+                                    color: const Color(0xFF163832),
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        (AppColors.isDark
+                                                ? const Color(0xFF051F20)
+                                                : const Color(0xFF163832))
+                                            .withValues(alpha: 0.9),
+                                        Colors.transparent,
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      stops: const [0.55, 1.0],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF8EB69B)
+                                            .withValues(alpha: 0.25),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadii.full),
+                                      ),
+                                      child: Text(
+                                        'FOREST OF STORIES',
+                                        style: AppText.overline(
+                                          10,
+                                          ls: 1.0,
+                                          color: const Color(0xFFDAF1DE),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Curated Campus Stacks',
+                                      style: AppText.title(
+                                        17,
+                                        w: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Over 12,000 academic titles by lamplight',
+                                      style: AppText.body(
+                                        11.5,
+                                        color: const Color(0xFFDAF1DE)
+                                            .withValues(alpha: 0.85),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     if (browsing && shelf.isNotEmpty) ...[
                       const SectionHeader(
                         title: 'Available now',

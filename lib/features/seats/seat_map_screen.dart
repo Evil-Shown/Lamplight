@@ -417,12 +417,108 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDemo = AppScope.of(context).dataSource == DataSource.demo;
+    final isDark = AppColors.isDark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/hilltop_sanctuary.png',
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, -0.4),
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: const Color(0xFF163832),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          (isDark
+                                  ? const Color(0xFF051F20)
+                                  : const Color(0xFF163832))
+                              .withValues(alpha: 0.88),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: const [0.48, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF8EB69B).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(AppRadii.full),
+                        ),
+                        child: Text(
+                          'HILLTOP STUDY SANCTUARY',
+                          style: AppText.overline(
+                            10,
+                            ls: 1.0,
+                            color: const Color(0xFFDAF1DE),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Desks & Reading Pods',
+                        style: AppText.title(
+                          17,
+                          w: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Quiet pods, garden desks & power outlets',
+                        style: AppText.body(
+                          11.5,
+                          color:
+                              const Color(0xFFDAF1DE).withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         Text(
           'Pick your seat',
-          style: AppText.title(28, w: FontWeight.w800, ls: -0.6),
+          style: AppText.title(26, w: FontWeight.w800, ls: -0.6),
         ),
         const SizedBox(height: 4),
         Text(
