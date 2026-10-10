@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'search_results_screen.dart';
 
+const Color _bookFlowBackground = Color(0xFF141518);
+const Color _bookFlowSurface = Color(0xFF22242A);
+const Color _bookFlowBorder = Color(0xFF2E313A);
+const Color _bookFlowAccent = Color(0xFFE8A838);
+const Color _bookFlowTextPrimary = Colors.white;
+final Color _bookFlowTextSecondary = Colors.grey[400]!;
+const Color _bookFlowTextInverse = Color(0xFF141518);
+
 /// Screen 1 — `book-search-v2`.
 ///
 /// Incremental build: search input, type filter chips and the SEARCH button.
@@ -48,10 +56,12 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
+      backgroundColor: _bookFlowBackground,
       appBar: AppBar(
+        backgroundColor: _bookFlowBackground,
+        foregroundColor: _bookFlowTextPrimary,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
@@ -67,6 +77,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               Text(
                 'What are you looking for?',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: _bookFlowTextPrimary,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -74,12 +85,24 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: _bookFlowSurface,
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: _bookFlowAccent,
+                  ),
                   hintText: 'Search by title, author, ISBN...',
-                  border: OutlineInputBorder(
+                  hintStyle: TextStyle(color: _bookFlowTextSecondary),
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _bookFlowBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _bookFlowAccent),
                   ),
                 ),
+                style: const TextStyle(color: _bookFlowTextPrimary),
                 textInputAction: TextInputAction.search,
               ),
               const SizedBox(height: 16),
@@ -92,12 +115,17 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                     label: Text(type),
                     selected: isSelected,
                     showCheckmark: false,
-                    selectedColor: colorScheme.primaryContainer,
-                    checkmarkColor: colorScheme.onPrimaryContainer,
+                    backgroundColor: _bookFlowSurface,
+                    selectedColor: _bookFlowAccent,
+                    checkmarkColor: _bookFlowTextInverse,
+                    side: const BorderSide(color: _bookFlowBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                     labelStyle: TextStyle(
                       color: isSelected
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurfaceVariant,
+                          ? _bookFlowTextInverse
+                          : _bookFlowTextSecondary,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -110,8 +138,8 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
+                    backgroundColor: _bookFlowAccent,
+                    foregroundColor: _bookFlowTextInverse,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -130,6 +158,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
               Text(
                 'Popular searches',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: _bookFlowTextPrimary,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -177,7 +206,8 @@ class _PopularSearchItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: colorScheme.outlineVariant),
+            color: _bookFlowSurface,
+            border: Border.all(color: _bookFlowBorder),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -185,19 +215,21 @@ class _PopularSearchItem extends StatelessWidget {
               Icon(
                 Icons.search_outlined,
                 size: 22,
-                color: colorScheme.onSurfaceVariant,
+                color: _bookFlowAccent,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   query,
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: _bookFlowTextPrimary,
+                      ),
                 ),
               ),
               Icon(
                 Icons.chevron_right,
                 size: 22,
-                color: colorScheme.onSurfaceVariant,
+                color: _bookFlowTextSecondary,
               ),
             ],
           ),
