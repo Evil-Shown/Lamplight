@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Library+ (SLIIT Quick Book) Firestore rules.
+// Lamplight (SLIIT Quick Book) Firestore rules.
 //
 // Roles come from the Firebase Auth custom claim `role` ('staff' | 'student'),
 // assigned server-side by the `claimRole` Cloud Function from the allowlist in

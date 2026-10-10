@@ -1,4 +1,4 @@
-# Library+ Integration and Wiring Plan
+# Lamplight Integration and Wiring Plan
 
 ## 1. Environment setup
 

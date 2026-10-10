@@ -42,10 +42,10 @@ class AuthType {
       );
 }
 
-/// The "Library+" wordmark: cream serif letters with a dark outline, so it
+/// The "Lamplight" wordmark: cream serif letters with a dark outline, so it
 /// reads over both the hero and the dark sheet.
-class LibraryWordmark extends StatelessWidget {
-  const LibraryWordmark({super.key, this.size = 36});
+class LamplightWordmark extends StatelessWidget {
+  const LamplightWordmark({super.key, this.size = 36});
 
   final double size;
 
@@ -58,12 +58,12 @@ class LibraryWordmark extends StatelessWidget {
       height: 1,
     );
     return Semantics(
-      label: 'Library+',
+      label: 'Lamplight',
       child: ExcludeSemantics(
         child: Stack(
           children: [
             Text(
-              'Library+',
+              'Lamplight',
               style: base.copyWith(
                 foreground: Paint()
                   ..style = PaintingStyle.stroke
@@ -72,13 +72,15 @@ class LibraryWordmark extends StatelessWidget {
                   ..color = AuthPalette.espresso,
               ),
             ),
-            Text('Library+', style: base.copyWith(color: AuthPalette.cream)),
+            Text('Lamplight', style: base.copyWith(color: AuthPalette.cream)),
           ],
         ),
       ),
     );
   }
 }
+
+typedef LibraryWordmark = LamplightWordmark;
 
 /// Page-position dots: the active one stretches into a pill.
 class StepDots extends StatelessWidget {

@@ -13,8 +13,8 @@ class TermsScreen extends StatelessWidget {
         title: 'Terms of use',
         sections: [
           _LegalSection(
-            'Using Library+',
-            'Library+ lets members of the university reserve books, book '
+            'Using Lamplight',
+            'Lamplight lets members of the university reserve books, book '
                 'study seats and see their loans. You agree to use it for '
                 'your own account and to follow the library rules shown in '
                 'the app.',

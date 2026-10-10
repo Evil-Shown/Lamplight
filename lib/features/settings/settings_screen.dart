@@ -207,7 +207,7 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
             child: Text(
-              'Library+ uses the text size and reduce-motion choices from '
+              'Lamplight uses the text size and reduce-motion choices from '
               'your phone accessibility settings.',
               style: AppText.body(12, color: AppColors.textSecondary),
             ),

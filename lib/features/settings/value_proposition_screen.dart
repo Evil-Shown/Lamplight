@@ -30,7 +30,7 @@ class ValuePropositionScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'WHAT LIBRARY+ DOES',
+                    'WHAT LAMPLIGHT DOES',
                     style: AppText.overline(
                       11,
                       color: AppColors.textInverse.withValues(alpha: 0.8),

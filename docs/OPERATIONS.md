@@ -1,4 +1,4 @@
-# Library+ Operations and Maintenance
+# Lamplight Operations and Maintenance
 
 ## 1. Environments
 

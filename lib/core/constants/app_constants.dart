@@ -1,5 +1,5 @@
 class AppStrings {
-  static const appName = 'Library+';
+  static const appName = 'Lamplight';
   static const portalName = 'SLIIT QUICK BOOK';
   static const searchBooksHint = 'Search by title, author, ISBN…';
   static const seatSearchHint = 'Filter by floor or section…';

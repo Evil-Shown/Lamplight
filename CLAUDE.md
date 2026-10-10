@@ -1,4 +1,4 @@
-# Library+ — Claude working instructions
+# Lamplight — Claude working instructions
 
 ## Model and effort routing
 

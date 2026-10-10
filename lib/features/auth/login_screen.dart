@@ -437,7 +437,7 @@ class _LoginScreenState extends State<LoginScreen> {
           top: -24,
           left: 0,
           right: 0,
-          child: Center(child: LibraryWordmark()),
+          child: Center(child: LamplightWordmark()),
         ),
       ],
     );
@@ -450,7 +450,7 @@ class _LoginScreenState extends State<LoginScreen> {
         AnimatedSwitcher(
           duration: AppMotion.fast,
           child: Text(
-            signingIn ? 'Welcome Back!' : 'Join Library+',
+            signingIn ? 'Welcome Back!' : 'Join Lamplight',
             key: ValueKey(signingIn),
             textAlign: TextAlign.center,
             style: GoogleFonts.fraunces(

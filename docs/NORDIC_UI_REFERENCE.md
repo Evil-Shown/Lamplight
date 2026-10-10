@@ -1,6 +1,6 @@
 # Nordic Modern Campus — UI reference
 
-Flutter implementation of the Library+ redesign (tokens in `lib/core/theme/app_theme.dart`).
+Flutter implementation of the Lamplight redesign (tokens in `lib/core/theme/app_theme.dart`).
 
 | Token | Light | Usage |
 |-------|-------|--------|

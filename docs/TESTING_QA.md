@@ -1,4 +1,4 @@
-# Library+ Testing and Quality Plan
+# Lamplight Testing and Quality Plan
 
 ## 1. Test pyramid
 

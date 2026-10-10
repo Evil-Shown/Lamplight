@@ -1,4 +1,4 @@
-# Library+ Development Documentation
+# Lamplight Development Documentation
 
 This directory is the implementation source of truth for completing the app. It combines the current Flutter prototype with Assignment 1 research, Assignment 2 high-fidelity prototype/testing, and the **Milestone 03** implementation/evaluation brief (working APK, CRUD, tests, consolidated report due **09.10.2026**).
 

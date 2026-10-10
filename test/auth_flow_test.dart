@@ -49,7 +49,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create a New Account'));
     await tester.pumpAndSettle();
-    expect(find.text('Join Library+'), findsOneWidget);
+    expect(find.text('Join Lamplight'), findsOneWidget);
     expect(find.text('Create account'), findsOneWidget);
   });
 

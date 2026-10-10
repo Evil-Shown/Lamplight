@@ -227,7 +227,7 @@ class AccountScreen extends StatelessWidget {
                   // consequence spelled out.
                   final confirmed = await showConfirmDialog(
                     context,
-                    title: 'Sign out of Library+?',
+                    title: 'Sign out of Lamplight?',
                     body: 'Your reservations stay saved. Data on this phone '
                         'is cleared and you return to the sign-in screen.',
                     confirmLabel: 'Sign out',
@@ -570,7 +570,7 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
           Text('Your data', style: AppText.title(20, w: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
-            'Everything Library+ holds about you, as text you can copy and '
+            'Everything Lamplight holds about you, as text you can copy and '
             'keep.',
             style: AppText.body(13, color: AppColors.textSecondary),
           ),

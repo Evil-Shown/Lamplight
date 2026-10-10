@@ -86,7 +86,7 @@ class NotificationService {
   void _showFromRemote(RemoteMessage message) {
     final n = message.notification;
     if (n != null) {
-      showLocal(title: n.title ?? 'Library+', body: n.body ?? '');
+      showLocal(title: n.title ?? 'Lamplight', body: n.body ?? '');
     }
   }
 
