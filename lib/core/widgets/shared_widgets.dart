@@ -2392,8 +2392,16 @@ class ConnectivityBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
       decoration: BoxDecoration(
-        color: AppColors.warningContainer,
+        color: AppColors.isDark
+            ? const Color(0xFF451A03).withValues(alpha: 0.90)
+            : AppColors.warningContainer,
         borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: AppColors.isDark
+            ? Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                width: 1,
+              )
+            : null,
       ),
       child: Row(
         children: [

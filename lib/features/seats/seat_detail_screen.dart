@@ -425,17 +425,24 @@ class _ZoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = active ? AppColors.primary : AppColors.textFaint;
+    final isDark = AppColors.isDark;
+    final tint = active
+        ? (isDark ? const Color(0xFFFBBF24) : AppColors.primary)
+        : (isDark ? const Color(0xFF94A3B8) : AppColors.textFaint);
     return Semantics(
       container: true,
       label: active ? label : '$label, not available',
       excludeSemantics: true,
       child: Opacity(
-        opacity: active ? 1 : 0.45,
+        opacity: active ? 1.0 : (isDark ? 0.65 : 0.45),
         child: FrostedCard(
           radius: AppRadii.sm,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          tint: active ? AppColors.primary.withValues(alpha: 0.14) : null,
+          tint: active
+              ? (isDark
+                  ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
+                  : AppColors.primary.withValues(alpha: 0.14))
+              : null,
           border: true,
           child: Column(
             children: [
@@ -447,7 +454,9 @@ class _ZoneCard extends StatelessWidget {
                 style: AppText.label(
                   11,
                   w: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? AppColors.primary : AppColors.textSecondary,
+                  color: active
+                      ? (isDark ? const Color(0xFFFDE68A) : AppColors.primary)
+                      : (isDark ? const Color(0xFFCBD5E1) : AppColors.textSecondary),
                 ),
               ),
             ],
@@ -553,7 +562,16 @@ class _SlotRow extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: AppColors.goldSoft,
+                              color: AppColors.isDark
+                                  ? const Color(0xFF451A03).withValues(alpha: 0.9)
+                                  : AppColors.goldSoft,
+                              border: AppColors.isDark
+                                  ? Border.all(
+                                      color: const Color(0xFFF59E0B)
+                                          .withValues(alpha: 0.35),
+                                      width: 1,
+                                    )
+                                  : null,
                               borderRadius:
                                   BorderRadius.circular(AppRadii.full),
                             ),
@@ -562,7 +580,9 @@ class _SlotRow extends StatelessWidget {
                               style: AppText.overline(
                                 9,
                                 ls: 0.8,
-                                color: AppColors.gold,
+                                color: AppColors.isDark
+                                    ? const Color(0xFFFDE68A)
+                                    : AppColors.gold,
                               ),
                             ),
                           ),
@@ -597,20 +617,33 @@ class _AmenityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.10),
+        color: isDark
+            ? const Color(0xFF1E293B)
+            : AppColors.primary.withValues(alpha: 0.10),
+        border: isDark
+            ? Border.all(color: const Color(0xFF334155), width: 1)
+            : null,
         borderRadius: BorderRadius.circular(AppRadii.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppColors.primary),
+          Icon(icon, size: 15, color: isDark ? const Color(0xFFFBBF24) : AppColors.primary),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(label, style: AppText.label(12.5, w: FontWeight.w600)),
+            child: Text(
+              label,
+              style: AppText.label(
+                12.5,
+                w: FontWeight.w600,
+                color: isDark ? const Color(0xFFF1F5F9) : null,
+              ),
+            ),
           ),
         ],
       ),

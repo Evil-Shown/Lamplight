@@ -200,6 +200,8 @@ class _HelpScreenState extends State<HelpScreen> {
                       data: Theme.of(context)
                           .copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
+                        iconColor: AppColors.isDark ? const Color(0xFFFBBF24) : AppColors.primary,
+                        collapsedIconColor: AppColors.textSecondary,
                         title: Text(
                           results[i].question,
                           style: AppText.title(14.5, w: FontWeight.w600),
@@ -212,7 +214,7 @@ class _HelpScreenState extends State<HelpScreen> {
                             results[i].answer,
                             style: AppText.body(
                               13.5,
-                              color: AppColors.textSecondary,
+                              color: AppColors.isDark ? const Color(0xFFCBD5E1) : AppColors.textSecondary,
                               height: 1.4,
                             ),
                           ),
