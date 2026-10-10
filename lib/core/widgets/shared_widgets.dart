@@ -1227,6 +1227,7 @@ class BookCover extends StatelessWidget {
     required this.title,
     this.color,
     this.isbn,
+    this.coverUrl,
     this.width = 56,
     this.height = 78,
     this.radius = AppRadii.xs,
@@ -1236,6 +1237,7 @@ class BookCover extends StatelessWidget {
   final String title;
   final int? color;
   final String? isbn;
+  final String? coverUrl;
   final double width;
   final double height;
   final double radius;
@@ -1249,6 +1251,11 @@ class BookCover extends StatelessWidget {
 
     // OpenLibrary keys on bare digits — dashes in stored ISBNs break the URL.
     final cleanIsbn = isbn?.replaceAll(RegExp(r'[^0-9Xx]'), '');
+    final imageUrl = coverUrl?.trim().isNotEmpty == true
+      ? coverUrl!.trim()
+      : (cleanIsbn == null || cleanIsbn.isEmpty
+        ? null
+        : 'https://covers.openlibrary.org/b/isbn/$cleanIsbn-L.jpg?default=false');
 
     Widget cover = Container(
       width: width,
@@ -1266,12 +1273,14 @@ class BookCover extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: cleanIsbn == null || cleanIsbn.isEmpty
+        child: imageUrl == null
             ? plate()
             : Image.network(
-                'https://covers.openlibrary.org/b/isbn/$cleanIsbn-L.jpg?default=false',
+            imageUrl,
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
+            headers: const {'Accept': 'image/*'},
+            webHtmlElementStrategy: WebHtmlElementStrategy.always,
                 errorBuilder: (_, __, ___) => plate(),
                 loadingBuilder: (context, child, progress) =>
                     progress == null
