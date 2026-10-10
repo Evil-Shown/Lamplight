@@ -195,7 +195,15 @@ class BookDetailScreen extends StatelessWidget {
                 label: 'RESERVE BOOK',
                 icon: Icons.bookmark_add_outlined,
                 onPressed: () {
-                  final reservation = AppScope.read(context).reserveBook(book);
+                    final reservation = AppScope.read(context).reserveBook(book);
+                    if (reservation == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('You have already reserved this book'),
+                        ),
+                      );
+                      return;
+                    }
                   AppRoute.push(
                     context,
                     ReservationConfirmationScreen(

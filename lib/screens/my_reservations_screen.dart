@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -28,8 +30,8 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final reservations = _tab == 'History'
-        ? state.reservationHistory
-        : state.activeReservations;
+      ? _uniqueById(state.reservationHistory)
+      : _uniqueActiveReservations(state.activeReservations);
 
     return Scaffold(
       backgroundColor: _bookFlowBackground,
@@ -101,6 +103,24 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
         ),
       ),
     );
+  }
+
+  List<BookReservation> _uniqueActiveReservations(
+    List<BookReservation> reservations,
+  ) {
+    final byBookId = LinkedHashMap<String, BookReservation>();
+    for (final reservation in reservations) {
+      byBookId.putIfAbsent(reservation.book.id, () => reservation);
+    }
+    return byBookId.values.toList(growable: false);
+  }
+
+  List<BookReservation> _uniqueById(List<BookReservation> reservations) {
+    final byId = LinkedHashMap<String, BookReservation>();
+    for (final reservation in reservations) {
+      byId.putIfAbsent(reservation.id, () => reservation);
+    }
+    return byId.values.toList(growable: false);
   }
 
   Future<void> _confirmCancel(BookReservation reservation) async {

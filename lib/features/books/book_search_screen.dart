@@ -195,6 +195,12 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
   void _reserve(Book book) {
     final state = AppScope.read(context);
     final reservation = state.reserveBook(book);
+    if (reservation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have already reserved this book')),
+      );
+      return;
+    }
     AppRoute.push(
       context,
       ReservationConfirmationScreen(
