@@ -27,6 +27,7 @@ class Book {
     this.description = '',
     this.dueDate,
     this.coverColor,
+    this.coverUrl = '',
     this.totalCopies,
     this.createdAt,
   });
@@ -42,6 +43,7 @@ class Book {
   final String description;
   final DateTime? dueDate;
   final int? coverColor;
+  final String coverUrl;
 
   /// Copies the library owns (staff admin). Null until the document has it.
   final int? totalCopies;

@@ -215,6 +215,7 @@ class _BookHoldCard extends StatelessWidget {
                 title: book.title,
                 color: book.coverColor,
                 isbn: book.isbn,
+                coverUrl: book.coverUrl,
                 width: 52,
                 height: 74,
               ),
