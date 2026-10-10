@@ -39,6 +39,7 @@ class GlassDock extends StatelessWidget {
       ),
       child: GlassSurface(
         radius: 28,
+        fill: AppGlass.dockFillFor(dark),
         child: SizedBox(
           height: height,
           child: LayoutBuilder(
@@ -124,6 +125,8 @@ class _DockItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
+    final inactive =
+        AppColors.isDark ? AppColors.textSecondary : AppColors.textPrimary;
     return PressScale(
       onTap: onTap,
       scale: 0.94,
@@ -140,7 +143,7 @@ class _DockItem extends StatelessWidget {
             child: Icon(
               selected ? destination.selectedIcon : destination.icon,
               size: 22,
-              color: selected ? accent : AppColors.textSecondary,
+              color: selected ? accent : inactive,
             ),
           ),
           const SizedBox(height: 2),
@@ -150,7 +153,7 @@ class _DockItem extends StatelessWidget {
             style: AppText.label(
               10,
               w: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+              color: selected ? AppColors.textPrimary : inactive,
             ),
             child: Text(
               destination.label,

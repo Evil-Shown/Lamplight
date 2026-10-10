@@ -151,7 +151,8 @@ class AppState extends ChangeNotifier {
   // ------------------------------------------------------ local settings
 
   NotificationPreferences _preferences = const NotificationPreferences();
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
+  bool _themeHintSeen = true;
   bool _soundsEnabled = true;
   bool _hapticsEnabled = true;
   String? _roleNotice;
@@ -181,6 +182,7 @@ class AppState extends ChangeNotifier {
   List<QueueEntry> get queue => List.unmodifiable(_queue);
   NotificationPreferences get preferences => _preferences;
   ThemeMode get themeMode => _themeMode;
+  bool get themeHintSeen => _themeHintSeen;
 
   List<Book> get books => _books;
   List<Seat> get seats => [
@@ -1157,6 +1159,7 @@ class AppState extends ChangeNotifier {
   /// Applies choices loaded from device storage before the first frame.
   void applyLocalSettings(LocalSettings s) {
     _themeMode = s.themeMode;
+    _themeHintSeen = s.themeHintSeen;
     _soundsEnabled = s.sounds;
     _hapticsEnabled = s.haptics;
     AppFeedback.soundsEnabled = s.sounds;
@@ -1184,7 +1187,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// `ThemeMode.system` (default) follows the device.
+  void markThemeHintSeen() {
+    if (_themeHintSeen) return;
+    _themeHintSeen = true;
+    unawaited(PreferencesStore.saveThemeHintSeen(true));
+    notifyListeners();
+  }
+
+  /// `ThemeMode.light` is the default; `ThemeMode.system` follows the device.
   void setThemeMode(ThemeMode mode) {
     if (_themeMode == mode) return;
     _themeMode = mode;

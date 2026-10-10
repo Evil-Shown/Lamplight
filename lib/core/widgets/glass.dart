@@ -858,19 +858,23 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// Shows [builder] inside a glass bottom sheet (blurred, rounded top, drag
-/// handle). The sheet's own route background is transparent.
+/// handle). The sheet's own route background is transparent. [opaque]
+/// swaps the translucent fill for the solid surface colour, for sheets that
+/// carry dense controls over a busy backdrop.
 Future<T?> showGlassSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   bool isScrollControlled = true,
   bool showDragHandle = true,
   bool isDismissible = true,
+  bool opaque = false,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
     isDismissible: isDismissible,
     useSafeArea: true,
+    showDragHandle: false,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: AppColors.isDark ? 0.5 : 0.28),
     elevation: 0,
@@ -878,6 +882,7 @@ Future<T?> showGlassSheet<T>(
       const top = BorderRadius.vertical(top: Radius.circular(AppRadii.xl));
       return GlassSurface(
         borderRadius: top,
+        fill: opaque ? AppColors.surface : null,
         shadows: false,
         child: SafeArea(
           top: false,

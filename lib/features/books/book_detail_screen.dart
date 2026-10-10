@@ -193,7 +193,7 @@ class BookDetailScreen extends StatelessWidget {
       bottomBar: BottomActionBar(
         child: canReserve
             ? PrimaryButton(
-                label: 'RESERVE BOOK',
+                label: 'Reserve book',
                 icon: Icons.bookmark_add_outlined,
                 onPressed: () {
                     final reservation = AppScope.read(context).reserveBook(book);
@@ -215,7 +215,7 @@ class BookDetailScreen extends StatelessWidget {
                 },
               )
             : PrimaryButton(
-                label: 'JOIN WAITLIST',
+                label: 'Join waitlist',
                 icon: Icons.hourglass_bottom_rounded,
                 tone: ButtonTone.secondary,
                 // Books use the same waitlist screen as seats, just

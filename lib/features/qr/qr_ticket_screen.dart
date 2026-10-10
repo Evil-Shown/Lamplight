@@ -22,7 +22,7 @@ class QrTicketScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time =
-        '${DateFormat('HH:mm').format(booking.startTime)} – ${DateFormat('HH:mm').format(booking.endTime)}';
+        '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
     final day = DateFormat('EEE d MMM').format(booking.date);
 
     // Track the live booking so a staff-side check-in or the local
@@ -233,7 +233,7 @@ class QrTicketScreen extends StatelessWidget {
                     icon: Icons.how_to_reg_rounded,
                     title: 'Checked in',
                     message:
-                        'Checked in at ${DateFormat('HH:mm').format(live.checkedInAt!)}. Enjoy your session.',
+                        'Checked in at ${DateFormat('h:mm a').format(live.checkedInAt!)}. Enjoy your session.',
                   ),
                 ),
                 PrimaryButton(

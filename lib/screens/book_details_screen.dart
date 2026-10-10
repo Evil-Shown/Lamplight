@@ -305,7 +305,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 ? _openReservationSheet
                 : null,
             child: Text(
-              canReserve ? 'RESERVE BOOK' : 'UNAVAILABLE',
+              canReserve ? 'Reserve book' : 'Unavailable',
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),

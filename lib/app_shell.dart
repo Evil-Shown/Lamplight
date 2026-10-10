@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'core/navigation/app_route.dart';
 import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/glass.dart';
 import 'core/widgets/glass_dock.dart';
+import 'core/widgets/shared_widgets.dart';
 import 'features/account/account_screen.dart';
 import 'features/books/book_search_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/reservations/reservations_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/seats/seat_map_screen.dart';
 import 'features/staff/staff_dashboard_screen.dart';
 
@@ -36,6 +39,74 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowThemeHint());
+  }
+
+  /// One-time pointer to the theme setting, shown the first time the
+  /// signed-in shell appears on this device.
+  void _maybeShowThemeHint() {
+    if (!mounted) return;
+    final state = AppScope.of(context);
+    if (state.themeHintSeen) return;
+    state.markThemeHintSeen();
+    showGlassSheet<void>(
+      context,
+      opaque: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: Icon(Icons.palette_outlined,
+                      size: 24, color: AppColors.primary),
+                ),
+                const SizedBox(width: AppSpacing.base),
+                Expanded(
+                  child: Text('Light theme is on',
+                      style: AppText.display(22, w: FontWeight.w700, ls: -0.3)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.base),
+            Text(
+              'Prefer dark, or want it to follow your phone? '
+              'Change the theme any time in Settings.',
+              style: AppText.body(14.5, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            PrimaryButton(
+              label: 'Got it',
+              onPressed: () => Navigator.pop(sheetContext),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PrimaryButton(
+              label: 'Open Settings',
+              tone: ButtonTone.secondary,
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                if (mounted) AppRoute.push(context, const SettingsScreen());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void switchTo(int index) {
     if (index < 0 || index >= _destinations.length) return;
