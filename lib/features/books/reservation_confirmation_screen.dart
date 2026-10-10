@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../../screens/my_reservations_screen.dart';
 import 'pickup_countdown.dart';
 
 /// reservation-success "Reservation Successful".
@@ -157,7 +158,11 @@ class ReservationConfirmationScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           PrimaryButton(
             label: 'View my reservations',
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MyReservationsScreen(),
+              ),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
