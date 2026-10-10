@@ -256,21 +256,12 @@ class MockData {
     return [
       BookReservation(
         id: 'BR-2026-045',
-        book: books[0],
+        book: books[3],
         reservedAt: now.subtract(const Duration(hours: 6)),
         pickupBy: now.add(const Duration(days: 5)),
         pickupLocation: 'Main Library',
         qrCode: 'LIB-BR-2026-045',
         status: ReservationStatus.ready,
-      ),
-      BookReservation(
-        id: 'BR-2026-046',
-        book: books[3],
-        reservedAt: now.subtract(const Duration(days: 1)),
-        pickupBy: now.add(const Duration(days: 2)),
-        pickupLocation: 'Main Library',
-        qrCode: 'LIB-BR-2026-046',
-        status: ReservationStatus.active,
       ),
     ];
   }
