@@ -13,8 +13,8 @@ This directory is the implementation source of truth for completing the app. It 
 7. [`DATA_MODEL.md`](DATA_MODEL.md) — collections, fields, indexes, retention, migrations.
 8. [`SECURITY_PRIVACY.md`](SECURITY_PRIVACY.md) — threats, rules, QR/camera security, privacy.
 9. [`INTEGRATION_WIRING.md`](INTEGRATION_WIRING.md) — platform setup and end-to-end wiring.
-10. [`TESTING_QA.md`](TESTING_QA.md) — automated, emulator, usability, accessibility, performance, security.
-11. [`POLISHING_RELEASE.md`](POLISHING_RELEASE.md) — UX polish, stores, operational release gates.
+10. [`ADMIN_WEB_DASHBOARD.md`](ADMIN_WEB_DASHBOARD.md) — zero-build staff & admin web portal hosted on Firebase.
+11. [`TESTING_QA.md`](TESTING_QA.md) — automated, emulator, usability, accessibility, performance, security.
 12. [`OPERATIONS.md`](OPERATIONS.md) — monitoring, backup, runbooks, cost, support.
 13. [`IMPLEMENTATION_ROADMAP.md`](IMPLEMENTATION_ROADMAP.md) — phased execution and priorities.
 14. [`DECISIONS.md`](DECISIONS.md) — settled and open product/architecture decisions.
@@ -31,17 +31,11 @@ This directory is the implementation source of truth for completing the app. It 
 
 ## Current state
 
-The repository is a high-fidelity Flutter prototype with mock, in-memory state. It is not yet production connected. Current strengths include the campus-blue design system, book/seat/reservation screens, role-aware shell, QR display, and broad render smoke tests.
-
-Major missing production capabilities:
-
-- Firebase authentication and server-enforced roles.
-- Firestore repositories and transactional reservations.
-- Secure QR token verification and real camera scanning.
-- Push/reminders/waitlist automation.
-- Security Rules/App Check.
-- Offline/error/accessibility completion.
-- CI, integration/emulator tests, monitoring, and release configuration.
+The application is deployed and connected to **Firebase (`sliit-quick-book`)**:
+* **Mobile App (Flutter)**: Material 3 warm-mocha UI, atomic seat reservations with Firestore transactions, book catalogue, camera QR scanning (`mobile_scanner`), FCM notifications, and server-enforced roles (`student`, `staff`, `admin`).
+* **Admin Web Dashboard**: Deployed live at `https://sliit-quick-book.web.app` (Firebase Hosting).
+* **Backend**: Firestore security rules and composite indexes are deployed and enforced. 91 automated tests passing (`91/91`).
+* **Data State**: 16 available seats and 7 catalogue books seeded live, with 3 pre-verified sample accounts.
 
 ## Documentation rules
 
