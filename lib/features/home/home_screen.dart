@@ -13,6 +13,11 @@ import '../qr/qr_ticket_screen.dart';
 import '../focus/focus_sanctuary_screen.dart';
 import '../journal/reading_journal_screen.dart';
 import '../sanctuary/night_sanctuary_screen.dart';
+import '../zones/study_zones_screen.dart';
+import '../zones/pod_booking_screen.dart';
+import '../zones/group_room_booking_screen.dart';
+import '../zones/library_guide_screen.dart';
+import '../seats/seat_scout_screen.dart';
 
 /// Nordic Modern Campus home — greeting, session hero, bento, occupancy.
 class HomeScreen extends StatelessWidget {
@@ -1150,14 +1155,63 @@ class _SanctuaryShowcase extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Sanctuaries & Studios'),
-        const SizedBox(height: AppSpacing.md),
+        _SectionTitle(
+          'Spaces & Sanctuaries',
+          trailing: TextButton(
+            onPressed: () {
+              AppFeedback.tap();
+              AppRoute.push(context, const StudyZonesScreen());
+            },
+            child: const Text('View All'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         SizedBox(
           height: 190,
           child: ListView(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             children: [
+              _SanctuaryCard(
+                title: 'Glass Study Pods (01-05)',
+                subtitle: 'Private tinted deep focus rooms',
+                tag: 'PODS 01-05',
+                imageAsset: 'assets/images/zone_glass_pods.png',
+                accentColor: const Color(0xFFD99246),
+                onTap: () =>
+                    AppRoute.push(context, const PodBookingScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Design & Project Studio',
+                subtitle: 'Creative group tables & idea walls',
+                tag: 'TEAM COLLAB',
+                imageAsset: 'assets/images/zone_design_project.jpg',
+                accentColor: const Color(0xFFE56A2B),
+                onTap: () =>
+                    AppRoute.push(context, const GroupRoomBookingScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Floor Scout & Deals',
+                subtitle: 'Radial seat map with Focus Scores',
+                tag: 'DEAL SCORES',
+                imageAsset: 'assets/images/zone_quiet_lounge.jpg',
+                accentColor: const Color(0xFF0D7EE8),
+                onTap: () =>
+                    AppRoute.push(context, const SeatScoutScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Startup & Innovation Lab',
+                subtitle: 'Workshop tables & agile lounge',
+                tag: 'INNOVATION',
+                imageAsset: 'assets/images/zone_startup_hub.png',
+                accentColor: const Color(0xFF0D7EE8),
+                onTap: () =>
+                    AppRoute.push(context, const StudyZonesScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
               _SanctuaryCard(
                 title: 'Zen Focus Room',
                 subtitle: 'Timer & library rain sounds',
@@ -1186,6 +1240,16 @@ class _SanctuaryShowcase extends StatelessWidget {
                 accentColor: const Color(0xFFFFAA2A),
                 onTap: () =>
                     AppRoute.push(context, const NightSanctuaryScreen()),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _SanctuaryCard(
+                title: 'Knowledge Line & Code',
+                subtitle: 'Quiet zones & campus facilities',
+                tag: 'ETIQUETTE',
+                imageAsset: 'assets/images/zone_quiet_lounge.jpg',
+                accentColor: const Color(0xFFD4A017),
+                onTap: () =>
+                    AppRoute.push(context, const LibraryGuideScreen()),
               ),
             ],
           ),
