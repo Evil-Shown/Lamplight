@@ -950,7 +950,7 @@ class PrimaryButton extends StatelessWidget {
           onPressed: _wrapped,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
-            backgroundColor: AppGlass.cardFill,
+            backgroundColor: AppGlass.cardFill.withValues(alpha: 1),
             side: BorderSide(color: AppColors.borderStrong, width: 1.2),
             shape: const StadiumBorder(),
           ),
@@ -1879,6 +1879,10 @@ class LiveFreshness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
+    // Demo data is already announced by the connectivity banner.
+    if (scope?.notifier?.dataSource == DataSource.demo) {
+      return const SizedBox.shrink();
+    }
     final (color, label, pulsing) = _resolve(scope?.notifier);
     return Row(
       mainAxisSize: MainAxisSize.min,

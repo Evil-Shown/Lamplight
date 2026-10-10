@@ -299,12 +299,17 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF2B1D14).withValues(alpha: 0.74)
-      : const Color(0xFFFFF4E2).withValues(alpha: 0.82);
+      ? const Color(0xFF2B1D14).withValues(alpha: 0.86)
+      : const Color(0xFFFFF4E2).withValues(alpha: 0.92);
 
   static Color chromeFillFor(bool dark) => dark
       ? const Color(0xFF1B110B).withValues(alpha: 0.88)
       : const Color(0xFFFFEDD2).withValues(alpha: 0.94);
+
+  /// Floating dock: chrome fill, a touch more opaque in light mode so the
+  /// scenery behind does not wash out the items.
+  static Color dockFillFor(bool dark) =>
+      dark ? chromeFillFor(dark) : chromeFillFor(dark).withValues(alpha: 0.985);
 
   static Color borderFor(bool dark) => dark
       ? Colors.white.withValues(alpha: 0.18)
@@ -724,6 +729,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
+          backgroundColor: AppGlass.cardFillFor(dark).withValues(alpha: 1),
           minimumSize: const Size.fromHeight(52),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           side: BorderSide(color: scheme.outline, width: 1.2),

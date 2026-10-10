@@ -416,6 +416,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDemo = AppScope.of(context).dataSource == DataSource.demo;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -428,8 +429,10 @@ class _Header extends StatelessWidget {
           'Tap a free spot, then continue to reserve it.',
           style: AppText.body(13.5, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 8),
-        LiveFreshness(lastSyncedAt: lastSyncedAt),
+        if (!isDemo) ...[
+          const SizedBox(height: 8),
+          LiveFreshness(lastSyncedAt: lastSyncedAt),
+        ],
       ],
     );
   }
