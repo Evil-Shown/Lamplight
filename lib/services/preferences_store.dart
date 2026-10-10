@@ -7,14 +7,19 @@ import '../core/state/test_env.dart';
 /// haptics. A safe no-op under `flutter test` and whenever storage fails.
 class LocalSettings {
   const LocalSettings({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.light,
     this.sounds = true,
     this.haptics = true,
+    this.themeHintSeen = true,
   });
 
   final ThemeMode themeMode;
   final bool sounds;
   final bool haptics;
+
+  /// Whether the one-time "you can change the theme" hint was shown. Defaults
+  /// to true so fallbacks and tests never show it.
+  final bool themeHintSeen;
 }
 
 class PreferencesStore {
@@ -23,6 +28,7 @@ class PreferencesStore {
   static const _kTheme = 'themeMode';
   static const _kSounds = 'soundsEnabled';
   static const _kHaptics = 'hapticsEnabled';
+  static const _kThemeHintSeen = 'themeHintSeen';
 
   static Future<LocalSettings> load() async {
     if (isRunningInTest) return const LocalSettings();
@@ -30,12 +36,13 @@ class PreferencesStore {
       final p = await SharedPreferences.getInstance();
       final mode = ThemeMode.values.firstWhere(
         (m) => m.name == p.getString(_kTheme),
-        orElse: () => ThemeMode.system,
+        orElse: () => ThemeMode.light,
       );
       return LocalSettings(
         themeMode: mode,
         sounds: p.getBool(_kSounds) ?? true,
         haptics: p.getBool(_kHaptics) ?? true,
+        themeHintSeen: p.getBool(_kThemeHintSeen) ?? false,
       );
     } catch (_) {
       return const LocalSettings();
@@ -61,6 +68,9 @@ class PreferencesStore {
       _write((p) => p.setBool(_kSounds, v));
   static Future<void> saveHaptics(bool v) =>
       _write((p) => p.setBool(_kHaptics, v));
+
+  static Future<void> saveThemeHintSeen(bool v) =>
+      _write((p) => p.setBool(_kThemeHintSeen, v));
 
   static Future<void> _write(
       Future<bool> Function(SharedPreferences p) fn) async {
