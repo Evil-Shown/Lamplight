@@ -153,14 +153,24 @@ class _HomeCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.97),
+        color: AppColors.isDark
+            ? AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.97)
+            : Colors.white,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: AppColors.isDark
               ? const Color(0xFF334155).withValues(alpha: 0.90)
-              : AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
+              : const Color(0xFFE2E8F0),
         ),
-        boxShadow: AppGlass.shadows,
+        boxShadow: AppColors.isDark
+            ? AppGlass.shadows
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: child,
     );
@@ -334,12 +344,24 @@ class _HomeGreeting extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.scheme.surfaceContainerLow,
+                      color: AppColors.isDark
+                          ? AppColors.scheme.surfaceContainerLow
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
-                        color: AppColors.scheme.outlineVariant,
+                        color: AppColors.isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
                       ),
-                      boxShadow: AppGlass.shadows,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(
+                            alpha: AppColors.isDark ? 0.35 : 0.05,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     alignment: Alignment.center,
                     child: Badge(
@@ -365,24 +387,39 @@ class _HomeGreeting extends StatelessWidget {
             runSpacing: 6,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.scheme.surfaceContainerLow,
+                  color: AppColors.isDark
+                      ? AppColors.scheme.surfaceContainerLow
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(color: AppColors.scheme.outlineVariant),
+                  border: Border.all(
+                    color: AppColors.isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(
+                        alpha: AppColors.isDark ? 0.25 : 0.04,
+                      ),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 7.5,
+                      height: 7.5,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.success,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.4),
+                            color: AppColors.success.withValues(alpha: 0.45),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -406,12 +443,16 @@ class _HomeGreeting extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: AppColors.primary.withValues(
+                    alpha: AppColors.isDark ? 0.15 : 0.10,
+                  ),
                   borderRadius: BorderRadius.circular(AppRadii.full),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: AppColors.primary.withValues(
+                      alpha: AppColors.isDark ? 0.35 : 0.25,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -449,15 +490,21 @@ class _HomeGreeting extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.95),
+                color: AppColors.isDark
+                    ? AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.95)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(AppRadii.card),
                 border: Border.all(
-                  color: AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
+                  color: AppColors.isDark
+                      ? const Color(0xFF334155).withValues(alpha: 0.90)
+                      : const Color(0xFFE2E8F0),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: AppColors.isDark ? 0.2 : 0.04),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(
+                      alpha: AppColors.isDark ? 0.25 : 0.05,
+                    ),
+                    blurRadius: 12,
                     offset: const Offset(0, 3),
                   ),
                 ],
@@ -1062,18 +1109,26 @@ class _GoalCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [Color(0xFF1E293B), Color(0xFF0F172A)]
+                  : const [Color(0xFFFFFFFF), Color(0xFFF8FAFC)],
+            ),
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
               color: isDark
-                  ? const Color(0xFF334155).withValues(alpha: 0.8)
-                  : const Color(0xFFE2E8F0).withValues(alpha: 0.25),
+                  ? const Color(0xFF334155).withValues(alpha: 0.9)
+                  : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
+                color: const Color(0xFF0F172A).withValues(
+                  alpha: isDark ? 0.35 : 0.06,
+                ),
+                blurRadius: 16,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
@@ -1083,10 +1138,10 @@ class _GoalCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.20),
+                      color: AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1114,7 +1169,7 @@ class _GoalCard extends StatelessWidget {
                           style: AppText.title(
                             16,
                             w: FontWeight.w700,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
                       ],
@@ -1123,10 +1178,14 @@ class _GoalCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.10),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.20),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.20)
+                            : const Color(0xFFFDE68A),
                       ),
                     ),
                     child: Row(
@@ -1139,7 +1198,9 @@ class _GoalCard extends StatelessWidget {
                           style: AppText.label(
                             11,
                             w: FontWeight.w800,
-                            color: const Color(0xFFFBBF24),
+                            color: isDark
+                                ? const Color(0xFFFBBF24)
+                                : const Color(0xFFB45309),
                           ),
                         ),
                       ],
@@ -1158,7 +1219,9 @@ class _GoalCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppText.body(
                         12,
-                        color: const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? const Color(0xFFCBD5E1)
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -1168,19 +1231,21 @@ class _GoalCard extends StatelessWidget {
                     style: AppText.label(
                       12,
                       w: FontWeight.w700,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 7),
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadii.full),
                 child: SizedBox(
                   height: 6,
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: Colors.white.withValues(alpha: 0.18),
+                    backgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : const Color(0xFFE2E8F0),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       AppColors.primary,
                     ),
@@ -1305,11 +1370,13 @@ class _CategoryPill extends StatelessWidget {
             border: Border.all(
               color: isDark
                   ? const Color(0xFF334155).withValues(alpha: 0.90)
-                  : AppColors.border,
+                  : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
+                color: const Color(0xFF0F172A).withValues(
+                  alpha: isDark ? 0.35 : 0.05,
+                ),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),

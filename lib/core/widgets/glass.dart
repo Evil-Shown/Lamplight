@@ -378,7 +378,7 @@ class _NaturePainter extends CustomPainter {
   void _pineTreeline(Canvas canvas, double w, double h) {
     final treelineColor = dark
         ? const Color(0xFF090D16)
-        : const Color(0xFF94A3B8).withValues(alpha: 0.45);
+        : const Color(0xFF94A3B8).withValues(alpha: 0.22);
     final ridgePath = Path()
       ..moveTo(0, h * 0.78)
       ..cubicTo(w * 0.3, h * 0.75, w * 0.65, h * 0.79, w, h * 0.76)
@@ -387,7 +387,7 @@ class _NaturePainter extends CustomPainter {
       ..close();
     canvas.drawPath(ridgePath, Paint()..color = treelineColor);
 
-    final count = 18;
+    const count = 18;
     for (var i = 0; i < count; i++) {
       final tx = w * (i / (count - 1));
       final ty = h * (0.755 + 0.025 * math.sin(i * 1.3));
@@ -399,7 +399,7 @@ class _NaturePainter extends CustomPainter {
   void _foregroundHills(Canvas canvas, double w, double h) {
     final hillColor = dark
         ? const Color(0xFF060910)
-        : const Color(0xFFCBD5E1).withValues(alpha: 0.35);
+        : const Color(0xFFCBD5E1).withValues(alpha: 0.18);
     final hillPath = Path()
       ..moveTo(0, h * 0.84)
       ..cubicTo(w * 0.35, h * 0.81, w * 0.70, h * 0.86, w, h * 0.83)
@@ -743,7 +743,7 @@ Future<T?> showGlassSheet<T>(
       const top = BorderRadius.vertical(top: Radius.circular(AppRadii.xl));
       return GlassSurface(
         borderRadius: top,
-        fill: opaque ? AppColors.surface : null,
+        fill: (opaque || !AppColors.isDark) ? AppColors.surface : null,
         border: true,
         shadows: false,
         child: SafeArea(
