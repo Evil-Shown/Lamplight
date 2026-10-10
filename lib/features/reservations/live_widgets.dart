@@ -108,8 +108,10 @@ class CountdownBadge extends StatelessWidget {
           fg = AppColors.textInverse;
           bg = AppColors.textInverse.withValues(alpha: 0.22);
         } else {
-          fg = AppColors.primary;
-          bg = AppColors.primary.withValues(alpha: 0.12);
+          fg = AppColors.isDark ? const Color(0xFFFDE68A) : AppColors.primary;
+          bg = AppColors.isDark
+              ? const Color(0xFF451A03).withValues(alpha: 0.8)
+              : AppColors.primary.withValues(alpha: 0.12);
         }
         return Semantics(
           label: text,
@@ -120,6 +122,17 @@ class CountdownBadge extends StatelessWidget {
                 horizontal: AppSpacing.md, vertical: AppSpacing.xs + 2),
             decoration: BoxDecoration(
               color: bg,
+              border: AppColors.isDark && !onGradient
+                  ? Border.all(
+                      color: (missed
+                              ? AppColors.error
+                              : warn
+                                  ? AppColors.warning
+                                  : const Color(0xFFF59E0B))
+                          .withValues(alpha: 0.35),
+                      width: 1,
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(AppRadii.full),
             ),
             child: Row(

@@ -564,10 +564,24 @@ class Callout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (fg, bg) = switch (tone) {
-      CalloutTone.info => (AppColors.primary, AppColors.primarySoft),
-      CalloutTone.success => (AppColors.success, AppColors.successSoft),
-      CalloutTone.warning => (AppColors.warning, AppColors.warningSoft),
-      CalloutTone.danger => (AppColors.error, AppColors.errorSoft),
+      CalloutTone.info => (
+          AppColors.isDark ? const Color(0xFFFDE68A) : AppColors.primary,
+          AppColors.primarySoft,
+        ),
+      CalloutTone.success => (
+          AppColors.isDark ? AppColors.onSuccessContainer : AppColors.success,
+          AppColors.successSoft,
+        ),
+      CalloutTone.warning => (
+          AppColors.isDark ? AppColors.onWarningContainer : AppColors.warning,
+          AppColors.warningSoft,
+        ),
+      CalloutTone.danger => (
+          AppColors.isDark
+              ? AppColors.scheme.onErrorContainer
+              : AppColors.error,
+          AppColors.errorSoft,
+        ),
       CalloutTone.neutral => (AppColors.neutral, AppColors.neutralSoft),
     };
 
@@ -575,9 +589,11 @@ class Callout extends StatelessWidget {
       margin: margin,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.92),
+        color: bg.withValues(alpha: AppColors.isDark ? 0.95 : 0.92),
         borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: fg.withValues(alpha: 0.18)),
+        border: Border.all(
+          color: fg.withValues(alpha: AppColors.isDark ? 0.35 : 0.18),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2231,11 +2247,16 @@ class ShelfTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : null,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color ?? AppColors.borderStrong),
+        border: Border.all(
+          color: color ??
+              (isDark ? const Color(0xFF475569) : AppColors.borderStrong),
+        ),
       ),
       child: Text(
         code,
@@ -2243,7 +2264,7 @@ class ShelfTag extends StatelessWidget {
           11.5,
           w: FontWeight.w600,
           ls: 0.3,
-          color: AppColors.textSecondary,
+          color: isDark ? const Color(0xFFE2E8F0) : AppColors.textSecondary,
         ),
       ),
     );
