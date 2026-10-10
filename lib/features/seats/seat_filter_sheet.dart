@@ -69,6 +69,7 @@ class SeatFilterSheet extends StatefulWidget {
   static Future<SeatFilters?> show(BuildContext context, SeatFilters initial) {
     return showGlassSheet<SeatFilters>(
       context,
+      opaque: true,
       builder: (_) => SeatFilterSheet(initial: initial),
     );
   }
@@ -100,7 +101,7 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
             Text('Filters',
                 style: AppText.display(22, w: FontWeight.w700, ls: -0.3)),
             const SizedBox(height: AppSpacing.lg),
-            const SectionLabel('Floor'),
+            SectionLabel('Floor', color: AppColors.textSecondary),
             const SizedBox(height: 10),
             SegmentedTabs(
               options: MockData.floors,
@@ -110,7 +111,7 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
               padding: EdgeInsets.zero,
             ),
             const SizedBox(height: AppSpacing.xl),
-            const SectionLabel('Study area'),
+            SectionLabel('Study area', color: AppColors.textSecondary),
             const SizedBox(height: 10),
             Wrap(
               spacing: AppSpacing.sm,
@@ -139,7 +140,7 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
-            const SectionLabel('Facilities'),
+            SectionLabel('Facilities', color: AppColors.textSecondary),
             const SizedBox(height: 10),
             Wrap(
               spacing: AppSpacing.sm,
@@ -196,7 +197,8 @@ class _SeatFilterSheetState extends State<SeatFilterSheet> {
   }
 }
 
-/// A pill that toggles a filter: tinted with a check when on, so the
+/// A pill that toggles a filter: filled with the primary colour and a
+/// check when on, so the
 /// state never rests on colour alone. Fires a toggle cue itself.
 class _ToggleChip extends StatelessWidget {
   const _ToggleChip({
@@ -242,7 +244,8 @@ class _ToggleChip extends StatelessWidget {
             children: [
               Icon(value ? Icons.check_rounded : icon,
                   size: 16,
-                  color: value ? AppColors.primary : AppColors.textSecondary),
+                  color:
+                      value ? AppColors.textInverse : AppColors.textSecondary),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -250,7 +253,7 @@ class _ToggleChip extends StatelessWidget {
                   style: AppText.label(
                     13.5,
                     w: value ? FontWeight.w700 : FontWeight.w500,
-                    color: value ? AppColors.primary : AppColors.textPrimary,
+                    color: value ? AppColors.textInverse : AppColors.textPrimary,
                   ),
                 ),
               ),

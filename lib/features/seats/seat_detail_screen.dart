@@ -346,11 +346,11 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
 
   /// Live floor occupancy from Firestore — the same honest number every
   /// slot shows, since desks are shared across the day's slots.
-  String _slotAvailability(int index) {
+  String? _slotAvailability(int index) {
     final floorSeats =
         AppScope.of(context).seats.where((s) => s.floor == seat.floor).toList();
     final total = floorSeats.length;
-    if (total == 0) return 'Availability unavailable';
+    if (total == 0) return null;
     final free =
         floorSeats.where((s) => s.status == SeatStatus.available).length;
     return '$free of $total desks left on Floor ${seat.floor}';
@@ -369,17 +369,17 @@ class _ZoneStrip extends StatelessWidget {
     final zones = [
       (
         Icons.volume_off_rounded,
-        'Quiet Wing',
+        'Quiet zone',
         seat.category == SeatCategory.quietZone,
       ),
       (
         Icons.power_rounded,
-        'Power Wing',
+        'Power outlet',
         seat.hasPowerOutlet,
       ),
       (
         Icons.monitor_rounded,
-        'Panel Hub',
+        'Monitor',
         seat.hasMonitor,
       ),
     ];
@@ -415,25 +415,33 @@ class _ZoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tint = active ? AppColors.primary : AppColors.textFaint;
-    return FrostedCard(
-      radius: AppRadii.sm,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      tint: active ? AppColors.primary.withValues(alpha: 0.14) : null,
-      border: true,
-      child: Column(
-        children: [
-          Icon(active ? icon : icon, size: 19, color: tint),
-          const SizedBox(height: 6),
-          Text(
-            active ? label : '$label · n/a',
-            textAlign: TextAlign.center,
-            style: AppText.label(
-              11,
-              w: active ? FontWeight.w700 : FontWeight.w500,
-              color: active ? AppColors.primary : AppColors.textSecondary,
-            ),
+    return Semantics(
+      container: true,
+      label: active ? label : '$label, not available',
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: active ? 1 : 0.45,
+        child: FrostedCard(
+          radius: AppRadii.sm,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          tint: active ? AppColors.primary.withValues(alpha: 0.14) : null,
+          border: true,
+          child: Column(
+            children: [
+              Icon(icon, size: 19, color: tint),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppText.label(
+                  11,
+                  w: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -453,7 +461,7 @@ class _SlotRow extends StatelessWidget {
 
   final String label;
   final String? badge;
-  final String availability;
+  final String? availability;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -472,7 +480,8 @@ class _SlotRow extends StatelessWidget {
               horizontal: AppSpacing.md + 2, vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.primary.withValues(alpha: 0.12)
+                ? Color.alphaBlend(AppColors.primary.withValues(alpha: 0.12),
+                    AppGlass.cardFill)
                 : AppGlass.cardFill,
             borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(
@@ -548,14 +557,16 @@ class _SlotRow extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      availability,
-                      style: AppText.body(
-                        11.5,
-                        color: AppColors.textSecondary,
+                    if (availability != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        availability!,
+                        style: AppText.body(
+                          11.5,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
