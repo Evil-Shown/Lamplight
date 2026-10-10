@@ -1280,7 +1280,7 @@ class BookCover extends StatelessWidget {
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
             headers: const {'Accept': 'image/*'},
-            webHtmlElementStrategy: WebHtmlElementStrategy.always,
+            webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                 errorBuilder: (_, __, ___) => plate(),
                 loadingBuilder: (context, child, progress) =>
                     progress == null
