@@ -156,7 +156,9 @@ class _HomeCard extends StatelessWidget {
         color: AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.97),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
+          color: AppColors.isDark
+              ? const Color(0xFF334155).withValues(alpha: 0.90)
+              : AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
         ),
         boxShadow: AppGlass.shadows,
       ),
@@ -660,11 +662,13 @@ class _HeroButton extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: AppColors.textInverse,
+          color: AppColors.isDark ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.md),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: AppColors.isDark
+                  ? AppColors.primary.withValues(alpha: 0.35)
+                  : Colors.black.withValues(alpha: 0.12),
               blurRadius: 14,
               offset: const Offset(0, 4),
             ),
@@ -673,7 +677,13 @@ class _HeroButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: AppColors.primary),
+            Icon(
+              icon,
+              size: 20,
+              color: AppColors.isDark
+                  ? const Color(0xFF0F172A)
+                  : AppColors.primary,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Flexible(
               child: Text(
@@ -683,13 +693,20 @@ class _HeroButton extends StatelessWidget {
                 style: AppText.label(
                   15,
                   w: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: AppColors.isDark
+                      ? const Color(0xFF0F172A)
+                      : AppColors.primary,
                 ),
               ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.arrow_forward_rounded,
-                size: 16, color: AppColors.primary),
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: 16,
+              color: AppColors.isDark
+                  ? const Color(0xFF0F172A)
+                  : AppColors.primary,
+            ),
           ],
         ),
       ),
@@ -1184,6 +1201,7 @@ class _QuickCategories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1196,8 +1214,8 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.menu_book_rounded,
                 label: 'Read',
-                tint: AppColors.primary,
-                bgTint: AppColors.isDark
+                tint: isDark ? const Color(0xFFFBBF24) : AppColors.primary,
+                bgTint: isDark
                     ? const Color(0xFF451A03)
                     : const Color(0xFFFEF3C7),
                 onTap: () => AppShell.switchTab(context, AppTab.books),
@@ -1208,8 +1226,8 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.event_seat_rounded,
                 label: 'Desks',
-                tint: const Color(0xFF0D9488),
-                bgTint: AppColors.isDark
+                tint: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488),
+                bgTint: isDark
                     ? const Color(0xFF134E4A)
                     : const Color(0xFFCCFBF1),
                 onTap: () => AppShell.switchTab(context, AppTab.seats),
@@ -1220,8 +1238,8 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.confirmation_number_rounded,
                 label: 'Bookings',
-                tint: const Color(0xFF4F46E5),
-                bgTint: AppColors.isDark
+                tint: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+                bgTint: isDark
                     ? const Color(0xFF312E81)
                     : const Color(0xFFEEF2FF),
                 onTap: () => AppShell.switchTab(context, AppTab.bookings),
@@ -1232,8 +1250,8 @@ class _QuickCategories extends StatelessWidget {
               child: _CategoryPill(
                 icon: Icons.qr_code_2_rounded,
                 label: 'QR Pass',
-                tint: const Color(0xFFE11D48),
-                bgTint: AppColors.isDark
+                tint: isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48),
+                bgTint: isDark
                     ? const Color(0xFF881337)
                     : const Color(0xFFFFE4E6),
                 onTap: () {
@@ -1282,14 +1300,16 @@ class _CategoryPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111827) : Colors.white,
+            color: isDark ? const Color(0xFF151D2A) : Colors.white,
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
-              color: AppColors.border,
+              color: isDark
+                  ? const Color(0xFF334155).withValues(alpha: 0.90)
+                  : AppColors.border,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),

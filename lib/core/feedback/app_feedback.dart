@@ -64,22 +64,76 @@ class AppFeedback {
   }
 
   /// Light press on a button or card.
-  static void tap() => _fire(_Cue.tap, HapticFeedback.lightImpact);
+  static void tap() => _fire(_Cue.tap, () => _impact('light'));
 
   /// A choice changed: chips, tabs, segments, dock items.
-  static void select() => _fire(_Cue.select, HapticFeedback.selectionClick);
+  static void select() => _fire(_Cue.select, _selection);
 
   /// A switch or checkbox flipped.
-  static void toggle() => _fire(_Cue.toggle, HapticFeedback.selectionClick);
+  static void toggle() => _fire(_Cue.toggle, _selection);
 
   /// A flow completed (booking confirmed, check-in done).
-  static void success() => _fire(_Cue.success, HapticFeedback.mediumImpact);
+  static void success() =>
+      _fire(_Cue.success, () => _notification('success'));
 
   /// Something needs attention but nothing failed.
-  static void warning() => _fire(_Cue.error, HapticFeedback.heavyImpact);
+  static void warning() =>
+      _fire(_Cue.error, () => _notification('warning'));
 
   /// An action failed or was refused.
-  static void error() => _fire(_Cue.error, HapticFeedback.vibrate);
+  static void error() => _fire(_Cue.error, () => _notification('error'));
+
+  // --- Haptic backends --------------------------------------------------
+  // On iPhone these hit the Taptic Engine through the `lamplight/haptics`
+  // channel (UINotification/UIImpact/UISelectionFeedbackGenerator). Anywhere
+  // else, or if the channel is missing, fall back to Flutter's HapticFeedback.
+
+  static const _haptics = MethodChannel('lamplight/haptics');
+
+  static bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
+
+  static Future<void> _impact(String style) async {
+    if (_isIOS) {
+      try {
+        await _haptics.invokeMethod<void>('impact', style);
+        return;
+      } on MissingPluginException {
+        // fall through
+      }
+    }
+    await HapticFeedback.lightImpact();
+  }
+
+  static Future<void> _selection() async {
+    if (_isIOS) {
+      try {
+        await _haptics.invokeMethod<void>('selection');
+        return;
+      } on MissingPluginException {
+        // fall through
+      }
+    }
+    await HapticFeedback.selectionClick();
+  }
+
+  static Future<void> _notification(String type) async {
+    if (_isIOS) {
+      try {
+        await _haptics.invokeMethod<void>('notification', type);
+        return;
+      } on MissingPluginException {
+        // fall through
+      }
+    }
+    switch (type) {
+      case 'success':
+        await HapticFeedback.mediumImpact();
+      case 'warning':
+        await HapticFeedback.heavyImpact();
+      default:
+        await HapticFeedback.vibrate();
+    }
+  }
 
   static void _fire(_Cue cue, Future<void> Function() haptic) {
     if (!_active) return;

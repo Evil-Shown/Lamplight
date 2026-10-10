@@ -99,19 +99,19 @@ class AppColors {
     onErrorContainer: Color(0xFFFECACA),
     surface: Color(0xFF0B0F19),
     onSurface: Color(0xFFF8FAFC),
-    onSurfaceVariant: Color(0xFF94A3B8),
-    outline: Color(0xFF475569),
-    outlineVariant: Color(0xFF1E293B),
+    onSurfaceVariant: Color(0xFFCBD5E1),
+    outline: Color(0xFF64748B),
+    outlineVariant: Color(0xFF334155),
     inverseSurface: Color(0xFFF8FAFC),
     onInverseSurface: Color(0xFF0B0F19),
     inversePrimary: Color(0xFFB45309),
     surfaceContainerLowest: Color(0xFF060910),
-    surfaceContainerLow: Color(0xFF111827),
+    surfaceContainerLow: Color(0xFF151D2A),
     surfaceContainer: Color(0xFF1E293B),
-    surfaceContainerHigh: Color(0xFF263346),
+    surfaceContainerHigh: Color(0xFF283548),
     surfaceContainerHighest: Color(0xFF334155),
     surfaceDim: Color(0xFF0B0F19),
-    surfaceBright: Color(0xFF263346),
+    surfaceBright: Color(0xFF283548),
   );
 
   /// Selected seats, nav pill, focus rings.
@@ -160,8 +160,10 @@ class AppColors {
   static Color get textPrimary => scheme.onSurface;
   static Color get textSecondary => scheme.onSurfaceVariant;
   static Color get textFaint =>
-      const Color(0xFF64748B);
-  static Color get textInverse => scheme.onPrimary;
+      isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+  /// Crisp white text for inverted, dark hero or colored surfaces.
+  static Color get textInverse => const Color(0xFFFFFFFF);
 
   // Lines — M3 outline roles.
   static Color get border => scheme.outlineVariant;
@@ -171,24 +173,24 @@ class AppColors {
   // extension so pills, icons and text stay harmonised across surfaces in
   // both brightnesses.
   static Color get success =>
-      isDark ? const Color(0xFF8FD6A3) : const Color(0xFF1E6B3A);
+      isDark ? const Color(0xFF4ADE80) : const Color(0xFF1E6B3A);
 
   /// Explicit success container — never an alpha blend.
   static Color get successContainer =>
-      isDark ? const Color(0xFF12432A) : const Color(0xFFD8F0DE);
+      isDark ? const Color(0xFF14532D) : const Color(0xFFD8F0DE);
   static Color get onSuccessContainer =>
-      isDark ? const Color(0xFFBDF0CB) : const Color(0xFF0B3318);
+      isDark ? const Color(0xFFBBF7D0) : const Color(0xFF0B3318);
 
   /// Alias so legacy call sites resolve onto the pinned container.
   static Color get successSoft => successContainer;
   static Color get warning =>
-      isDark ? const Color(0xFFF2C25B) : const Color(0xFF8A5A00);
+      isDark ? const Color(0xFFFBBF24) : const Color(0xFF8A5A00);
 
   /// Explicit warning container — never an alpha blend.
   static Color get warningContainer =>
-      isDark ? const Color(0xFF4A3500) : const Color(0xFFFFE9B8);
+      isDark ? const Color(0xFF78350F) : const Color(0xFFFFE9B8);
   static Color get onWarningContainer =>
-      isDark ? const Color(0xFFFFE08A) : const Color(0xFF3D2800);
+      isDark ? const Color(0xFFFDE68A) : const Color(0xFF3D2800);
 
   /// Alias so legacy call sites resolve onto the pinned container.
   static Color get warningSoft => warningContainer;
@@ -325,19 +327,19 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF111827).withValues(alpha: 0.95)
+      ? const Color(0xFF151D2A).withValues(alpha: 0.98)
       : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
 
   static Color chromeFillFor(bool dark) => dark
-      ? const Color(0xFF0B0F19).withValues(alpha: 0.92)
+      ? const Color(0xFF0B0F19).withValues(alpha: 0.94)
       : const Color(0xFFFFFFFF).withValues(alpha: 0.95);
 
   /// Floating dock: chrome fill, crisp in light and dark mode.
   static Color dockFillFor(bool dark) =>
-      dark ? const Color(0xFF111827).withValues(alpha: 0.95) : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
+      dark ? const Color(0xFF151D2A).withValues(alpha: 0.96) : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
 
   static Color borderFor(bool dark) => dark
-      ? const Color(0xFF334155).withValues(alpha: 0.65)
+      ? const Color(0xFF334155).withValues(alpha: 0.90)
       : const Color(0xFFE2E8F0);
 
   /// Bright rim light on the top/left edge.

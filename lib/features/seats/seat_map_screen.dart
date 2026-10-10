@@ -1361,18 +1361,27 @@ class _SeatGridCard extends StatelessWidget {
     // The map sits on a dark clearing in front of a misty pine forest: the
     // crowns rise above and beside the panel, the seats stay on solid dark
     // green so every tile and label keeps its contrast in both themes.
+    final isDark = AppColors.isDark;
     const cream = Color(0xFFF3E8D6);
-    final faint = cream.withValues(alpha: 0.66);
+    final faint = isDark
+        ? const Color(0xFFE2E8F0)
+        : cream.withValues(alpha: 0.85);
 
     final panel = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E1D13).withValues(alpha: 0.93),
+        color: isDark
+            ? const Color(0xFF0F1B14).withValues(alpha: 0.96)
+            : const Color(0xFF0E1D13).withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: cream.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF34D399).withValues(alpha: 0.35)
+              : cream.withValues(alpha: 0.18),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.35),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -1396,9 +1405,15 @@ class _SeatGridCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: cream.withValues(alpha: 0.10),
+                  color: isDark
+                      ? const Color(0xFF34D399).withValues(alpha: 0.15)
+                      : cream.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(color: cream.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF34D399).withValues(alpha: 0.35)
+                        : cream.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1416,7 +1431,12 @@ class _SeatGridCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Divider(height: 1, color: cream.withValues(alpha: 0.12)),
+          Divider(
+            height: 1,
+            color: isDark
+                ? const Color(0xFF34D399).withValues(alpha: 0.25)
+                : cream.withValues(alpha: 0.15),
+          ),
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, box) {
@@ -1431,7 +1451,12 @@ class _SeatGridCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
-          Divider(height: 1, color: cream.withValues(alpha: 0.12)),
+          Divider(
+            height: 1,
+            color: isDark
+                ? const Color(0xFF34D399).withValues(alpha: 0.25)
+                : cream.withValues(alpha: 0.15),
+          ),
           const SizedBox(height: 14),
           _Legend(hasMine: mySeatIds.isNotEmpty, textColor: faint),
           const SizedBox(height: 14),
@@ -1664,11 +1689,15 @@ class _SeatBadge extends StatelessWidget {
           : _renderMine
               ? AppColors.amberHighlight
               : switch (seat.status) {
-                  SeatStatus.available => AppColors.successContainer
-                      .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
-                  SeatStatus.limited => AppColors.warningContainer
-                      .withValues(alpha: AppColors.isDark ? 0.6 : 0.85),
-                  SeatStatus.occupied => const Color(0xFF3B3A34),
+                  SeatStatus.available => AppColors.isDark
+                      ? const Color(0xFF143823)
+                      : AppColors.successContainer.withValues(alpha: 0.85),
+                  SeatStatus.limited => AppColors.isDark
+                      ? const Color(0xFF452205)
+                      : AppColors.warningContainer.withValues(alpha: 0.85),
+                  SeatStatus.occupied => AppColors.isDark
+                      ? const Color(0xFF1E242B)
+                      : const Color(0xFF3B3A34),
                 };
 
   Color get _glowColor => isSelected
@@ -1688,12 +1717,15 @@ class _SeatBadge extends StatelessWidget {
           : _renderMine
               ? AppColors.amberHighlight
               : switch (seat.status) {
-                  SeatStatus.available =>
-                    AppColors.seatAvailable.withValues(alpha: 0.6),
-                  SeatStatus.limited =>
-                    AppColors.seatLimited.withValues(alpha: 0.6),
-                  SeatStatus.occupied =>
-                    const Color(0xFFF3E8D6).withValues(alpha: 0.22),
+                  SeatStatus.available => AppColors.isDark
+                      ? const Color(0xFF34D399)
+                      : AppColors.seatAvailable.withValues(alpha: 0.6),
+                  SeatStatus.limited => AppColors.isDark
+                      ? const Color(0xFFFBBF24)
+                      : AppColors.seatLimited.withValues(alpha: 0.6),
+                  SeatStatus.occupied => AppColors.isDark
+                      ? const Color(0xFF475569)
+                      : const Color(0xFFF3E8D6).withValues(alpha: 0.22),
                 };
 
   double get _ringWidth => dimmed
@@ -1709,10 +1741,15 @@ class _SeatBadge extends StatelessWidget {
       : _renderMine
           ? _onAmber
           : switch (seat.status) {
-              SeatStatus.available => AppColors.onSuccessContainer,
-              SeatStatus.limited => AppColors.onWarningContainer,
-              SeatStatus.occupied =>
-                const Color(0xFFF3E8D6).withValues(alpha: 0.7),
+              SeatStatus.available => AppColors.isDark
+                  ? const Color(0xFFECFDF5)
+                  : AppColors.onSuccessContainer,
+              SeatStatus.limited => AppColors.isDark
+                  ? const Color(0xFFFEF3C7)
+                  : AppColors.onWarningContainer,
+              SeatStatus.occupied => AppColors.isDark
+                  ? const Color(0xFF94A3B8)
+                  : const Color(0xFFF3E8D6).withValues(alpha: 0.7),
             };
 
   String _statusLabel(SeatStatus status) => switch (status) {
@@ -1732,14 +1769,27 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     final items = <(Color, Color, IconData?, String)>[
-      (AppColors.successContainer, AppColors.seatAvailable, null, 'Free'),
-      (AppColors.warningContainer, AppColors.seatLimited, null, 'Limited'),
       (
-        const Color(0xFF3B3A34),
-        const Color(0xFFF3E8D6).withValues(alpha: 0.3),
+        isDark ? const Color(0xFF143823) : AppColors.successContainer,
+        isDark ? const Color(0xFF34D399) : AppColors.seatAvailable,
         null,
-        'Full'
+        'Free',
+      ),
+      (
+        isDark ? const Color(0xFF452205) : AppColors.warningContainer,
+        isDark ? const Color(0xFFFBBF24) : AppColors.seatLimited,
+        null,
+        'Limited',
+      ),
+      (
+        isDark ? const Color(0xFF1E242B) : const Color(0xFF3B3A34),
+        isDark
+            ? const Color(0xFF475569)
+            : const Color(0xFFF3E8D6).withValues(alpha: 0.3),
+        null,
+        'Full',
       ),
       (
         AppColors.seatSelected,

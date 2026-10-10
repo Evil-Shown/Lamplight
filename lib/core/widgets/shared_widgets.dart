@@ -1077,7 +1077,8 @@ class PrimaryButton extends StatelessWidget {
     final fg = onPressed == null
         ? AppColors.textPrimary.withValues(alpha: 0.38)
         : switch (tone) {
-            ButtonTone.primary => AppColors.textInverse,
+            ButtonTone.primary =>
+                AppColors.isDark ? const Color(0xFF0F172A) : AppColors.textInverse,
             ButtonTone.secondary => AppColors.primary,
             ButtonTone.danger => AppColors.error,
             ButtonTone.neutral => AppColors.primaryDark,
