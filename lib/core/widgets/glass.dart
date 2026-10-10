@@ -329,7 +329,7 @@ class _NaturePainter extends CustomPainter {
       canvas.drawLine(sc.translate(0, -4), sc.translate(0, 4), bright);
     }
 
-    final mc = Offset(w * 0.74, h * 0.54);
+    final mc = Offset(w * 0.82, h * 0.16);
     final moonR = w * 0.055;
     final haloR = w * 0.32;
 

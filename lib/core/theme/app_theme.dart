@@ -83,7 +83,7 @@ class AppColors {
   static const ColorScheme _darkScheme = ColorScheme.dark(
     primary: Color(0xFFF59E0B),
     onPrimary: Color(0xFF0F172A),
-    primaryContainer: Color(0xFF451A03),
+    primaryContainer: Color(0xFF24180A),
     onPrimaryContainer: Color(0xFFFDE68A),
     secondary: Color(0xFF94A3B8),
     onSecondary: Color(0xFF0F172A),
@@ -188,7 +188,7 @@ class AppColors {
 
   /// Explicit warning container — never an alpha blend.
   static Color get warningContainer =>
-      isDark ? const Color(0xFF78350F) : const Color(0xFFFFE9B8);
+      isDark ? const Color(0xFF261A08) : const Color(0xFFFFE9B8);
   static Color get onWarningContainer =>
       isDark ? const Color(0xFFFDE68A) : const Color(0xFF3D2800);
 
