@@ -793,24 +793,20 @@ class AppTheme {
         subtitleTextStyle: AppText.body(13, color: scheme.onSurfaceVariant),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? Colors.white
-              : (dark ? scheme.onSurfaceVariant : Colors.white),
-        ),
+        thumbColor: const WidgetStatePropertyAll<Color>(Colors.white),
         thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
         trackOutlineWidth: const WidgetStatePropertyAll(1),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? scheme.primary
               : (dark
-                  ? Colors.white.withValues(alpha: 0.14)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.16)),
+                  ? const Color(0xFF334155)
+                  : const Color(0xFFCBD5E1)),
         ),
         trackOutlineColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
               ? Colors.transparent
-              : scheme.outlineVariant,
+              : (dark ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
         ),
       ),
       checkboxTheme: CheckboxThemeData(

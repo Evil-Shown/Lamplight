@@ -1236,7 +1236,19 @@ class SettingRow extends StatelessWidget {
                 IgnorePointer(
                   child: Switch(
                     value: switchValue!,
-                    activeThumbColor: AppColors.primary,
+                    activeThumbColor: Colors.white,
+                    activeTrackColor: AppColors.primary,
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: AppColors.isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFCBD5E1),
+                    trackOutlineColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? Colors.transparent
+                          : (AppColors.isDark
+                              ? const Color(0xFF475569)
+                              : const Color(0xFF94A3B8)),
+                    ),
                     onChanged: onSwitchChanged == null ? null : (_) {},
                   ),
                 )
