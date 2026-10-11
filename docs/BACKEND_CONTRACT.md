@@ -1,9 +1,12 @@
 # Backend contract (Firestore + Cloud Functions)
 
-Callables live in the default region (us-central1). Timestamps: Firestore `Timestamp` in docs, ISO-8601 strings in callable responses. Auth claim: `role` = `staff` | `student` (token claim, set by `claimRole`; call `getIdToken(true)` after).
+Callables live in the default region (us-central1). Timestamps: Firestore `Timestamp` in docs, ISO-8601 strings in callable responses. Auth claim: `role` = `admin` | `staff` | `student` (token claim, set by `claimRole`; call `getIdToken(true)` after).
 
 ## Roles
-- `claimRole()` -> `{role}`. Call after every sign-in, then refresh the token. Staff = email in `config/staffAllowlist.emails` AND email verified (emulator: verification not required).
+- `claimRole()` -> `{role}`. Call after every sign-in, then refresh the token. Roles precedence: `admin` > `staff` > `student`.
+  - Admin: email in `config/adminAllowlist.emails` AND email verified.
+  - Staff: email in `config/staffAllowlist.emails` AND email verified.
+  - Student: default fallback.
 - `users/{uid}.role` is a server-maintained mirror (only written if the profile exists). Clients must NOT write `role`, `strikes`, `finesTotal`. Write profile with `set(..., merge: true)` / `update` only with: `name, studentId, email, reservationsVisibleToStaffOnly, notificationPrefs, createdAt, updatedAt`.
 - `notificationPrefs` map: `pushEnabled, emailEnabled, smsEnabled, reminderBeforeStart, reminderBeforeExpiry, waitlistUpdates` (bools, default true).
 
@@ -11,8 +14,8 @@ Callables live in the default region (us-central1). Timestamps: Firestore `Times
 `ready, active, expiringSoon, completed, cancelled, expired, noShow` (add `expired`, `noShow` to ReservationStatus).
 
 ## Collections
-- `config/library` (signed-in read only): `currency, finePerDay, fineCap, loanDays, renewDays, maxRenewals, seatGraceMinutes, seatEarlyCheckInMinutes, pickupWindowDays, waitlistOfferMinutes, seatReminderMinutes, pickupReminderHours, dueSoonDays, dueDayHours`. `config/staffAllowlist` is never client-readable.
-- `books/{id}` (staff write): `title, author, subject, isbn, shelfLocation, copiesAvailable, availability, description, coverColor, dueDate, titleLower, authorLower, createdAt`. `copiesAvailable` is changed only by functions.
+- `config/library` (signed-in read only): `currency, finePerDay, fineCap, loanDays, renewDays, maxRenewals, seatGraceMinutes, seatEarlyCheckInMinutes, pickupWindowDays, waitlistOfferMinutes, seatReminderMinutes, pickupReminderHours, dueSoonDays, dueDayHours`. `config/staffAllowlist` and `config/adminAllowlist` are never client-readable directly.
+- `books/{id}` (staff write): `title, author, subject, isbn, shelfLocation, copiesAvailable, copiesTotal, coverUrl, availability, description, coverColor, dueDate, titleLower, authorLower, createdAt`. `copiesAvailable` is changed only by functions.
 - `seats/{id}` (clients: update only): `status` (available|limited|occupied), `heldBy` (uid|null), `bookingId` (string|null), server-only `heldFor` (uid|null), `heldUntil`. Student take: `{status:'occupied', heldBy: uid, bookingId}` from available/limited while `heldFor` is null or self. Release: `{status:'available', heldBy:null, bookingId:null}` by the holder. Treat `heldFor != null && != me` as unavailable.
 - `users/{uid}/reservations/{id}` (book). Client create keys ONLY: `bookId, bookTitle, reservedAt, pickupBy, pickupLocation, qrCode, status('ready'|'active'), userId(=uid)`; id matches `[A-Za-z0-9_-]{1,64}`. Server adds: `qrNonce, qrPass, copyHeld, copyReleased, createdAt, qrUsedAt, verifiedBy, expiredAt, cancelReason('noCopies'), loanId, fromWaitlistOffer, remindersSent{}`. Owner update: `status` -> `cancelled` only (from open status). Show `qrPass` as the QR payload once it exists (a second after create); `qrCode` is the short manual code. Never deleted by clients.
 - `users/{uid}/bookings/{id}` (seat). Client create keys ONLY: `seatId, date, startTime, endTime, qrCode, status('ready'|'active'), checkedInAt(null), userId`. Server adds `qrNonce, qrPass, createdAt, qrUsedAt, verifiedBy, noShowAt, remindersSent{}`. Owner update: `status` -> `cancelled`, or `completed` if `checkedInAt` set. Clients cannot set `checkedInAt` (use staff scan -> `verifyQrPass`). Owner delete allowed only while open and not checked in.
@@ -25,7 +28,10 @@ Callables live in the default region (us-central1). Timestamps: Firestore `Times
 
 ## Callables (all error as `HttpsError`; codes: unauthenticated, permission-denied, invalid-argument, not-found, failed-precondition)
 - `claimRole()` -> `{role}`
-- `verifyQrPass({code, consume?=true})` (staff) -> `{result: valid|alreadyUsed|tooEarly|expired|cancelled|notFound|malformed, consumed, kind:'seat'|'book', docPath, status, seatId, bookId, bookTitle, startTime, endTime, pickupBy, ownerUid, ownerName, ownerStudentId}` (the detail fields are absent for notFound/malformed). `code` = `qrPass` string, or the short `qrCode` for manual entry. Consuming: seat -> `checkedInAt`, status `active`; book -> status `completed`. Pass `consume:false` for a book when the next step is `checkoutBook`.
+- `endSeatSession({bookingId, uid})` (staff/admin) -> `{ended:true}`
+- `listStaff()` (admin only) -> `{emails: string[]}`
+- `setStaffAllowlist({emails: string[]})` (admin only) -> `{success:true}`
+- `verifyQrPass({code, consume?=true})` (staff/admin) -> `{result: valid|alreadyUsed|tooEarly|expired|cancelled|notFound|malformed, consumed, kind:'seat'|'book', docPath, status, seatId, bookId, bookTitle, startTime, endTime, pickupBy, ownerUid, ownerName, ownerStudentId}` (the detail fields are absent for notFound/malformed). `code` = `qrPass` string, or the short `qrCode` for manual entry. Consuming: seat -> `checkedInAt`, status `active`; book -> status `completed`. Pass `consume:false` for a book when the next step is `checkoutBook`.
 - `respondToWaitlistOffer({entryId, accept})` -> `{status:'accepted'|'declined', kind:'book'|'seat', docId?}`; on accept `docId` is the new reservation/booking id (`wl-<entryId>`). Idempotent.
 - `renewLoan({loanId})` -> `{loanId, dueDate, renewals}`. Fails if overdue, renewals >= max, or someone is waiting.
 - `checkoutBook({userId, bookId, reservationId?, loanDays?})` (staff) -> `{loanId, dueDate}`.
