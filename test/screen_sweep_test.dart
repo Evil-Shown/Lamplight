@@ -22,7 +22,9 @@ import 'package:library_app/features/seats/seat_detail_screen.dart';
 import 'package:library_app/features/seats/seat_map_screen.dart';
 import 'package:library_app/features/settings/settings_screen.dart';
 import 'package:library_app/features/settings/value_proposition_screen.dart';
+import 'package:library_app/features/staff/admin/staff_management_screen.dart';
 import 'package:library_app/features/staff/staff_dashboard_screen.dart';
+import 'package:library_app/features/staff/staff_manage_screen.dart';
 import 'package:library_app/features/staff/staff_scanner_screen.dart';
 import 'package:library_app/features/staff/verification_result_screen.dart';
 import 'package:library_app/features/waitlist/waitlist_joined_screen.dart';
@@ -104,6 +106,9 @@ void main() {
     'account': const AccountScreen(),
     'staffDashboard': const StaffDashboardScreen(),
     'staffScanner': const StaffScannerScreen(),
+    'staffScannerTab': const StaffScannerScreen(embedded: true),
+    'staffManage': const StaffManageScreen(),
+    'staffManagement': const StaffManagementScreen(),
     'verification': const VerificationResultScreen(
       code: 'LIB-2026-4851',
       result: {

@@ -22,6 +22,30 @@ class _BookCursor {
   final DocumentSnapshot<Map<String, dynamic>>? single;
 }
 
+enum QrVerifyFailure { network, permissionDenied, other }
+
+/// Thrown by [FirestoreService.verifyCodeStrict] when a scan could not be
+/// checked (as opposed to the code simply matching nothing).
+class QrVerifyException implements Exception {
+  const QrVerifyException(this.failure, this.message);
+  final QrVerifyFailure failure;
+  final String message;
+
+  factory QrVerifyException.fromCode(String code, String? message) {
+    final failure = switch (code) {
+      'unavailable' || 'deadline-exceeded' || 'network' =>
+        QrVerifyFailure.network,
+      'permission-denied' || 'unauthenticated' =>
+        QrVerifyFailure.permissionDenied,
+      _ => QrVerifyFailure.other,
+    };
+    return QrVerifyException(failure, message ?? code);
+  }
+
+  @override
+  String toString() => message;
+}
+
 /// Thin Firestore + Firebase Auth repository. Every screen keeps talking to
 /// [AppState]; this class is where the real network happens.
 ///
@@ -47,13 +71,16 @@ class FirestoreService {
   /// Set when the role could not be verified at the last sign-in.
   String? roleNotice;
 
+  /// Set after a live sign-up when a verification email went out.
+  String? signUpNotice;
+
   UserProfile? _me;
   final Set<String> _consumedPaths = {};
 
   // ------------------------------------------------------------------ auth
 
   UserProfile _demoProfile(UserRole role) =>
-      role == UserRole.staff ? MockData.staff : MockData.student;
+      role == UserRole.student ? MockData.student : MockData.staff;
 
   AuthFailure get _notConfigured => const AuthFailure('not-configured',
       'The library service is not available right now. Try again later.');
@@ -137,6 +164,12 @@ class FirestoreService {
         name: cleanName,
         studentId: cleanStudentId,
       );
+      // The server only grants staff/admin to verified emails.
+      signUpNotice = null;
+      try {
+        await user.sendEmailVerification();
+        signUpNotice = 'We sent a verification link to $cleanEmail.';
+      } catch (_) {}
       return await _finishSignIn(user, profile);
     } on AuthFailure {
       rethrow;
@@ -218,6 +251,21 @@ class FirestoreService {
     }
   }
 
+  /// Emits the signed-in Firebase user (or null). Empty when Firebase is not
+  /// initialised, so callers can listen unconditionally.
+  Stream<User?> authStateChanges() =>
+      _firebaseReady ? _auth.authStateChanges() : const Stream.empty();
+
+  /// Sends a password-reset email. Throws on failure; callers show a neutral
+  /// message so account existence is not revealed.
+  Future<void> sendPasswordReset(String email) async {
+    if (!_firebaseReady) {
+      if (mockDataAllowed) return;
+      throw _notConfigured;
+    }
+    await _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
   Future<void> signOut() async {
     _me = null;
     if (!_firebaseReady) return;
@@ -264,23 +312,30 @@ class FirestoreService {
     return fallback;
   }
 
+  UserRole _roleFromClaim(Object? claim) => switch (claim) {
+        'admin' => UserRole.admin,
+        'staff' => UserRole.staff,
+        _ => UserRole.student,
+      };
+
   /// Calls `claimRole`, force-refreshes the ID token and reads the `role`
-  /// claim. Falls back to student (never staff) if the server is unreachable.
+  /// claim. A cached claim is only used when [cachedFirst] is set and the
+  /// call fails (offline); otherwise it falls back to student, never staff.
   Future<UserRole> _resolveRole(User user, {bool cachedFirst = false}) async {
     roleNotice = null;
     try {
-      if (cachedFirst) {
-        final cached = (await user.getIdTokenResult()).claims?['role'];
-        if (cached == 'staff' || cached == 'student') {
-          return cached == 'staff' ? UserRole.staff : UserRole.student;
-        }
-      }
       await FunctionsService.instance.claimRole();
       final token = await user.getIdTokenResult(true);
-      return token.claims?['role'] == 'staff'
-          ? UserRole.staff
-          : UserRole.student;
+      return _roleFromClaim(token.claims?['role']);
     } catch (_) {
+      if (cachedFirst) {
+        try {
+          final cached = (await user.getIdTokenResult()).claims?['role'];
+          if (cached == 'admin' || cached == 'staff' || cached == 'student') {
+            return _roleFromClaim(cached);
+          }
+        } catch (_) {}
+      }
       roleNotice = 'Could not verify your library role, so you are signed '
           'in as a student. Check your connection and sign in again.';
       return UserRole.student;
@@ -393,7 +448,7 @@ class FirestoreService {
   /// Demo/test only: pushes the sample catalogue and seat map into an empty
   /// project. A no-op in production builds.
   Future<void> seedIfEmpty() async {
-    if (!_firebaseReady || uid == null) return;
+    if (!mockDataAllowed || !_firebaseReady || uid == null) return;
     try {
       final books = await _db.collection('books').limit(1).get();
       if (books.docs.isEmpty) {
@@ -555,7 +610,9 @@ class FirestoreService {
   /// Atomically reserves a seat: the seat document is only flipped to
   /// `occupied` while still `available`, so two students tapping at the
   /// same time cannot both win the same seat. Returns false if the seat
-  /// was taken first.
+  /// was taken first. Other failures (e.g. permission-denied) are rethrown;
+  /// only a genuine offline error (`unavailable`) keeps the optimistic state
+  /// and returns true.
   Future<bool> addBooking(SeatBooking b, SeatStatus seatStatus) async {
     if (!_canStream) return true;
     try {
@@ -579,9 +636,10 @@ class FirestoreService {
       return true;
     } on StateError {
       return false;
-    } catch (_) {
-      // Offline/unreachable — keep the optimistic local state.
-      return true;
+    } on FirebaseException catch (e) {
+      // Offline/unreachable: the write is queued, keep the optimistic state.
+      if (e.code == 'unavailable') return true;
+      rethrow;
     }
   }
 
@@ -861,7 +919,20 @@ class FirestoreService {
   /// to a collection-group lookup (needs a collection-group index on
   /// `qrCode` for `bookings` and `reservations`). Returns owner + state info,
   /// or null when the code matches nothing.
+  ///
+  /// Swallows every failure into null; staff screens that want to tell
+  /// "offline" from "not a library code" should call [verifyCodeStrict].
   Future<Map<String, dynamic>?> verifyCode(String code) async {
+    try {
+      return await verifyCodeStrict(code);
+    } on QrVerifyException {
+      return null;
+    }
+  }
+
+  /// Like [verifyCode], but network and permission failures throw a
+  /// [QrVerifyException] instead of looking like an unknown code.
+  Future<Map<String, dynamic>?> verifyCodeStrict(String code) async {
     if (!_firebaseReady) return null;
     final trimmed = code.trim();
     try {
@@ -881,10 +952,12 @@ class FirestoreService {
       };
     } on CallableFailure catch (e) {
       // Only a missing function falls through to the query path; anything
-      // else (offline, denied) reports "no match" rather than guessing.
-      if (e.code != 'not-found' && e.code != 'unimplemented') return null;
-    } catch (_) {
-      return null;
+      // else (offline, denied) is a distinct error, not "no match".
+      if (e.code != 'not-found' && e.code != 'unimplemented') {
+        throw QrVerifyException.fromCode(e.code, e.message);
+      }
+    } catch (e) {
+      throw QrVerifyException(QrVerifyFailure.network, e.toString());
     }
     return _verifyViaQuery(trimmed);
   }
@@ -955,6 +1028,7 @@ class FirestoreService {
       final userDoc =
           await _db.collection('users').doc(ref.parent.parent!.id).get();
       return {
+        'ownerUid': ref.parent.parent!.id,
         'ownerName': userDoc.data()?['name'] as String? ?? 'Student',
         'ownerId': userDoc.data()?['studentId'] as String? ?? '—',
       };

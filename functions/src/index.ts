@@ -1,9 +1,10 @@
 import "./admin";
 
 export { claimRole } from "./roles";
+export { setStaffAllowlist, listStaff } from "./staffAdmin";
 export { verifyQrPass, onBookingCreated } from "./qr";
 export { onReservationCreated, onReservationUpdated, expireReservations } from "./reservations";
-export { releaseNoShowSeats } from "./seats";
+export { releaseNoShowSeats, endExpiredSeatSessions, endSeatSession } from "./seats";
 export {
   respondToWaitlistOffer,
   expireWaitlistOffers,

@@ -13,7 +13,16 @@ import '../../models/models.dart';
 import '../qr/active_session_screen.dart';
 
 /// What a scanned pass turned out to be.
-enum PassOutcome { valid, alreadyUsed, tooEarly, expired, cancelled, notFound }
+enum PassOutcome {
+  valid,
+  alreadyUsed,
+  tooEarly,
+  expired,
+  cancelled,
+  notFound,
+  invalid,
+  ambiguous,
+}
 
 /// Maps the verification map onto a [PassOutcome]. A null map means the
 /// code matched nothing (the service returns null for notFound/malformed).
@@ -32,6 +41,10 @@ PassOutcome passOutcomeOf(Map<String, dynamic>? r) {
       return PassOutcome.expired;
     case 'cancelled':
       return PassOutcome.cancelled;
+    case 'invalid':
+      return PassOutcome.invalid;
+    case 'ambiguous':
+      return PassOutcome.ambiguous;
     case 'notFound':
     case 'malformed':
       return PassOutcome.notFound;
@@ -91,6 +104,8 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
       case PassOutcome.expired:
       case PassOutcome.cancelled:
       case PassOutcome.notFound:
+      case PassOutcome.invalid:
+      case PassOutcome.ambiguous:
         AppFeedback.error();
     }
   }
@@ -110,6 +125,8 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
         PassOutcome.expired => 'Pass has expired',
         PassOutcome.cancelled => 'Reservation cancelled',
         PassOutcome.notFound => 'Not a ${AppStrings.appName} code',
+        PassOutcome.invalid => 'Pass not accepted',
+        PassOutcome.ambiguous => 'Needs the QR pass',
       };
 
   String get _detail {
@@ -133,22 +150,55 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
         return 'The student cancelled this reservation.';
       case PassOutcome.notFound:
         return 'No reservation matches "${widget.code}".';
+      case PassOutcome.invalid:
+        return 'This pass is damaged or incomplete.';
+      case PassOutcome.ambiguous:
+        return 'More than one booking matches this code. '
+            'Ask for the QR pass instead.';
     }
   }
 
   (IconData, Color, String) get _look => switch (_outcome) {
-        PassOutcome.valid =>
-          (Icons.check_circle_rounded, AppColors.success, 'Verified'),
-        PassOutcome.alreadyUsed =>
-          (Icons.history_rounded, AppColors.warning, 'Already used'),
-        PassOutcome.tooEarly =>
-          (Icons.schedule_rounded, AppColors.warning, 'Too early'),
-        PassOutcome.expired =>
-          (Icons.timer_off_rounded, AppColors.error, 'Expired'),
-        PassOutcome.cancelled =>
-          (Icons.cancel_rounded, AppColors.error, 'Cancelled'),
-        PassOutcome.notFound =>
-          (Icons.help_outline_rounded, AppColors.error, 'Unknown'),
+        PassOutcome.valid => (
+            Icons.check_circle_rounded,
+            AppColors.success,
+            'Verified'
+          ),
+        PassOutcome.alreadyUsed => (
+            Icons.history_rounded,
+            AppColors.warning,
+            'Already used'
+          ),
+        PassOutcome.tooEarly => (
+            Icons.schedule_rounded,
+            AppColors.warning,
+            'Too early'
+          ),
+        PassOutcome.expired => (
+            Icons.timer_off_rounded,
+            AppColors.error,
+            'Expired'
+          ),
+        PassOutcome.cancelled => (
+            Icons.cancel_rounded,
+            AppColors.error,
+            'Cancelled'
+          ),
+        PassOutcome.notFound => (
+            Icons.help_outline_rounded,
+            AppColors.error,
+            'Unknown'
+          ),
+        PassOutcome.invalid => (
+            Icons.report_gmailerrorred_rounded,
+            AppColors.error,
+            'Invalid'
+          ),
+        PassOutcome.ambiguous => (
+            Icons.call_split_rounded,
+            AppColors.warning,
+            'Ambiguous'
+          ),
       };
 
   /// The reservation id is the last segment of the server's document path.
@@ -179,7 +229,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
     if (booking != null) {
       AppRoute.pushReplacement(
         context,
-        ActiveSessionScreen(booking: booking),
+        ActiveSessionScreen(booking: booking, ownerUid: _ownerUid),
       );
       return;
     }
@@ -231,7 +281,8 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
       AppFeedback.error();
       setState(() {
         _busy = false;
-        _error = 'Could not record the loan. Check the connection and try again.';
+        _error =
+            'Could not record the loan. Check the connection and try again.';
       });
     }
   }
@@ -249,7 +300,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
     final start = _time('startTime');
     final end = _time('endTime');
     return SeatBooking(
-      id: widget.code,
+      id: _reservationId ?? widget.code,
       seat: seat,
       date: start ?? DateTime.now(),
       startTime: start ?? DateTime.now(),
@@ -261,7 +312,9 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
   @override
   Widget build(BuildContext context) {
     final r = widget.result;
-    final notFound = _outcome == PassOutcome.notFound;
+    final notFound = _outcome == PassOutcome.notFound ||
+        _outcome == PassOutcome.invalid ||
+        _outcome == PassOutcome.ambiguous;
     final valid = _outcome == PassOutcome.valid;
     final (icon, bannerColor, pillLabel) = _look;
     final ownerName = r?['ownerName'] as String? ?? 'Unknown';
@@ -348,8 +401,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: AppColors.textPrimary,
-                            borderRadius:
-                                BorderRadius.circular(AppRadii.sm),
+                            borderRadius: BorderRadius.circular(AppRadii.sm),
                           ),
                           child: Text(
                             _isSeat
@@ -370,14 +422,13 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                             children: [
                               Text(
                                 ownerName,
-                                style:
-                                    AppText.title(17, w: FontWeight.w700),
+                                style: AppText.title(17, w: FontWeight.w700),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 ownerId,
-                                style: AppText.body(
-                                    12.5, color: AppColors.textSecondary),
+                                style: AppText.body(12.5,
+                                    color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -409,8 +460,8 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
                           Expanded(
                             child: Text(
                               'Code ${widget.code}',
-                              style: AppText.body(
-                                  14, color: AppColors.textSecondary),
+                              style: AppText.body(14,
+                                  color: AppColors.textSecondary),
                             ),
                           ),
                           StatusPill(
@@ -443,8 +494,7 @@ class _VerificationResultScreenState extends State<VerificationResultScreen> {
             PrimaryButton(
               label: 'Lend this book',
               icon: Icons.menu_book_rounded,
-              onPressed:
-                  _busy ? null : () => _lend(resourceLabel, ownerName),
+              onPressed: _busy ? null : () => _lend(resourceLabel, ownerName),
             ),
             const SizedBox(height: AppSpacing.md),
             PrimaryButton(

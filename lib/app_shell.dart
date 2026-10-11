@@ -13,6 +13,8 @@ import 'features/reservations/reservations_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/seats/seat_map_screen.dart';
 import 'features/staff/staff_dashboard_screen.dart';
+import 'features/staff/staff_manage_screen.dart';
+import 'features/staff/staff_scanner_screen.dart';
 
 /// Tab indices, shared so screens can jump between them by name.
 class AppTab {
@@ -23,14 +25,22 @@ class AppTab {
   static const books = 2;
   static const bookings = 3;
   static const profile = 4;
+
+  // Staff shell: Dashboard, Scan, Manage, Account.
+  static const scan = 1;
+  static const manage = 2;
+  static const staffAccount = 3;
 }
 
 /// Role-aware shell with a floating glass navigation dock.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
-  static void switchTab(BuildContext context, int index) {
-    context.findAncestorStateOfType<_AppShellState>()?.switchTo(index);
+  /// Switches tab; returns false when there is no shell above [context].
+  static bool switchTab(BuildContext context, int index) {
+    final shell = context.findAncestorStateOfType<_AppShellState>();
+    shell?.switchTo(index);
+    return shell != null;
   }
 
   @override
@@ -128,22 +138,20 @@ class _AppShellState extends State<AppShell> {
   ];
 
   static const _staffTabs = <_Destination>[
-    _Destination(Icons.home_outlined, Icons.home_rounded, 'Home'),
-    _Destination(Icons.event_seat_outlined, Icons.event_seat_rounded, 'Seats'),
     _Destination(
-        Icons.library_books_outlined, Icons.library_books_rounded, 'Catalog'),
-    _Destination(Icons.confirmation_number_outlined,
-        Icons.confirmation_number_rounded, 'Bookings'),
-    _Destination(Icons.badge_outlined, Icons.badge_rounded, 'Staff'),
+        Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
+    _Destination(
+        Icons.qr_code_scanner_rounded, Icons.qr_code_scanner_rounded, 'Scan'),
+    _Destination(Icons.tune_rounded, Icons.tune_rounded, 'Manage'),
+    _Destination(Icons.person_outline_rounded, Icons.person_rounded, 'Account'),
   ];
 
   List<Widget> get _screens => isStaff
       ? const [
           StaffDashboardScreen(),
-          SeatMapScreen(),
-          BookSearchScreen(),
-          ReservationsScreen(),
-          StaffDashboardScreen(),
+          StaffScannerScreen(embedded: true),
+          StaffManageScreen(),
+          AccountScreen(),
         ]
       : const [
           HomeScreen(),

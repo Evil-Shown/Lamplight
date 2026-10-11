@@ -290,8 +290,7 @@ class _BookCard extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Edit ${book.title}',
-                constraints:
-                    const BoxConstraints(minWidth: 48, minHeight: 48),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 icon: Icon(Icons.edit_outlined,
                     size: 20, color: AppColors.textSecondary),
                 onPressed: () {
@@ -498,7 +497,8 @@ class _BookFormSheetState extends State<_BookFormSheet> {
       AppFeedback.error();
       setState(() {
         _saving = false;
-        _error = 'Could not save this book. Check your connection and try again.';
+        _error =
+            'Could not save this book. Check your connection and try again.';
       });
     }
   }
@@ -543,8 +543,7 @@ class _BookFormSheetState extends State<_BookFormSheet> {
               ],
             ),
             if (_error != null) ...[
-              Text(_error!,
-                  style: AppText.body(13, color: AppColors.error)),
+              Text(_error!, style: AppText.body(13, color: AppColors.error)),
               const SizedBox(height: AppSpacing.sm),
             ],
             PrimaryButton(
