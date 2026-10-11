@@ -178,7 +178,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1F1714) : Colors.white,
+              color: isDark ? const Color(0xFF111827) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
                 color: AppColors.border,
@@ -238,7 +238,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1F1714) : Colors.white,
+              color: isDark ? const Color(0xFF111827) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
                 color: AppColors.border,
@@ -314,7 +314,7 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1F1714) : const Color(0xFF1E293B),
+                color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               child: Column(
@@ -340,3 +340,4 @@ class _GroupRoomBookingScreenState extends State<GroupRoomBookingScreen> {
     );
   }
 }
+

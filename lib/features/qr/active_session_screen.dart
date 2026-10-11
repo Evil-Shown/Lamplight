@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/feedback/app_feedback.dart';
@@ -14,9 +15,13 @@ import '../reservations/live_widgets.dart';
 /// the session window, and the three network entitlements the prototype
 /// advertises.
 class ActiveSessionScreen extends StatefulWidget {
-  const ActiveSessionScreen({super.key, required this.booking});
+  const ActiveSessionScreen({super.key, required this.booking, this.ownerUid});
 
   final SeatBooking booking;
+
+  /// Set when staff view a student's session; ending it then acts on that
+  /// student's booking rather than the signed-in user's own.
+  final String? ownerUid;
 
   @override
   State<ActiveSessionScreen> createState() => _ActiveSessionScreenState();
@@ -25,7 +30,7 @@ class ActiveSessionScreen extends StatefulWidget {
 class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   late final DateTime _checkedInAt =
       widget.booking.checkedInAt ?? DateTime.now();
-  int _extendedMinutes = 0;
+  bool _ending = false;
 
   // Ticks every second so the remaining time and elapsed timer stay live.
   @override
@@ -34,7 +39,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   Widget _content(BuildContext context, DateTime now) {
     final booking = widget.booking;
     final elapsed = now.difference(_checkedInAt);
-    final endsAt = booking.endTime.add(Duration(minutes: _extendedMinutes));
+    final endsAt = booking.endTime;
     final total = endsAt.difference(booking.startTime).inMinutes;
     final used = now.difference(booking.startTime).inMinutes;
     final progress = total <= 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
@@ -178,7 +183,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('A-12',
+                      Text(booking.seat.label,
                           style: AppText.display(30,
                               w: FontWeight.w800,
                               ls: -0.8,
@@ -236,6 +241,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             size: 15, color: AppColors.primary),
                         onPressed: () {
                           AppFeedback.tap();
+                          Clipboard.setData(ClipboardData(
+                              text: AppScope.read(context)
+                                  .activeProfile
+                                  .studentId));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Token ID copied'),
@@ -289,39 +298,49 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           ),
           const SizedBox(height: 12),
           PrimaryButton(
-            label: _extendedMinutes > 0
-                ? 'Extended $_extendedMinutes min'
-                : 'Extend Time (+30 min)',
-            icon: Icons.add_alarm_rounded,
-            tone: ButtonTone.secondary,
-            onPressed: () => setState(() => _extendedMinutes += 30),
-          ),
-          const SizedBox(height: 12),
-          PrimaryButton(
             label: 'End session',
             icon: Icons.task_alt_rounded,
             tone: ButtonTone.secondary,
-            onPressed: () async {
-              // M01: ending a session confirms with the consequence first.
-              final confirmed = await showConfirmDialog(
-                context,
-                title: 'End your session now?',
-                body:
-                    'Seat ${booking.seat.label} will be released and the next person waiting may be offered it.',
-                confirmLabel: 'End session',
-                cancelLabel: 'Keep session',
-              );
-              if (confirmed && context.mounted) {
-                AppScope.read(context).cancelSeatBooking(booking.id);
-                if (context.mounted) {
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                }
-              }
-            },
+            onPressed: _ending ? null : () => _endSession(booking),
           ),
         ],
       ),
     );
+  }
+
+  bool get _staffView => widget.ownerUid != null;
+
+  Future<void> _endSession(SeatBooking booking) async {
+    // M01: ending a session confirms with the consequence first.
+    final confirmed = await showConfirmDialog(
+      context,
+      title: _staffView
+          ? "End this student's session?"
+          : 'End your session now?',
+      body:
+          'Seat ${booking.seat.label} will be released and the next person waiting may be offered it.',
+      confirmLabel: 'End session',
+      cancelLabel: 'Keep session',
+    );
+    if (!confirmed || !mounted) return;
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _ending = true);
+    final result =
+        await state.endSeatSession(booking, ownerUid: widget.ownerUid);
+    if (!mounted) return;
+    if (result.ok) {
+      AppFeedback.success();
+      messenger.showSnackBar(SnackBar(
+          content: Text(result.alreadyEnded
+              ? 'This session had already ended.'
+              : 'Session ended. Seat ${booking.seat.label} is free.')));
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    } else {
+      AppFeedback.error();
+      setState(() => _ending = false);
+      messenger.showSnackBar(SnackBar(content: Text(result.message!)));
+    }
   }
 
   String _formatElapsed(Duration d) {

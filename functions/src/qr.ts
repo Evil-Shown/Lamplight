@@ -71,7 +71,7 @@ export const onBookingCreated = onDocumentCreated(
   },
 );
 
-type Result = "valid" | "alreadyUsed" | "expired" | "cancelled" | "tooEarly" | "notFound" | "malformed";
+type Result = "valid" | "alreadyUsed" | "expired" | "cancelled" | "tooEarly" | "notFound" | "malformed" | "invalid" | "ambiguous";
 
 /**
  * verifyQrPass (staff): { code: string, consume?: boolean (default true) }
@@ -98,13 +98,16 @@ export const verifyQrPass = onCall({ secrets: [QR_SECRET] }, async (request) => 
       ref = db.doc(`users/${pass.uid}/${pass.kind === "b" ? "bookings" : "reservations"}/${pass.docId}`);
     } else {
       // Manual entry: look the short code up (staff-typed, no nonce proof).
-      const b = await db.collectionGroup("bookings").where("qrCode", "==", code).limit(1).get();
+      const [b, r] = await Promise.all([
+        db.collectionGroup("bookings").where("qrCode", "==", code).limit(2).get(),
+        db.collectionGroup("reservations").where("qrCode", "==", code).limit(2).get(),
+      ]);
+      if (b.size + r.size > 1) return { result: "ambiguous" as Result };
       if (!b.empty) {
         ref = b.docs[0]!.ref;
         kind = "b";
-      } else {
-        const r = await db.collectionGroup("reservations").where("qrCode", "==", code).limit(1).get();
-        if (!r.empty) ref = r.docs[0]!.ref;
+      } else if (!r.empty) {
+        ref = r.docs[0]!.ref;
       }
     }
     if (!ref) return { result: "notFound" as Result };
@@ -139,11 +142,16 @@ export const verifyQrPass = onCall({ secrets: [QR_SECRET] }, async (request) => 
       else if (status === "expired" || status === "noShow") result = "expired";
       else if (status === "completed" || d["qrUsedAt"] || (kind === "b" && d["checkedInAt"])) result = "alreadyUsed";
       else if (kind === "b") {
-        const start = (d["startTime"] as Timestamp).toMillis();
-        const end = (d["endTime"] as Timestamp).toMillis();
+        const startTs = d["startTime"];
+        const endTs = d["endTime"];
+        if (!(startTs instanceof Timestamp) || !(endTs instanceof Timestamp)) return { result: "invalid" as Result, ...base };
+        const start = startTs.toMillis();
+        const end = endTs.toMillis();
         if (now > end) result = "expired";
         else if (now < start - cfg.seatEarlyCheckInMinutes * MS.minute) result = "tooEarly";
-      } else if ((d["pickupBy"] as Timestamp).toMillis() < now) {
+      } else if (!(d["pickupBy"] instanceof Timestamp)) {
+        return { result: "invalid" as Result, ...base };
+      } else if (d["pickupBy"].toMillis() < now) {
         result = "expired";
       }
 

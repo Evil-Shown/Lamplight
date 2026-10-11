@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/glass.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import '../reservations/reservations_screen.dart';
 
 /// P-09A Waitlist Joined.
 ///
@@ -97,8 +98,18 @@ class WaitlistJoinedScreen extends StatelessWidget {
           const SizedBox(height: 26),
           PrimaryButton(
             label: isBook ? 'View My Reservations' : 'Back to Seat Map',
-            onPressed: () =>
-                Navigator.of(context).popUntil((route) => route.isFirst),
+            onPressed: () {
+              final navigator = Navigator.of(context);
+              navigator.popUntil((route) => route.isFirst);
+              if (isBook) {
+                // The shell is not an ancestor of pushed routes, so open the
+                // reservations list directly.
+                navigator.push(MaterialPageRoute<void>(
+                  builder: (_) =>
+                      const AuroraBackground(child: ReservationsScreen()),
+                ));
+              }
+            },
           ),
         ],
       ),

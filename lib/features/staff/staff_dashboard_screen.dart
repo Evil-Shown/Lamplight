@@ -11,6 +11,7 @@ import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import 'admin/widgets/staff_live_states.dart';
+import '../../app_shell.dart' show AppShell, AppTab;
 import 'staff_scanner_screen.dart';
 
 /// P-13 Staff Dashboard.
@@ -67,203 +68,203 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         child: RefreshIndicator(
           onRefresh: state.refresh,
           child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.base, AppSpacing.base, AppSpacing.base, AppNavInset.bottom),
-          children: [
-            // App-level cached-data banner (D-14).
-            ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
-            GlassSurface(
-              radius: AppRadii.xl,
-              padding: const EdgeInsets.all(AppSpacing.base),
-              child: Row(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.base,
+                AppSpacing.base, AppNavInset.bottom),
+            children: [
+              // App-level cached-data banner (D-14).
+              ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
+              GlassSurface(
+                radius: AppRadii.xl,
+                padding: const EdgeInsets.all(AppSpacing.base),
+                child: Row(
+                  children: [
+                    const CampusMark(size: 44),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Staff Dashboard',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.title(18, w: FontWeight.w800),
+                          ),
+                          Text(
+                            'Library Control Hub',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.body(12.5,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        CountUp(
+                          value: waiting,
+                          style: AppText.display(AppText.displayLg,
+                              w: FontWeight.w800, color: AppColors.primary),
+                        ),
+                        Text('in queue',
+                            style: AppText.label(12, w: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    PressScale(
+                      onTap: () {
+                        if (!AppShell.switchTab(context, AppTab.scan)) {
+                          AppRoute.push(context, const StaffScannerScreen());
+                        }
+                      },
+                      child: Tooltip(
+                        message: 'Scan a pass',
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: AppGradients.hero,
+                            borderRadius: BorderRadius.circular(AppRadii.md),
+                          ),
+                          child: Icon(Icons.qr_code_scanner_rounded,
+                              size: 24, color: AppColors.textInverse),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.base),
+              TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Search students or locations',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () =>
+                              setState(() => _searchController.clear()),
+                        ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.base),
+              Row(
                 children: [
-                  const CampusMark(size: 44),
+                  Expanded(
+                    child: StatTile(
+                      label: 'Due today',
+                      value: stats.reservationsDueToday,
+                      caption: 'Book pickups',
+                      color: AppColors.primary,
+                      icon: Icons.confirmation_num_outlined,
+                    ),
+                  ),
                   const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: StatTile(
+                      label: 'Waitlisted',
+                      value: stats.waitingCount,
+                      caption: 'Waiting for a book or seat',
+                      color: AppColors.warning,
+                      icon: Icons.hourglass_top_rounded,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatTile(
+                      label: 'In session',
+                      value: stats.activeSessions,
+                      caption: 'Seated now',
+                      color: AppColors.success,
+                      icon: Icons.schedule_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: StatTile(
+                      label: 'Seat fill',
+                      value: stats.seatFillPercent,
+                      suffix: '%',
+                      caption:
+                          '${stats.seatsOccupied} of ${stats.seatsTotal} seats',
+                      color: AppColors.accent,
+                      icon: Icons.event_seat_outlined,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Row(
+                children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Dispatch queue · ${queue.length}',
+                            style: AppText.title(15.5, w: FontWeight.w700)),
+                        const SizedBox(height: 2),
                         Text(
-                          'Staff Dashboard',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.title(18, w: FontWeight.w800),
-                        ),
-                        Text(
-                          'Library Control Hub',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.body(12.5,
-                              color: AppColors.textSecondary),
+                          'Updates in real time',
+                          style: AppText.body(12, color: AppColors.textFaint),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      CountUp(
-                        value: waiting,
-                        style: AppText.display(AppText.displayLg,
-                            w: FontWeight.w800, color: AppColors.primary),
-                      ),
-                      Text('waiting',
-                          style: AppText.label(12, w: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  PressScale(
-                    onTap: () => AppRoute.push(
-                      context,
-                      const StaffScannerScreen(),
-                    ),
-                    child: Tooltip(
-                      message: 'Scan a pass',
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: AppGradients.hero,
-                          borderRadius: BorderRadius.circular(AppRadii.md),
-                        ),
-                        child: Icon(Icons.qr_code_scanner_rounded,
-                            size: 24, color: AppColors.textInverse),
-                      ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              FilterChipRow(
+                options: const ['All', 'Active', 'Urgent'],
+                selected: _queueFilter,
+                onSelected: (value) => setState(() => _queueFilter = value),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: AppSpacing.base),
+              if (loading)
+                const Column(
+                  children: [
+                    SkeletonCard(height: 100),
+                    SizedBox(height: AppSpacing.md),
+                    SkeletonCard(height: 100),
+                  ],
+                )
+              else if (failed)
+                ErrorState(
+                  message: state.lastError?.message ??
+                      'We could not load the dispatch queue.',
+                  onRetry: state.refresh,
+                )
+              else if (queue.isEmpty)
+                const EmptyState(
+                  icon: Icons.inbox_rounded,
+                  title: 'Queue is clear',
+                  message: 'No students waiting. Queue updates in real time.',
+                )
+              else
+                for (var i = 0; i < queue.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpacing.md),
+                  StaggeredEntrance(
+                    index: i,
+                    child: _QueueRow(
+                      entry: queue[i],
+                      onApprove: () => state.approveQueueEntry(queue[i].id),
+                      onDismiss: () => state.dismissQueueEntry(queue[i].id),
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search students or locations',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        onPressed: () =>
-                            setState(() => _searchController.clear()),
-                      ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Row(
-              children: [
-                Expanded(
-                  child: StatTile(
-                    label: 'Due today',
-                    value: stats.reservationsDueToday,
-                    caption: 'Book pickups',
-                    color: AppColors.primary,
-                    icon: Icons.confirmation_num_outlined,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: StatTile(
-                    label: 'Waitlisted',
-                    value: stats.waitingCount,
-                    caption: 'Books and seats',
-                    color: AppColors.warning,
-                    icon: Icons.hourglass_top_rounded,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: StatTile(
-                    label: 'In session',
-                    value: stats.activeSessions,
-                    caption: 'Seated now',
-                    color: AppColors.success,
-                    icon: Icons.schedule_rounded,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: StatTile(
-                    label: 'Seat fill',
-                    value: stats.seatFillPercent,
-                    suffix: '%',
-                    caption:
-                        '${stats.seatsOccupied} of ${stats.seatsTotal} seats',
-                    color: AppColors.accent,
-                    icon: Icons.event_seat_outlined,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Dispatch queue · ${queue.length}',
-                          style: AppText.title(15.5, w: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Updates in real time',
-                        style: AppText.body(12, color: AppColors.textFaint),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            FilterChipRow(
-              options: const ['All', 'Active', 'Urgent'],
-              selected: _queueFilter,
-              onSelected: (value) => setState(() => _queueFilter = value),
-              padding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: AppSpacing.base),
-            if (loading)
-              const Column(
-                children: [
-                  SkeletonCard(height: 100),
-                  SizedBox(height: AppSpacing.md),
-                  SkeletonCard(height: 100),
-                ],
-              )
-            else if (failed)
-              ErrorState(
-                message: state.lastError?.message ??
-                    'We could not load the dispatch queue.',
-                onRetry: state.refresh,
-              )
-            else if (queue.isEmpty)
-              const EmptyState(
-                icon: Icons.inbox_rounded,
-                title: 'Queue is clear',
-                message:
-                    'No students waiting. Queue updates in real time.',
-              )
-            else
-              for (var i = 0; i < queue.length; i++) ...[
-                if (i > 0) const SizedBox(height: AppSpacing.md),
-                StaggeredEntrance(
-                  index: i,
-                  child: _QueueRow(
-                    entry: queue[i],
-                    onApprove: () => state.approveQueueEntry(queue[i].id),
-                    onDismiss: () => state.dismissQueueEntry(queue[i].id),
-                  ),
-                ),
-              ],
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -311,8 +312,7 @@ class _QueueRow extends StatelessWidget {
                   entry.studentName.isEmpty
                       ? '?'
                       : entry.studentName.substring(0, 1).toUpperCase(),
-                  style:
-                      AppText.title(14, w: FontWeight.w700, color: color),
+                  style: AppText.title(14, w: FontWeight.w700, color: color),
                 ),
               ),
               const SizedBox(width: 12),
@@ -331,8 +331,7 @@ class _QueueRow extends StatelessWidget {
                       '${entry.location} · waited ${waited.inMinutes}m',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          AppText.body(12.5, color: AppColors.textSecondary),
+                      style: AppText.body(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -345,8 +344,8 @@ class _QueueRow extends StatelessWidget {
             children: [
               Expanded(
                 child: _RowAction(
-                  label: 'Contact',
-                  icon: Icons.phone_outlined,
+                  label: 'Copy ID',
+                  icon: Icons.copy_rounded,
                   onTap: () => _showContact(context, entry),
                 ),
               ),
@@ -362,8 +361,9 @@ class _QueueRow extends StatelessWidget {
                   tone: entry.status == QueueStatus.expired
                       ? AppColors.error
                       : AppColors.success,
-                  onTap:
-                      entry.status == QueueStatus.expired ? onDismiss : onApprove,
+                  onTap: entry.status == QueueStatus.expired
+                      ? onDismiss
+                      : onApprove,
                 ),
               ),
             ],
@@ -388,8 +388,7 @@ void _showContact(BuildContext context, QueueEntry entry) {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Contact student',
-              style: AppText.title(20, w: FontWeight.w800)),
+          Text('Copy student ID', style: AppText.title(20, w: FontWeight.w800)),
           const SizedBox(height: AppSpacing.base),
           Text(
               entry.studentName.isEmpty ? 'Unknown student' : entry.studentName,
@@ -451,31 +450,31 @@ class _RowAction extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: PressScale(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: effectiveTone.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(AppRadii.sm),
-          border: Border.all(color: effectiveTone.withValues(alpha: 0.28)),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: effectiveTone.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: effectiveTone.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17, color: effectiveTone),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label(13.5,
+                        w: FontWeight.w700, color: effectiveTone)),
+              ),
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 17, color: effectiveTone),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.label(
-                      13.5, w: FontWeight.w700, color: effectiveTone)),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
