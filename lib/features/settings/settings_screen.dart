@@ -303,7 +303,7 @@ class _ThemePick extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = selected ? AppColors.textInverse : AppColors.textSecondary;
+    final fg = selected ? Colors.white : AppColors.textSecondary;
     return Semantics(
       button: true,
       selected: selected,
@@ -320,15 +320,30 @@ class _ThemePick extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadii.full),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
+            spacing: 5,
             children: [
               Icon(icon, size: 16, color: fg),
-              Text(label,
-                  style: AppText.label(12, w: FontWeight.w600, color: fg)),
+              Text(
+                label,
+                style: AppText.label(
+                  12.5,
+                  w: FontWeight.w700,
+                  color: fg,
+                ),
+              ),
             ],
           ),
         ),
