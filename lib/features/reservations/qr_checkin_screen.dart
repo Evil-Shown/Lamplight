@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/reservation_repository.dart';
@@ -22,7 +21,7 @@ class QrCheckInScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
-              SoftCard(
+              SurfaceCard(
                 elevated: true,
                 margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -39,11 +38,11 @@ class QrCheckInScreen extends StatelessWidget {
                         data: record.qrPayload,
                         version: QrVersions.auto,
                         size: 220,
-                        eyeStyle: const QrEyeStyle(
+                        eyeStyle: QrEyeStyle(
                           eyeShape: QrEyeShape.square,
                           color: AppColors.textPrimary,
                         ),
-                        dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleStyle: QrDataModuleStyle(
                           dataModuleShape: QrDataModuleShape.square,
                           color: AppColors.textPrimary,
                         ),
@@ -93,7 +92,7 @@ class _DetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
+    return SurfaceCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
@@ -107,7 +106,7 @@ class _DetailsCard extends StatelessWidget {
                   height: 60,
                 )
               else
-                const IconBadge(
+                IconBadge(
                   icon: Icons.event_seat_rounded,
                   color: AppColors.info,
                   size: 44,
@@ -136,11 +135,11 @@ class _DetailsCard extends StatelessWidget {
             ],
           ),
           const Divider(),
-          SummaryRow(label: 'Reservation ID', value: record.id),
+          InfoRow(label: 'Reservation ID', value: record.id),
           const Divider(),
-          SummaryRow(label: 'Location', value: record.location),
+          InfoRow(label: 'Location', value: record.location),
           const Divider(),
-          SummaryRow(
+          InfoRow(
             label: 'Pickup by',
             value: DateFormat('yyyy-MM-dd').format(record.pickupBy),
           ),
@@ -149,3 +148,4 @@ class _DetailsCard extends StatelessWidget {
     );
   }
 }
+
