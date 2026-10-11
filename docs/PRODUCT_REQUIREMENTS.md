@@ -1,8 +1,8 @@
-# Library+ Product Requirements
+# Lamplight Product Requirements
 
 ## 1. Purpose
 
-Library+ is a mobile-first system for discovering and reserving library books, finding and booking reading-room seats, joining waitlists, receiving reminders, and checking in with QR codes. It also gives authorised library staff tools to verify reservations, manage no-shows, and monitor demand.
+Lamplight is a mobile-first system for discovering and reserving library books, finding and booking reading-room seats, joining waitlists, receiving reminders, and checking in with QR codes. It also gives authorised library staff tools to verify reservations, manage no-shows, and monitor demand.
 
 This specification combines:
 

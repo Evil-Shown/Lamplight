@@ -84,7 +84,7 @@ List<FaqEntry> buildFaq() => [
       const FaqEntry(
         'I am not getting notifications.',
         'Check Settings: reminders and the push channel must be on. Also '
-            'check that your phone allows notifications for Library+. A '
+            'check that your phone allows notifications for Lamplight. A '
             'session reminder arrives ${AppPolicy.seatReminderLeadMinutes} '
             'minutes before it starts.',
       ),

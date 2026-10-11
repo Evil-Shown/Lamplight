@@ -1,4 +1,4 @@
-# Library+ Data Model
+# Lamplight Data Model
 
 ## 1. Conventions
 

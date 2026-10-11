@@ -1,4 +1,4 @@
-# Library+ Security and Privacy Plan
+# Lamplight Security and Privacy Plan
 
 ## 1. Threat model
 
