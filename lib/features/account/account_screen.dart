@@ -91,7 +91,12 @@ class AccountScreen extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: state.clearRoleNotice,
-                  style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(44, 44),
+                    foregroundColor: AppColors.isDark
+                        ? const Color(0xFFFBBF24)
+                        : AppColors.primary,
+                  ),
                   child: const Text('Dismiss'),
                 ),
               ),
@@ -740,17 +745,28 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.isDark
+                ? const Color(0xFFFBBF24)
+                : AppColors.primary,
+          ),
           child: const Text('Cancel'),
         ),
         if (!_typing)
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => setState(() => _typing = true),
             child: const Text('Continue'),
           )
         else
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
             onPressed: _matches ? () => Navigator.pop(context, true) : null,
             child: const Text('Delete account'),
           ),

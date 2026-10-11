@@ -744,6 +744,7 @@ Future<T?> showGlassSheet<T>(
       return GlassSurface(
         borderRadius: top,
         fill: opaque ? AppColors.surface : null,
+        border: true,
         shadows: false,
         child: SafeArea(
           top: false,
