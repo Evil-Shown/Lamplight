@@ -1,4 +1,4 @@
-# Library+ Firebase Backend Design
+# Lamplight Firebase Backend Design
 
 ## 1. Firebase services
 

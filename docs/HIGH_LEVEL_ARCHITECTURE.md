@@ -1,4 +1,4 @@
-# Library+ High-Level Architecture
+# Lamplight High-Level Architecture
 
 ## 1. Architecture goals
 

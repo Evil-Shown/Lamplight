@@ -1,4 +1,4 @@
-# Library+ Implementation Roadmap
+# Lamplight Implementation Roadmap
 
 ## Phase 0 — Baseline and decisions
 

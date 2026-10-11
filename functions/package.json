@@ -1,7 +1,7 @@
 {
   "name": "library-functions",
   "private": true,
-  "description": "Cloud Functions for the Library+ app",
+  "description": "Cloud Functions for the Lamplight app",
   "main": "lib/index.js",
   "engines": { "node": "20" },
   "scripts": {

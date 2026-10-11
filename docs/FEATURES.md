@@ -1,4 +1,4 @@
-# Library+ Feature Catalogue
+# Lamplight Feature Catalogue
 
 Status terms: **Implemented prototype**, **Partial**, **Planned**, or **Later**.
 

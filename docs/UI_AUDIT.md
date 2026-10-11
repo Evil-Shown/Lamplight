@@ -1,4 +1,4 @@
-# Library+ App — Full UI & Architecture Audit
+# Lamplight App — Full UI & Architecture Audit
 
 > Standalone brief describing the current state of the codebase and UI.
 > Written so another engineer (or AI agent) can reason about the app and
@@ -8,7 +8,7 @@
 
 ## 1. Project overview
 
-- **App**: Library+ — university library book reservation & reading-room seat booking prototype ("SLIIT QUICK BOOK" portal branding, UNILAG/Campus Commons labels).
+- **App**: Lamplight — university library book reservation & reading-room seat booking prototype ("SLIIT QUICK BOOK" portal branding, UNILAG/Campus Commons labels).
 - **Stack**: Flutter 3.47 (stable), Dart 3.13, Material 3. Runs on web (Chrome), Windows desktop, Android, iOS.
 - **Dependencies** (pubspec.yaml): `google_fonts ^6.2.1` (Inter), `intl ^0.19.0`, `qr_flutter ^4.1.0`, `cupertino_icons`. **No state-management package, no DI, no router package, no DB** — deliberately self-contained mock-data prototype.
 - **Size**: ~31 Dart files under `lib/`, largest: `core/widgets/shared_widgets.dart` (~1,345 lines), `features/home/home_screen.dart` (~950), `features/seats/seat_map_screen.dart` (~640), `features/seats/seat_detail_screen.dart` (~560), `core/theme/app_theme.dart` (~540).

@@ -1,11 +1,11 @@
 {
-    "name": "library_app",
-    "short_name": "library_app",
+    "name": "Lamplight",
+    "short_name": "Lamplight",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Lamplight - Library Book Reservation & Reading Room Seat Booking",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

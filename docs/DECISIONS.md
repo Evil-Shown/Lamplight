@@ -1,4 +1,4 @@
-# Library+ Architecture and Product Decisions
+# Lamplight Architecture and Product Decisions
 
 ## ADR-001 — Campus-blue design is authoritative
 
