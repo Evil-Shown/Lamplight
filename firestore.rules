@@ -107,7 +107,8 @@ service cloud.firestore {
             && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/bookings/$(after.bookingId)).data.seatId
                  == seatId
             && before.get('heldBy', null) == null
-            && before.get('heldFor', request.auth.uid) == request.auth.uid)
+            && (before.get('heldFor', null) == null
+                || before.get('heldFor', null) == request.auth.uid))
           ||
           // release
           (before.get('heldBy', null) == request.auth.uid

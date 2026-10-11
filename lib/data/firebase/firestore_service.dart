@@ -626,12 +626,16 @@ class FirestoreService {
           throw StateError('seat-taken');
         }
         tx.set(_bookingsRef().doc(b.id), _bookingToMap(b));
-        // The rules require the holder and booking id with the flip.
-        tx.update(seatRef, {
-          'status': seatStatus.name,
-          'heldBy': uid,
-          'bookingId': b.id,
-        });
+        // Sample seats have no document (and rules forbid creating one), so
+        // only flip the seat when it really exists.
+        if (seatSnap.exists) {
+          // The rules require the holder and booking id with the flip.
+          tx.update(seatRef, {
+            'status': seatStatus.name,
+            'heldBy': uid,
+            'bookingId': b.id,
+          });
+        }
       });
       return true;
     } on StateError {
@@ -639,6 +643,7 @@ class FirestoreService {
     } on FirebaseException catch (e) {
       // Offline/unreachable: the write is queued, keep the optimistic state.
       if (e.code == 'unavailable') return true;
+      debugPrint('addBooking failed: ${e.code} ${e.message}');
       rethrow;
     }
   }

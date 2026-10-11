@@ -65,7 +65,7 @@ beforeEach(async () => {
       type: "book", title: "Code Complete", resourceId: "b3", userId: "alice", status: "offered", joinedAt: Timestamp.now(),
     });
     await setDoc(doc(db, "books/b1"), { title: "Clean Code", copiesAvailable: 3 });
-    await setDoc(doc(db, "seats/s1_1"), { label: "2B", status: "available", heldBy: null, bookingId: null });
+    await setDoc(doc(db, "seats/s1_1"), { label: "2B", status: "available", heldBy: null, bookingId: null, heldFor: null });
     await setDoc(doc(db, "seats/held"), { label: "9Z", status: "available", heldBy: null, heldFor: "bob" });
     await setDoc(doc(db, "config/staffAllowlist"), { emails: ["staff1@sliit.lk"] });
     await setDoc(doc(db, "config/library"), { currency: "USD" });
