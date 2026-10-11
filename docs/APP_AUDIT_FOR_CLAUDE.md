@@ -1,4 +1,4 @@
-# Library+ (SLIIT Quick Book) — Complete Application Audit
+# Lamplight (SLIIT Quick Book) — Complete Application Audit
 
 > **Purpose of this document:** a self-contained, exhaustive description of an existing Flutter mobile app — every screen, feature, component, flow, backend surface, and design token — so that an AI assistant (Claude) can generate a **complete frontend design build-up prompt** (or redesign system) without ever seeing the code.
 >
@@ -10,7 +10,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Product name** | Library+ (in-app strings: `Library+`, portal name `SLIIT QUICK BOOK`) |
+| **Product name** | Lamplight (in-app strings: `Lamplight`, portal name `SLIIT QUICK BOOK`) |
 | **One-liner** | Library book reservation & reading-room seat booking system for a university campus (SLIIT) |
 | **Users** | Two roles: **Student** and **Staff** (librarian). Role chosen at sign-in in the current build. |
 | **Core jobs** | ① Find & reserve library books for pickup ② Find & reserve reading-room seats on a floor map ③ Join waitlists when a resource is taken ④ Show a QR pass that staff verify with a live camera scanner ⑤ Staff dashboard to operate the dispatch queue |
@@ -239,7 +239,7 @@ State banner (icon + headline + body, success/error tone): **Valid reservation /
 `_IdentityCard` (avatar, name, student ID, role) + `_MemberStats` (Books held / Seats booked / Waiting counts), Privacy section (Staff-only visibility toggle **[gap]** cosmetic), Quick links (Notifications, Settings, Help & support), **Sign out** (revokes Firebase session, tears down streams, returns to Login).
 
 ### 5.21 Settings — `lib/features/settings/settings_screen.dart`
-Notification methods toggles (push/email/SMS + reminder-before-start/expiry + waitlist updates — `NotificationPreferences` model), Appearance: light/dark/system `_ThemePicker` (live theme switch), Other settings rows. Value Proposition screen (onboarding "why Library+" feature cards) also present.
+Notification methods toggles (push/email/SMS + reminder-before-start/expiry + waitlist updates — `NotificationPreferences` model), Appearance: light/dark/system `_ThemePicker` (live theme switch), Other settings rows. Value Proposition screen (onboarding "why Lamplight" feature cards) also present.
 
 ---
 

@@ -1,4 +1,4 @@
-# Information Architecture — Library App
+# Information Architecture — Lamplight App
 
 > **Migration notice (2026-10-07):** This original Assignment-era screen checklist contains deleted file paths and an outdated primary navigation. Use [`README.md`](README.md), [`FEATURES.md`](FEATURES.md), [`UI_DESIGN.md`](UI_DESIGN.md), and [`HIGH_LEVEL_ARCHITECTURE.md`](HIGH_LEVEL_ARCHITECTURE.md) as the implementation source of truth. During the `go_router` migration, replace this file with generated/verified route documentation.
 

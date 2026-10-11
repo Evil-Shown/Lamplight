@@ -1,4 +1,4 @@
-# Library+ Flutter Frontend Design
+# Lamplight Flutter Frontend Design
 
 ## 1. Target structure
 

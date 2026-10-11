@@ -1,4 +1,4 @@
-# Library+ UI/UX Design Specification
+# Lamplight UI/UX Design Specification
 
 ## 1. Direction
 
