@@ -44,9 +44,9 @@ class LamplightPalette {
 class AppColors {
   AppColors._();
 
-  /// Lamplight by day: clean crisp porcelain canvas, charcoal slate text, warm glowing amber accents.
+  /// Lamplight by day: clean crisp porcelain canvas, charcoal slate text, warm glowing radiant amber accents.
   static const ColorScheme _lightScheme = ColorScheme.light(
-    primary: Color(0xFFB45309),
+    primary: Color(0xFFD97706), // Radiant warm amber gold (crisp, beautiful, not brown)
     onPrimary: Color(0xFFFFFFFF),
     primaryContainer: Color(0xFFFEF3C7),
     onPrimaryContainer: Color(0xFF78350F),
@@ -328,7 +328,7 @@ class AppGlass {
 
   static Color cardFillFor(bool dark) => dark
       ? const Color(0xFF151D2A).withValues(alpha: 0.98)
-      : const Color(0xFFFFFFFF).withValues(alpha: 0.98);
+      : const Color(0xFFFFFFFF); // Solid crisp porcelain white in light mode
 
   static Color chromeFillFor(bool dark) => dark
       ? const Color(0xFF0B0F19).withValues(alpha: 0.94)

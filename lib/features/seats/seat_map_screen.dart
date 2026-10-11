@@ -121,31 +121,115 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             children: [
               ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
               Expanded(
-                child: syncFailed(state)
-                    ? syncErrorState(state)
-                    : !state.isHydrated
-                        ? ListView(
-                            padding:
-                                const EdgeInsets.all(AppSpacing.screenMargin),
-                            children: const [
-                              Skeleton(height: 120, radius: AppRadii.xl),
-                              SizedBox(height: AppSpacing.base),
-                              Skeleton(height: 280, radius: AppRadii.xl),
-                            ],
-                          )
-                        : refreshable(
-                            state,
-                            SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSpacing.screenMargin,
-                                AppSpacing.sm,
-                                AppSpacing.screenMargin,
-                                AppSpacing.xl + 44,
+                child: Stack(
+                  children: [
+                    syncFailed(state)
+                        ? syncErrorState(state)
+                        : !state.isHydrated
+                            ? ListView(
+                                padding:
+                                    const EdgeInsets.all(AppSpacing.screenMargin),
+                                children: const [
+                                  Skeleton(height: 120, radius: AppRadii.xl),
+                                  SizedBox(height: AppSpacing.base),
+                                  Skeleton(height: 280, radius: AppRadii.xl),
+                                ],
+                              )
+                            : refreshable(
+                                state,
+                                SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.screenMargin,
+                                    AppSpacing.sm,
+                                    AppSpacing.screenMargin,
+                                    AppSpacing.xl + 88,
+                                  ),
+                                  child: _content(state, visible, mySeatIds),
+                                ),
                               ),
-                              child: _content(state, visible, mySeatIds),
+                    if (selected != null)
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        bottom: 12,
+                        child: AnimatedSwitcher(
+                          duration: noMotion ? Duration.zero : AppMotion.fast,
+                          child: Container(
+                            key: ValueKey('float-bar-${selected.id}'),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.isDark
+                                  ? const Color(0xFF1E293B)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(AppRadii.full),
+                              border: Border.all(
+                                color: AppColors.isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(
+                                    alpha: AppColors.isDark ? 0.45 : 0.14,
+                                  ),
+                                  blurRadius: 18,
+                                  spreadRadius: -2,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                _MiniSeat(
+                                  label: selected.label,
+                                  mine: mySeatIds.contains(selected.id),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Seat ${selected.label}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppText.title(
+                                          14.5,
+                                          w: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_statusText(selected.status)} · ${selected.zoneLabel}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppText.body(
+                                          11,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                PrimaryButton(
+                                  label: 'Book seat',
+                                  trailingIcon: Icons.arrow_forward_rounded,
+                                  onPressed: () => _openDetail(selected),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -354,6 +438,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                 selected: _selected,
                 mySeatIds: mySeatIds,
                 onSelect: (seat) => setState(() => _selected = seat),
+                onOpen: _openDetail,
                 floorNo: floorNo,
               ),
             ),
@@ -1321,6 +1406,7 @@ class _SeatGridCard extends StatelessWidget {
     required this.mySeatIds,
     required this.onSelect,
     required this.floorNo,
+    this.onOpen,
   });
 
   final List<Seat> visible;
@@ -1328,6 +1414,7 @@ class _SeatGridCard extends StatelessWidget {
   final Seat? selected;
   final Set<String> mySeatIds;
   final ValueChanged<Seat> onSelect;
+  final ValueChanged<Seat>? onOpen;
   final int floorNo;
 
   @override
@@ -1500,12 +1587,21 @@ class _SeatGridCard extends StatelessWidget {
   Widget _gridCell(Seat? seat, Set<String> visibleIds) {
     if (seat == null) return const SizedBox(width: 54, height: 54);
     final isVisible = visibleIds.contains(seat.id);
+    final isSelected = selected?.id == seat.id;
     return _SeatBadge(
       seat: seat,
       dimmed: !isVisible,
-      isSelected: selected?.id == seat.id,
+      isSelected: isSelected,
       isMine: mySeatIds.contains(seat.id),
-      onTap: isVisible ? () => onSelect(seat) : null,
+      onTap: isVisible
+          ? () {
+              if (isSelected && onOpen != null) {
+                onOpen!(seat);
+              } else {
+                onSelect(seat);
+              }
+            }
+          : null,
     );
   }
 }
