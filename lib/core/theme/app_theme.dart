@@ -16,84 +16,108 @@ import 'package:google_fonts/google_fonts.dart';
 /// scheme at runtime; call sites keep the same `AppColors.x` syntax —
 /// the trade-off is that colours can't appear inside `const`
 /// expressions.
+/// The Quiet Morning & Forest Pine palettes extracted from the Lamplight design tokens.
+class LamplightPalette {
+  LamplightPalette._();
+
+  // Image 1: Forest Pine & Sage
+  static const obsidian = Color(0xFF051F20);
+  static const midnightPine = Color(0xFF0B2B26);
+  static const evergreen = Color(0xFF163832);
+  static const juniper = Color(0xFF235347);
+  static const sage = Color(0xFF8EB69B);
+  static const morningMint = Color(0xFFDAF1DE);
+
+  // Image 2: Quiet Morning
+  static const ivoryMist = Color(0xFFF5F0E8);
+  static const softTaupe = Color(0xFFD8C9B6);
+  static const warmStone = Color(0xFFB5A18C);
+  static const cocoaBrown = Color(0xFF806B59);
+  static const deepEspresso = Color(0xFF3F352E);
+
+  // Lamplight Warm Accent
+  static const amberGlow = Color(0xFFD99246);
+  static const warmGold = Color(0xFFE5A65D);
+}
+
 class AppColors {
   AppColors._();
 
-  /// Nordic light: sapphire, porcelain canvas, indigo accent.
+  /// Quiet Morning light: Ivory Mist canvas, Evergreen primary, Cocoa Brown secondary.
   static const ColorScheme _lightScheme = ColorScheme.light(
-    primary: Color(0xFF6B3516),
-    onPrimary: Color(0xFFFFF3E0),
-    primaryContainer: Color(0xFFF3D3A6),
-    onPrimaryContainer: Color(0xFF3A1B06),
-    secondary: Color(0xFF9C4A2B),
+    primary: Color(0xFF163832),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFDAF1DE),
+    onPrimaryContainer: Color(0xFF0B2B26),
+    secondary: Color(0xFF806B59),
     onSecondary: Color(0xFFFFFFFF),
-    secondaryContainer: Color(0xFFF4D5C4),
-    onSecondaryContainer: Color(0xFF3E1608),
-    tertiary: Color(0xFF7A5A1A),
+    secondaryContainer: Color(0xFFF0E8DD),
+    onSecondaryContainer: Color(0xFF3F352E),
+    tertiary: Color(0xFF235347),
     onTertiary: Color(0xFFFFFFFF),
-    tertiaryContainer: Color(0xFFF2DDA0),
-    onTertiaryContainer: Color(0xFF35270A),
+    tertiaryContainer: Color(0xFFE4F0E8),
+    onTertiaryContainer: Color(0xFF051F20),
     error: Color(0xFFB3261E),
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
     onErrorContainer: Color(0xFF410002),
-    surface: Color(0xFFE8B380),
-    onSurface: Color(0xFF2A180C),
-    onSurfaceVariant: Color(0xFF4A2F1C),
-    outline: Color(0xFF6B4A32),
-    outlineVariant: Color(0xFFB88652),
-    inverseSurface: Color(0xFF2A180C),
-    onInverseSurface: Color(0xFFFBEBD3),
-    inversePrimary: Color(0xFFF0B070),
-    surfaceContainerLowest: Color(0xFFFFF9EE),
-    surfaceContainerLow: Color(0xFFFFF1DC),
-    surfaceContainer: Color(0xFFF2D9B4),
-    surfaceContainerHigh: Color(0xFFE8C799),
-    surfaceContainerHighest: Color(0xFFDDB57F),
-    surfaceDim: Color(0xFFD9A369),
-    surfaceBright: Color(0xFFEBB886),
+    surface: Color(0xFFF5F0E8),
+    onSurface: Color(0xFF231C18),
+    onSurfaceVariant: Color(0xFF6B584B),
+    outline: Color(0xFFB5A18C),
+    outlineVariant: Color(0xFFD8C9B6),
+    inverseSurface: Color(0xFF0B2B26),
+    onInverseSurface: Color(0xFFF5F0E8),
+    inversePrimary: Color(0xFF8EB69B),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFFAF7F2),
+    surfaceContainer: Color(0xFFF4ECE1),
+    surfaceContainerHigh: Color(0xFFEDE3D5),
+    surfaceContainerHighest: Color(0xFFE3D6C4),
+    surfaceDim: Color(0xFFE2D6C5),
+    surfaceBright: Color(0xFFFAF7F2),
   );
 
-  /// Nordic dark: slate canvas, light sapphire primary.
+  /// Forest Pine dark: Obsidian base, Dark Pine surfaces, Sage Moss primary.
   static const ColorScheme _darkScheme = ColorScheme.dark(
-    primary: Color(0xFFF0B070),
-    onPrimary: Color(0xFF2A1503),
-    primaryContainer: Color(0xFF7A4A1E),
-    onPrimaryContainer: Color(0xFFFFDDB8),
-    secondary: Color(0xFFE0A58A),
-    onSecondary: Color(0xFF3E1608),
-    secondaryContainer: Color(0xFF5A3322),
-    onSecondaryContainer: Color(0xFFF8DECF),
-    tertiary: Color(0xFFE6C98A),
-    onTertiary: Color(0xFF35270A),
-    tertiaryContainer: Color(0xFF5E4A12),
-    onTertiaryContainer: Color(0xFFF6E8B8),
+    primary: Color(0xFF8EB69B),
+    onPrimary: Color(0xFF051F20),
+    primaryContainer: Color(0xFF163832),
+    onPrimaryContainer: Color(0xFFDAF1DE),
+    secondary: Color(0xFFD8C9B6),
+    onSecondary: Color(0xFF0B2B26),
+    secondaryContainer: Color(0xFF235347),
+    onSecondaryContainer: Color(0xFFDAF1DE),
+    tertiary: Color(0xFFE5A65D),
+    onTertiary: Color(0xFF2A1503),
+    tertiaryContainer: Color(0xFF3B2713),
+    onTertiaryContainer: Color(0xFFFFDDB8),
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
     errorContainer: Color(0xFF93000A),
     onErrorContainer: Color(0xFFFFDAD6),
-    surface: Color(0xFF1C110C),
-    onSurface: Color(0xFFF6E6D2),
-    onSurfaceVariant: Color(0xFFD6BCA3),
-    outline: Color(0xFFA58A72),
-    outlineVariant: Color(0xFF43302A),
-    inverseSurface: Color(0xFFF6E6D2),
-    onInverseSurface: Color(0xFF2A180C),
-    inversePrimary: Color(0xFF6B3516),
-    surfaceContainerLowest: Color(0xFF120A07),
-    surfaceContainerLow: Color(0xFF271912),
-    surfaceContainer: Color(0xFF2F1F16),
-    surfaceContainerHigh: Color(0xFF3B281C),
-    surfaceContainerHighest: Color(0xFF4B3426),
-    surfaceDim: Color(0xFF1C110C),
-    surfaceBright: Color(0xFF3B281C),
+    surface: Color(0xFF051F20),
+    onSurface: Color(0xFFF5F0E8),
+    onSurfaceVariant: Color(0xFF8EB69B),
+    outline: Color(0xFF326357),
+    outlineVariant: Color(0xFF163832),
+    inverseSurface: Color(0xFFF5F0E8),
+    onInverseSurface: Color(0xFF051F20),
+    inversePrimary: Color(0xFF163832),
+    surfaceContainerLowest: Color(0xFF031415),
+    surfaceContainerLow: Color(0xFF0B2B26),
+    surfaceContainer: Color(0xFF0F332D),
+    surfaceContainerHigh: Color(0xFF163C34),
+    surfaceContainerHighest: Color(0xFF204E44),
+    surfaceDim: Color(0xFF051F20),
+    surfaceBright: Color(0xFF163C34),
   );
 
-  /// Electric indigo — selected seats, nav pill, focus rings.
-  static const Color indigo = Color(0xFFB5532C);
+  /// Selected seats, nav pill, focus rings.
+  static const Color indigo = Color(0xFF235347);
 
-  /// Cyan accent for your seat / special highlights (no yellow).
-  static const Color amberHighlight = Color(0xFFE6B422);
+  /// Cyan accent for your seat / special highlights.
+  static const Color amberHighlight = Color(0xFFE5A65D);
 
   /// The scheme matching the active brightness. Kept in sync by the app
   /// root through [isDark] before the frame is built.
@@ -299,12 +323,12 @@ class AppGlass {
   static const double blurCard = 16;
 
   static Color cardFillFor(bool dark) => dark
-      ? const Color(0xFF2B1D14).withValues(alpha: 0.86)
-      : const Color(0xFFFFF4E2).withValues(alpha: 0.92);
+      ? const Color(0xFF0B2B26).withValues(alpha: 0.90)
+      : const Color(0xFFFAF7F2).withValues(alpha: 0.94);
 
   static Color chromeFillFor(bool dark) => dark
-      ? const Color(0xFF1B110B).withValues(alpha: 0.88)
-      : const Color(0xFFFFEDD2).withValues(alpha: 0.94);
+      ? const Color(0xFF051F20).withValues(alpha: 0.94)
+      : const Color(0xFFF5F0E8).withValues(alpha: 0.96);
 
   /// Floating dock: chrome fill, a touch more opaque in light mode so the
   /// scenery behind does not wash out the items.
@@ -312,17 +336,17 @@ class AppGlass {
       dark ? chromeFillFor(dark) : chromeFillFor(dark).withValues(alpha: 0.985);
 
   static Color borderFor(bool dark) => dark
-      ? Colors.white.withValues(alpha: 0.18)
-      : const Color(0xFF4A2410).withValues(alpha: 0.22);
+      ? const Color(0xFF8EB69B).withValues(alpha: 0.16)
+      : const Color(0xFFD8C9B6).withValues(alpha: 0.55);
 
   /// Bright rim light on the top/left edge.
   static Color rimFor(bool dark) => dark
-      ? Colors.white.withValues(alpha: 0.22)
+      ? Colors.white.withValues(alpha: 0.18)
       : Colors.white.withValues(alpha: 0.95);
 
   static Color shadowFor(bool dark) => dark
-      ? Colors.black.withValues(alpha: 0.38)
-      : const Color(0xFF4A2410).withValues(alpha: 0.16);
+      ? Colors.black.withValues(alpha: 0.40)
+      : const Color(0xFF231C18).withValues(alpha: 0.08);
 
   /// Translucent card fill (frosted cards, chips, inputs).
   static Color get cardFill => cardFillFor(AppColors.isDark);
@@ -366,37 +390,36 @@ class AppGlass {
       ];
 }
 
-/// The sky behind the app: dusk amber deepening to brown in light mode, a
-/// midnight sky with stars in dark mode, with
-/// soft copper glows. A desert scene is painted over it (see glass.dart).
+/// The sky behind the app: morning mist & quiet sunrise in light mode,
+/// midnight evergreen sky with stars in dark mode.
 class AppAurora {
   AppAurora._();
 
   static const List<Color> light = [
-    Color(0x66FFE3B8), // cream glow 40%
-    Color(0x40C2703A), // copper 25%
-    Color(0x33FFC58A), // peach 20%
-    Color(0x2E8A4A2B), // rust 18%
+    Color(0x52DAF1DE), // morning mint 32%
+    Color(0x388EB69B), // sage mist 22%
+    Color(0x30F5D5A5), // warm lamplight sun 19%
+    Color(0x24235347), // juniper tint 14%
   ];
 
   static const List<Color> dark = [
-    Color(0x335B6BD6),
-    Color(0x2E4A3B8C),
-    Color(0x29B8703A),
-    Color(0x1F2B3A6B),
+    Color(0x38163832), // evergreen glow
+    Color(0x2E235347), // juniper shadow
+    Color(0x288EB69B), // sage starlight
+    Color(0x200B2B26), // midnight pine
   ];
 
   static List<Color> get colors => AppColors.isDark ? dark : light;
 
   /// Canvas colour the blobs float over.
   static Color get base => AppColors.isDark
-      ? const Color(0xFF1A1832)
-      : const Color(0xFFE3A872);
+      ? const Color(0xFF051F20)
+      : const Color(0xFFF5F0E8);
 
   /// Top-to-bottom sky gradient stops.
   static List<Color> get sky => AppColors.isDark
-      ? const [Color(0xFF0C1124), Color(0xFF1A1832), Color(0xFF2C1C28)]
-      : const [Color(0xFFF0C99C), Color(0xFFE3A872), Color(0xFFC98350)];
+      ? const [Color(0xFF021011), Color(0xFF051F20), Color(0xFF0B2B26)]
+      : const [Color(0xFFEAF1EB), Color(0xFFF5F0E8), Color(0xFFF7ECE1)];
 }
 
 /// The M3 corner scale: extra-small 8, small 12, medium 16, large 20,
@@ -473,24 +496,25 @@ class AppGradients {
   AppGradients._();
 
   /// Mark/avatar gradient: primary → vivid lift, 135°.
-  static Gradient get brand => const LinearGradient(
+  static Gradient get brand => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFE0A050), Color(0xFFB8702C)],
+        colors: AppColors.isDark
+            ? const [Color(0xFF8EB69B), Color(0xFF163832)]
+            : const [Color(0xFF163832), Color(0xFF235347)],
       );
 
-  /// Depth hero: glowing amber in dark mode (dark text on it), deep brown
-  /// in light mode (cream text on it), at 135 degrees.
+  /// Depth hero: rich Evergreen in light mode, deep Obsidian Pine in dark mode.
   static Gradient get hero => AppColors.isDark
       ? const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFF0B070), Color(0xFFC27A2C)],
+          colors: [Color(0xFF163832), Color(0xFF051F20)],
         )
       : const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7A4020), Color(0xFF4A2410)],
+          colors: [Color(0xFF163832), Color(0xFF0B2B26)],
         );
 
   /// Legacy name kept so existing call sites restyle onto `hero`; the
@@ -553,6 +577,23 @@ class AppText {
         letterSpacing: ls,
         color: color ?? AppColors.textPrimary,
         height: height ?? 1.15,
+      );
+
+  static TextStyle serif(
+    double size, {
+    FontWeight w = FontWeight.w400,
+    double ls = 0,
+    Color? color,
+    FontStyle? fontStyle,
+    double? height,
+  }) =>
+      GoogleFonts.fraunces(
+        fontSize: size,
+        fontWeight: w,
+        letterSpacing: ls,
+        color: color ?? AppColors.textPrimary,
+        fontStyle: fontStyle,
+        height: height ?? 1.35,
       );
 
   static TextStyle title(

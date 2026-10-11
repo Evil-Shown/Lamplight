@@ -109,7 +109,7 @@ class _AuroraBackgroundState extends State<AuroraBackground>
               ),
             ),
           ),
-          _DesertBackdrop(dark: AppColors.isDark),
+          _NatureBackdrop(dark: AppColors.isDark),
           widget.child,
         ],
       ),
@@ -180,8 +180,8 @@ class _AuroraPainter extends CustomPainter {
 /// buttes and layered sand dunes with a lit and a shadowed side, and a
 /// saguaro in the foreground. Painted once inside its own repaint boundary
 /// with no blur, so it stays crisp and costs nothing while scrolling.
-class _DesertBackdrop extends StatelessWidget {
-  const _DesertBackdrop({required this.dark});
+class _NatureBackdrop extends StatelessWidget {
+  const _NatureBackdrop({required this.dark});
 
   final bool dark;
 
@@ -190,89 +190,43 @@ class _DesertBackdrop extends StatelessWidget {
         child: RepaintBoundary(
           child: CustomPaint(
             size: Size.infinite,
-            painter: _DesertPainter(dark: dark),
+            painter: _NaturePainter(dark: dark),
           ),
         ),
       );
 }
 
-class _DesertPainter extends CustomPainter {
-  const _DesertPainter({required this.dark});
+class _NaturePainter extends CustomPainter {
+  const _NaturePainter({required this.dark});
 
   final bool dark;
-
-  // Lit top, base, and shadow colour for each dune, back to front.
-  static const _litLight = [
-    Color(0xFFF6CB98),
-    Color(0xFFEFB67F),
-    Color(0xFFE3A167),
-    Color(0xFFD38C55),
-  ];
-  static const _baseLight = [
-    Color(0xFFE6AE78),
-    Color(0xFFDA9A64),
-    Color(0xFFC7824F),
-    Color(0xFFA96A3F),
-  ];
-  static const _shadeLight = [
-    Color(0xFFB8733E),
-    Color(0xFFA5643A),
-    Color(0xFF8D4F2E),
-    Color(0xFF6E3C22),
-  ];
-
-  // Night: moonlit slopes in cool indigo, deep shadow on the lee side.
-  static const _litDark = [
-    Color(0xFF45476E),
-    Color(0xFF383A5E),
-    Color(0xFF2D2F4F),
-    Color(0xFF232540),
-  ];
-  static const _baseDark = [
-    Color(0xFF2B2E52),
-    Color(0xFF23264A),
-    Color(0xFF1B1D3A),
-    Color(0xFF13152E),
-  ];
-  static const _shadeDark = [
-    Color(0xFF0C0D22),
-    Color(0xFF0A0B1C),
-    Color(0xFF080917),
-    Color(0xFF05060F),
-  ];
-
-  // Per dune: left y, crest x, crest y, right y (all fractions).
-  static const _dunes = [
-    (0.70, 0.80, 0.645, 0.725),
-    (0.755, 0.22, 0.695, 0.785),
-    (0.83, 0.68, 0.765, 0.845),
-    (0.91, 0.30, 0.85, 0.915),
-  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final lit = dark ? _litDark : _litLight;
-    final base = dark ? _baseDark : _baseLight;
-    final shade = dark ? _shadeDark : _shadeLight;
 
     if (dark) {
-      _night(canvas, w, h);
+      _nightSky(canvas, w, h);
     } else {
-      _sun(canvas, w, h);
-    }
-    _buttes(canvas, w, h);
-
-    for (var i = 0; i < _dunes.length; i++) {
-      final (ly, cx, cy, ry) = _dunes[i];
-      _dune(canvas, w, h, ly, cx, cy, ry, lit[i], base[i], shade[i], i);
+      _morningSun(canvas, w, h);
     }
 
-    _cactus(canvas, w, h);
+    // 1. Distant misty mountains
+    _mountains(canvas, w, h);
 
-    // Foreground depth: the page darkens slightly toward the bottom edge.
-    final foot = Rect.fromLTWH(0, h * 0.82, w, h * 0.18);
+    // 2. Midground pine treeline
+    _pineTreeline(canvas, w, h);
+
+    // 3. Foreground rolling forest hills
+    _foregroundHills(canvas, w, h);
+
+    // 4. Foreground framing pine silhouettes
+    _pineTree(canvas, w * 0.10, h * 0.88, h * 0.12, dark ? const Color(0xFF021011) : const Color(0xFF0F2622));
+    _pineTree(canvas, w * 0.88, h * 0.86, h * 0.14, dark ? const Color(0xFF031415) : const Color(0xFF163832));
+
+    // 5. Subtle bottom depth scrim
+    final foot = Rect.fromLTWH(0, h * 0.80, w, h * 0.20);
     canvas.drawRect(
       foot,
       Paint()
@@ -280,19 +234,42 @@ class _DesertPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            (dark ? const Color(0xFF05060F) : const Color(0xFF2A1408))
+            (dark ? const Color(0xFF031415) : const Color(0xFFE2D7C8))
                 .withValues(alpha: 0),
-            (dark ? const Color(0xFF05060F) : const Color(0xFF2A1408))
-                .withValues(alpha: dark ? 0.6 : 0.3),
+            (dark ? const Color(0xFF031415) : const Color(0xFFE2D7C8))
+                .withValues(alpha: dark ? 0.65 : 0.35),
           ],
         ).createShader(foot),
     );
   }
 
-  /// Night sky: a warm afterglow on the horizon, scattered stars and a full
-  /// moon low over the dunes.
-  void _night(Canvas canvas, double w, double h) {
-    final glow = Rect.fromLTWH(0, h * 0.5, w, h * 0.22);
+  void _morningSun(Canvas canvas, double w, double h) {
+    final c = Offset(w * 0.72, h * 0.58);
+    final glowR = w * 0.48;
+
+    canvas.drawCircle(
+      c,
+      glowR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFFFDEFD9).withValues(alpha: 0.75),
+            const Color(0xFFFBE4C8).withValues(alpha: 0.28),
+            const Color(0xFFFBE4C8).withValues(alpha: 0),
+          ],
+          stops: const [0, 0.45, 1],
+        ).createShader(Rect.fromCircle(center: c, radius: glowR)),
+    );
+
+    canvas.drawCircle(
+      c,
+      w * 0.068,
+      Paint()..color = const Color(0xFFFFF7EB).withValues(alpha: 0.95),
+    );
+  }
+
+  void _nightSky(Canvas canvas, double w, double h) {
+    final glow = Rect.fromLTWH(0, h * 0.46, w, h * 0.28);
     canvas.drawRect(
       glow,
       Paint()
@@ -300,283 +277,149 @@ class _DesertPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFFB0605A).withValues(alpha: 0),
-            const Color(0xFFB0605A).withValues(alpha: 0.28),
+            const Color(0xFF163832).withValues(alpha: 0),
+            const Color(0xFF163832).withValues(alpha: 0.22),
           ],
         ).createShader(glow),
     );
 
-    // Stars: deterministic, thinning out toward the horizon.
-    var seed = 29;
+    var seed = 42;
     double next() {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
       return seed / 0x80000000;
     }
 
     final starPaint = Paint();
-    for (var i = 0; i < 90; i++) {
+    for (var i = 0; i < 85; i++) {
       final x = next() * w;
-      final y = next() * h * 0.6;
-      final fade = 1 - (y / (h * 0.6)) * 0.6;
-      final r = 0.5 + next() * 1.1;
-      starPaint.color = const Color(0xFFF3EEDC)
-          .withValues(alpha: (0.3 + next() * 0.6) * fade);
+      final y = next() * h * 0.58;
+      final fade = 1 - (y / (h * 0.58)) * 0.5;
+      final r = 0.5 + next() * 1.0;
+      starPaint.color = const Color(0xFFDAF1DE)
+          .withValues(alpha: (0.35 + next() * 0.55) * fade);
       canvas.drawCircle(Offset(x, y), r, starPaint);
     }
-    // A few brighter stars with a faint cross.
+
     final bright = Paint()
-      ..color = const Color(0xFFFFF6E0).withValues(alpha: 0.8)
+      ..color = const Color(0xFFF5F0E8).withValues(alpha: 0.85)
       ..strokeWidth = 0.8;
     for (final (x, y) in const [
-      (0.14, 0.12),
-      (0.4, 0.2),
-      (0.86, 0.1),
-      (0.62, 0.3)
+      (0.18, 0.12),
+      (0.38, 0.22),
+      (0.84, 0.14),
+      (0.60, 0.32),
     ]) {
-      final c = Offset(w * x, h * y);
-      canvas.drawCircle(c, 1.5, bright);
-      canvas.drawLine(c.translate(-5, 0), c.translate(5, 0), bright);
-      canvas.drawLine(c.translate(0, -5), c.translate(0, 5), bright);
+      final sc = Offset(w * x, h * y);
+      canvas.drawCircle(sc, 1.4, bright);
+      canvas.drawLine(sc.translate(-4, 0), sc.translate(4, 0), bright);
+      canvas.drawLine(sc.translate(0, -4), sc.translate(0, 4), bright);
     }
 
-    // The moon and its cool halo.
-    final c = Offset(w * 0.7, h * 0.6);
-    final haloR = w * 0.42;
+    final mc = Offset(w * 0.74, h * 0.54);
+    final moonR = w * 0.055;
+    final haloR = w * 0.32;
+
     canvas.drawCircle(
-      c,
+      mc,
       haloR,
       Paint()
-        ..shader = RadialGradient(colors: [
-          const Color(0xFFBFD0FF).withValues(alpha: 0.3),
-          const Color(0xFFBFD0FF).withValues(alpha: 0.08),
-          const Color(0xFFBFD0FF).withValues(alpha: 0),
-        ], stops: const [
-          0,
-          0.4,
-          1
-        ]).createShader(Rect.fromCircle(center: c, radius: haloR)),
-    );
-    final moonR = w * 0.066;
-    canvas.drawCircle(c, moonR, Paint()..color = const Color(0xFFF6F1DE));
-    final crater = Paint()
-      ..color = const Color(0xFFCFC8B0).withValues(alpha: 0.55);
-    canvas.drawCircle(
-        c.translate(-moonR * 0.35, -moonR * 0.25), moonR * 0.22, crater);
-    canvas.drawCircle(
-        c.translate(moonR * 0.3, moonR * 0.2), moonR * 0.28, crater);
-    canvas.drawCircle(
-        c.translate(-moonR * 0.1, moonR * 0.5), moonR * 0.14, crater);
-  }
-
-  void _sun(Canvas canvas, double w, double h) {
-    final c = Offset(w * 0.7, h * 0.625);
-    final glowR = w * 0.5;
-    canvas.drawCircle(
-      c,
-      glowR,
-      Paint()
-        ..shader = RadialGradient(colors: [
-          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFF0D0))
-              .withValues(alpha: dark ? 0.32 : 0.8),
-          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD79A))
-              .withValues(alpha: dark ? 0.1 : 0.28),
-          (dark ? const Color(0xFFF0A35E) : const Color(0xFFFFD79A))
-              .withValues(alpha: 0),
-        ], stops: const [
-          0,
-          0.35,
-          1
-        ]).createShader(Rect.fromCircle(center: c, radius: glowR)),
-    );
-    canvas.drawCircle(
-      c,
-      w * 0.072,
-      Paint()
-        ..color = (dark ? const Color(0xFFF5B574) : const Color(0xFFFFF4DC))
-            .withValues(alpha: dark ? 0.7 : 0.95),
-    );
-  }
-
-  /// Flat-topped rock buttes on the horizon, lit on the left, shaded on the
-  /// right.
-  void _buttes(Canvas canvas, double w, double h) {
-    Path poly(List<(double, double)> pts) {
-      final path = Path()..moveTo(w * pts.first.$1, h * pts.first.$2);
-      for (final pt in pts.skip(1)) {
-        path.lineTo(w * pt.$1, h * pt.$2);
-      }
-      return path..close();
-    }
-
-    final body = dark ? const Color(0xFF1C1E3A) : const Color(0xFFC98A58);
-    final side = dark ? const Color(0xFF0E1024) : const Color(0xFFA56A3E);
-
-    final big = [
-      (0.02, 0.73),
-      (0.045, 0.655),
-      (0.075, 0.645),
-      (0.185, 0.645),
-      (0.215, 0.665),
-      (0.235, 0.73),
-    ];
-    canvas.drawPath(poly(big), Paint()..color = body);
-    canvas.drawPath(
-      poly([
-        (0.14, 0.645),
-        (0.185, 0.645),
-        (0.215, 0.665),
-        (0.235, 0.73),
-        (0.15, 0.73),
-      ]),
-      Paint()..color = side,
-    );
-
-    final small = [
-      (0.25, 0.73),
-      (0.265, 0.685),
-      (0.285, 0.678),
-      (0.34, 0.678),
-      (0.355, 0.7),
-      (0.37, 0.73),
-    ];
-    canvas.drawPath(poly(small), Paint()..color = body);
-    canvas.drawPath(
-      poly([
-        (0.315, 0.678),
-        (0.34, 0.678),
-        (0.355, 0.7),
-        (0.37, 0.73),
-        (0.31, 0.73),
-      ]),
-      Paint()..color = side,
-    );
-  }
-
-  /// One dune: a lit windward slope, then a crisp crest and a shadowed lee.
-  void _dune(Canvas canvas, double w, double h, double ly, double cx, double cy,
-      double ry, Color lit, Color base, Color shade, int index) {
-    final left = Offset(-w * 0.1, h * ly);
-    final crest = Offset(w * cx, h * cy);
-    final right = Offset(w * 1.1, h * ry);
-    final rise = crest.dx - left.dx;
-    final fall = right.dx - crest.dx;
-
-    // The dune body.
-    final body = Path()
-      ..moveTo(left.dx, left.dy)
-      ..cubicTo(left.dx + rise * 0.4, left.dy, crest.dx - rise * 0.32, crest.dy,
-          crest.dx, crest.dy)
-      ..cubicTo(crest.dx + fall * 0.05, crest.dy + (right.dy - crest.dy) * 0.55,
-          right.dx - fall * 0.45, right.dy, right.dx, right.dy)
-      ..lineTo(right.dx, h)
-      ..lineTo(left.dx, h)
-      ..close();
-    final bounds = Rect.fromLTWH(0, h * (cy - 0.02), w, h);
-    canvas.drawPath(
-      body,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [lit, base],
-        ).createShader(bounds),
-    );
-
-    // The lee side in shadow: sharp along the crest, fading into the dune.
-    final lee = Path()
-      ..moveTo(crest.dx, crest.dy)
-      ..cubicTo(crest.dx + fall * 0.05, crest.dy + (right.dy - crest.dy) * 0.55,
-          right.dx - fall * 0.45, right.dy, right.dx, right.dy)
-      ..lineTo(right.dx, right.dy + h * 0.1)
-      ..cubicTo(right.dx - fall * 0.35, right.dy + h * 0.1,
-          crest.dx + fall * 0.1, crest.dy + h * 0.1, crest.dx, crest.dy)
-      ..close();
-    final leeBox =
-        Rect.fromLTRB(crest.dx, crest.dy, right.dx, right.dy + h * 0.1);
-    canvas.drawPath(
-      lee,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        ..shader = RadialGradient(
           colors: [
-            shade.withValues(alpha: dark ? 0.85 : 0.7),
-            shade.withValues(alpha: 0),
+            const Color(0xFF8EB69B).withValues(alpha: 0.20),
+            const Color(0xFF8EB69B).withValues(alpha: 0),
           ],
-        ).createShader(leeBox),
+        ).createShader(Rect.fromCircle(center: mc, radius: haloR)),
     );
 
-    // A thin warm rim along the crest where the sun grazes it.
-    final rim = Path()
-      ..moveTo(left.dx + rise * 0.45, left.dy + (crest.dy - left.dy) * 0.3)
-      ..cubicTo(left.dx + rise * 0.6, left.dy + (crest.dy - left.dy) * 0.62,
-          crest.dx - rise * 0.15, crest.dy + 0.5, crest.dx, crest.dy);
-    canvas.drawPath(
-      rim,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..strokeCap = StrokeCap.round
-        ..color = (dark ? const Color(0xFFB8C4F0) : const Color(0xFFFFE9C4))
-            .withValues(alpha: dark ? 0.32 : 0.55),
-    );
+    final moonPath = Path()
+      ..addOval(Rect.fromCircle(center: mc, radius: moonR));
+    final cutPath = Path()
+      ..addOval(Rect.fromCircle(center: mc.translate(-moonR * 0.45, -moonR * 0.35), radius: moonR * 0.95));
+    final crescent = Path.combine(PathOperation.difference, moonPath, cutPath);
+    canvas.drawPath(crescent, Paint()..color = const Color(0xFFF5F0E8));
   }
 
-  /// A saguaro on the nearest dune: dark body with a thin lit edge.
-  void _cactus(Canvas canvas, double w, double h) {
-    final x = w * 0.86;
-    final base = h * 0.915;
-    final ht = h * 0.1;
-    final body = dark ? const Color(0xFF05060F) : const Color(0xFF3D2314);
-    final edge = (dark ? const Color(0xFFB8C4F0) : const Color(0xFFFFD9A8))
-        .withValues(alpha: dark ? 0.45 : 0.5);
+  void _mountains(Canvas canvas, double w, double h) {
+    final backColor = dark ? const Color(0xFF0C2422) : const Color(0xFFD6E3D8);
+    final backPath = Path()
+      ..moveTo(0, h * 0.69)
+      ..cubicTo(w * 0.22, h * 0.63, w * 0.38, h * 0.66, w * 0.58, h * 0.61)
+      ..cubicTo(w * 0.76, h * 0.57, w * 0.90, h * 0.64, w, h * 0.62)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(backPath, Paint()..color = backColor);
 
-    void shape(Paint paint, double dx) {
-      final trunk = w * 0.026;
-      final arm = w * 0.017;
-      canvas.drawLine(
-        Offset(x + dx, base),
-        Offset(x + dx, base - ht),
-        paint
-          ..strokeWidth = trunk
-          ..strokeCap = StrokeCap.round,
-      );
-      paint
-        ..strokeWidth = arm
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-      canvas.drawPath(
-        Path()
-          ..moveTo(x + dx, base - ht * 0.42)
-          ..lineTo(x + dx - w * 0.052, base - ht * 0.42)
-          ..lineTo(x + dx - w * 0.052, base - ht * 0.7),
-        paint,
-      );
-      canvas.drawPath(
-        Path()
-          ..moveTo(x + dx, base - ht * 0.58)
-          ..lineTo(x + dx + w * 0.046, base - ht * 0.58)
-          ..lineTo(x + dx + w * 0.046, base - ht * 0.84),
-        paint,
-      );
+    final midColor = dark ? const Color(0xFF081E1C) : const Color(0xFFBFD2C3);
+    final midPath = Path()
+      ..moveTo(0, h * 0.73)
+      ..cubicTo(w * 0.18, h * 0.68, w * 0.35, h * 0.74, w * 0.52, h * 0.69)
+      ..cubicTo(w * 0.72, h * 0.64, w * 0.88, h * 0.71, w, h * 0.68)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(midPath, Paint()..color = midColor);
+  }
+
+  void _pineTreeline(Canvas canvas, double w, double h) {
+    final treelineColor = dark ? const Color(0xFF051716) : const Color(0xFFA5BDAA);
+    final ridgePath = Path()
+      ..moveTo(0, h * 0.78)
+      ..cubicTo(w * 0.3, h * 0.75, w * 0.65, h * 0.79, w, h * 0.76)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(ridgePath, Paint()..color = treelineColor);
+
+    final count = 18;
+    for (var i = 0; i < count; i++) {
+      final tx = w * (i / (count - 1));
+      final ty = h * (0.755 + 0.025 * math.sin(i * 1.3));
+      final th = h * 0.040 + (i % 3) * 6.0;
+      _pineTree(canvas, tx, ty, th, treelineColor);
     }
+  }
 
-    shape(
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..color = edge,
-      -1.6,
+  void _foregroundHills(Canvas canvas, double w, double h) {
+    final hillColor = dark ? const Color(0xFF031011) : const Color(0xFF8EB69B).withValues(alpha: 0.65);
+    final hillPath = Path()
+      ..moveTo(0, h * 0.84)
+      ..cubicTo(w * 0.35, h * 0.81, w * 0.70, h * 0.86, w, h * 0.83)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(hillPath, Paint()..color = hillColor);
+  }
+
+  void _pineTree(Canvas canvas, double x, double base, double height, Color color) {
+    final paint = Paint()..color = color;
+    final trunkW = height * 0.12;
+
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(x, base - height * 0.12),
+        width: trunkW,
+        height: height * 0.24,
+      ),
+      Paint()..color = color.withValues(alpha: 0.85),
     );
-    shape(
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..color = body,
-      0,
-    );
+
+    for (var i = 0; i < 3; i++) {
+      final tierBase = base - height * (0.18 + i * 0.24);
+      final tierWidth = height * (0.52 - i * 0.12);
+      final tierHeight = height * 0.38;
+
+      final path = Path()
+        ..moveTo(x - tierWidth / 2, tierBase)
+        ..lineTo(x, tierBase - tierHeight)
+        ..lineTo(x + tierWidth / 2, tierBase)
+        ..close();
+      canvas.drawPath(path, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _DesertPainter old) => old.dark != dark;
+  bool shouldRepaint(covariant _NaturePainter old) => old.dark != dark;
 }
 
 /// Shared glass look. [blur] null = frosted (no BackdropFilter).
