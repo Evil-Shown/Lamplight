@@ -1585,7 +1585,7 @@ class _SeatBadge extends StatelessWidget {
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        shape: BoxShape.circle,
         color: _fillColor,
         border: Border.all(color: _ringColor, width: _ringWidth),
         boxShadow: glow,
@@ -1594,83 +1594,33 @@ class _SeatBadge extends StatelessWidget {
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          Positioned(
-            top: 4,
-            child: Container(
-              width: 22,
-              height: 2,
-              decoration: BoxDecoration(
-                color: (isSelected ? Colors.white : _ringColor)
-                    .withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
           Text(
             seat.label,
             style: AppText.title(
               13,
               w: FontWeight.w800,
-              color: dimmed ? AppColors.textSecondary : _labelColor,
+              color: dimmed ? AppColors.textSecondary : Colors.white,
             ),
           ),
-          if (seat.status == SeatStatus.occupied && !dimmed && !_renderMine)
-            SizedBox(
-              width: 54,
-              height: 54,
-              child: Center(
-                child: Transform.rotate(
-                  angle: -math.pi / 4,
-                  child: Container(
-                    width: 32,
-                    height: 1.8,
-                    color: AppColors.seatOccupied.withValues(alpha: 0.65),
-                  ),
-                ),
-              ),
-            ),
-          if (seat.status == SeatStatus.limited &&
-              !dimmed &&
-              !_renderMine &&
-              !isSelected)
-            Positioned(
-              top: 5,
-              right: 5,
-              child: Icon(Icons.timelapse_rounded,
-                  size: 11, color: AppColors.seatLimited),
-            ),
           if (isSelected || _renderMine)
             Positioned(
-              top: -4,
-              right: -4,
+              top: -2,
+              right: -2,
               child: Container(
                 padding: const EdgeInsets.all(2.5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.scheme.surface,
-                  border: Border.all(color: _ringColor, width: 1.2),
+                  color: Colors.white,
+                  border: Border.all(color: _fillColor, width: 1.2),
                 ),
-                child: Icon(Icons.check_rounded, size: 10, color: _ringColor),
+                child: Icon(Icons.check_rounded, size: 10, color: _fillColor),
               ),
             )
           else if (showPower)
-            Positioned(
-              right: 5,
-              bottom: 5,
-              child: Icon(Icons.bolt_rounded,
-                  size: 11, color: AppColors.seatAvailable),
-            ),
-          if (seat.nearWindow &&
-              !dimmed &&
-              !_renderMine &&
-              !isSelected &&
-              seat.status == SeatStatus.available)
-            Positioned(
-              left: 5,
-              top: 5,
-              child: Icon(Icons.wb_sunny_outlined,
-                  size: 10,
-                  color: AppColors.seatAvailable.withValues(alpha: 0.7)),
+            const Positioned(
+              right: 8,
+              bottom: 6,
+              child: Icon(Icons.bolt_rounded, size: 11, color: Colors.white),
             ),
         ],
       ),
@@ -1712,77 +1662,43 @@ class _SeatBadge extends StatelessWidget {
   Color get _fillColor => dimmed
       ? AppColors.scheme.outlineVariant.withValues(alpha: 0.3)
       : isSelected
-          ? AppColors.seatSelected
+          ? _SeatPalette.selected
           : _renderMine
               ? AppColors.amberHighlight
-              : switch (seat.status) {
-                  SeatStatus.available => AppColors.isDark
-                      ? const Color(0xFF143823)
-                      : AppColors.successContainer.withValues(alpha: 0.85),
-                  SeatStatus.limited => AppColors.isDark
-                      ? const Color(0xFF452205)
-                      : AppColors.warningContainer.withValues(alpha: 0.85),
-                  SeatStatus.occupied => AppColors.isDark
-                      ? const Color(0xFF1E242B)
-                      : const Color(0xFF3B3A34),
-                };
+              : _SeatPalette.of(seat.status);
 
-  Color get _glowColor => isSelected
-      ? AppColors.indigo
-      : _renderMine
-          ? AppColors.amberHighlight
-          : switch (seat.status) {
-              SeatStatus.available => AppColors.success,
-              SeatStatus.limited => AppColors.warning,
-              SeatStatus.occupied => Colors.transparent,
-            };
+  Color get _glowColor => dimmed ? Colors.transparent : _fillColor;
 
   Color get _ringColor => dimmed
       ? Colors.transparent
-      : isSelected
-          ? AppColors.indigo
-          : _renderMine
-              ? AppColors.amberHighlight
-              : switch (seat.status) {
-                  SeatStatus.available => AppColors.isDark
-                      ? const Color(0xFF34D399)
-                      : AppColors.seatAvailable.withValues(alpha: 0.6),
-                  SeatStatus.limited => AppColors.isDark
-                      ? const Color(0xFFFBBF24)
-                      : AppColors.seatLimited.withValues(alpha: 0.6),
-                  SeatStatus.occupied => AppColors.isDark
-                      ? const Color(0xFF475569)
-                      : const Color(0xFFF3E8D6).withValues(alpha: 0.22),
-                };
+      : isSelected || _renderMine
+          ? Colors.white
+          : Colors.transparent;
 
-  double get _ringWidth => dimmed
-      ? 0
-      : isSelected
-          ? 2.5
-          : _renderMine
-              ? 2.0
-              : 1.2;
-
-  Color get _labelColor => isSelected
-      ? AppColors.textInverse
+  double get _ringWidth => isSelected
+      ? 2.5
       : _renderMine
-          ? _onAmber
-          : switch (seat.status) {
-              SeatStatus.available => AppColors.isDark
-                  ? const Color(0xFFECFDF5)
-                  : AppColors.onSuccessContainer,
-              SeatStatus.limited => AppColors.isDark
-                  ? const Color(0xFFFEF3C7)
-                  : AppColors.onWarningContainer,
-              SeatStatus.occupied => AppColors.isDark
-                  ? const Color(0xFF94A3B8)
-                  : const Color(0xFFF3E8D6).withValues(alpha: 0.7),
-            };
+          ? 2.0
+          : 0;
 
   String _statusLabel(SeatStatus status) => switch (status) {
         SeatStatus.available => 'available',
         SeatStatus.limited => 'limited',
         SeatStatus.occupied => 'full',
+      };
+}
+
+/// Solid status colours, readable on the dark map panel in both themes.
+class _SeatPalette {
+  static const available = Color(0xFF16A34A);
+  static const limited = Color(0xFFF59E0B);
+  static const full = Color(0xFFDC2626);
+  static const selected = Color(0xFF2563EB);
+
+  static Color of(SeatStatus status) => switch (status) {
+        SeatStatus.available => available,
+        SeatStatus.limited => limited,
+        SeatStatus.occupied => full,
       };
 }
 
@@ -1796,41 +1712,12 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = AppColors.isDark;
-    final items = <(Color, Color, IconData?, String)>[
-      (
-        isDark ? const Color(0xFF143823) : AppColors.successContainer,
-        isDark ? const Color(0xFF34D399) : AppColors.seatAvailable,
-        null,
-        'Free',
-      ),
-      (
-        isDark ? const Color(0xFF452205) : AppColors.warningContainer,
-        isDark ? const Color(0xFFFBBF24) : AppColors.seatLimited,
-        null,
-        'Limited',
-      ),
-      (
-        isDark ? const Color(0xFF1E242B) : const Color(0xFF3B3A34),
-        isDark
-            ? const Color(0xFF475569)
-            : const Color(0xFFF3E8D6).withValues(alpha: 0.3),
-        null,
-        'Full',
-      ),
-      (
-        AppColors.seatSelected,
-        AppColors.seatSelected,
-        Icons.check_rounded,
-        'Selected'
-      ),
-      if (hasMine)
-        (
-          AppColors.amberHighlight,
-          AppColors.amberHighlight,
-          Icons.check_rounded,
-          'Yours'
-        ),
+    final items = <(Color, IconData?, String)>[
+      (_SeatPalette.available, null, 'Available'),
+      (_SeatPalette.limited, null, 'Limited'),
+      (_SeatPalette.full, null, 'Full'),
+      (_SeatPalette.selected, null, 'Selected'),
+      if (hasMine) (AppColors.amberHighlight, Icons.check_rounded, 'Yours'),
     ];
     return Wrap(
       alignment: WrapAlignment.center,
@@ -1838,21 +1725,17 @@ class _Legend extends StatelessWidget {
       spacing: AppSpacing.base,
       runSpacing: AppSpacing.sm,
       children: [
-        for (final (fill, ring, glyph, text) in items)
+        for (final (fill, glyph, text) in items)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 15,
-                height: 15,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4.5),
-                  color: fill,
-                  border: Border.all(color: ring, width: 1.4),
-                ),
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: fill),
                 child: glyph == null
                     ? null
-                    : Icon(glyph, size: 9, color: AppColors.textInverse),
+                    : Icon(glyph, size: 9, color: Colors.white),
               ),
               const SizedBox(width: 6),
               Text(text,
