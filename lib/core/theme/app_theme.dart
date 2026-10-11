@@ -854,23 +854,31 @@ class AppTheme {
             AppText.body(13.5, color: scheme.onInverseSurface),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerLow.withValues(alpha: 0.94),
-        modalBackgroundColor:
-            scheme.surfaceContainerLow.withValues(alpha: 0.94),
+        backgroundColor: dark
+            ? const Color(0xFF151D2A).withValues(alpha: 0.98)
+            : scheme.surfaceContainerLow.withValues(alpha: 0.94),
+        modalBackgroundColor: dark
+            ? const Color(0xFF151D2A).withValues(alpha: 0.98)
+            : scheme.surfaceContainerLow.withValues(alpha: 0.94),
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
         dragHandleColor: scheme.outline.withValues(alpha: 0.5),
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
+          side: dark
+              ? BorderSide(color: AppGlass.borderFor(dark), width: 1)
+              : BorderSide.none,
           borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+              const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerLow.withValues(alpha: 0.95),
+        backgroundColor: dark
+            ? const Color(0xFF151D2A).withValues(alpha: 0.98)
+            : scheme.surfaceContainerLow.withValues(alpha: 0.95),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.xl),
-          side: BorderSide(color: AppGlass.borderFor(dark)),
+          side: BorderSide(color: AppGlass.borderFor(dark), width: 1.2),
         ),
       ),
       progressIndicatorTheme:
