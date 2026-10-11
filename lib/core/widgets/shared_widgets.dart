@@ -1990,7 +1990,7 @@ class TicketCard extends StatelessWidget {
     );
     return Material(
       color: AppColors.isDark
-          ? const Color(0xFF1F1714).withValues(alpha: 0.94)
+          ? const Color(0xFF111827).withValues(alpha: 0.95)
           : Colors.white,
       shape: shape,
       clipBehavior: Clip.antiAlias,

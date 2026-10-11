@@ -38,6 +38,7 @@ class _SlotChoice {
 }
 
 class _SeatDetailScreenState extends State<SeatDetailScreen> {
+  bool _busy = false;
   static const _slots = [
     _SlotChoice(8, 10, '8:00 AM – 10:00 AM'),
     _SlotChoice(10, 12, '10:00 AM – 12:00 PM'),
@@ -78,26 +79,34 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
     });
   }
 
-  void _reserve() {
+  Future<void> _reserve() async {
     final slot = _slot;
-    if (slot == null) return;
+    if (slot == null || _busy) return;
     final start = DateTime(_day.year, _day.month, _day.day, slot.startHour);
     final end = DateTime(_day.year, _day.month, _day.day, slot.endHour);
-    final booking = AppScope.read(context).reserveSeat(
-      seat,
-      start: start,
-      end: end,
-    );
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    final SeatBookResult result;
+    try {
+      result = await state.reserveSeat(seat, start: start, end: end);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    final booking = result.booking;
     if (booking == null) {
       AppFeedback.error();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          content: Text('Seat ${seat.label} was just taken — '
-              'pick another seat.'),
+          content: Text(result.failure == SeatBookFailure.taken
+              ? 'That seat was just taken. Pick another seat.'
+              : "Couldn't book the seat. Check your connection and try "
+                  'again.'),
         ),
       );
       return;
     }
+    if (!mounted) return;
     AppRoute.push(context, BookingConfirmationScreen(booking: booking));
   }
 
@@ -314,8 +323,10 @@ class _SeatDetailScreenState extends State<SeatDetailScreen> {
                   PrimaryButton(
                     label: _slot == null
                         ? 'Choose a time slot'
-                        : 'Reserve Seat ${seat.label}',
-                    onPressed: _slot == null ? null : _reserve,
+                        : _busy
+                            ? 'Booking…'
+                            : 'Reserve Seat ${seat.label}',
+                    onPressed: _slot == null || _busy ? null : _reserve,
                   ),
                 ],
               )

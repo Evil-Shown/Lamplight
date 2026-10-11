@@ -291,8 +291,8 @@ class _NaturePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF3E2522).withValues(alpha: 0),
-            const Color(0xFF3E2522).withValues(alpha: 0.22),
+            const Color(0xFF0B0F19).withValues(alpha: 0),
+            const Color(0xFFF59E0B).withValues(alpha: 0.10),
           ],
         ).createShader(glow),
     );
@@ -309,13 +309,13 @@ class _NaturePainter extends CustomPainter {
       final y = next() * h * 0.58;
       final fade = 1 - (y / (h * 0.58)) * 0.5;
       final r = 0.5 + next() * 1.0;
-      starPaint.color = const Color(0xFFFFE0B2)
+      starPaint.color = const Color(0xFFF8FAFC)
           .withValues(alpha: (0.35 + next() * 0.55) * fade);
       canvas.drawCircle(Offset(x, y), r, starPaint);
     }
 
     final bright = Paint()
-      ..color = const Color(0xFFF5F0E8).withValues(alpha: 0.85)
+      ..color = const Color(0xFFF8FAFC).withValues(alpha: 0.9)
       ..strokeWidth = 0.8;
     for (final (x, y) in const [
       (0.18, 0.12),
@@ -339,8 +339,8 @@ class _NaturePainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFD3A376).withValues(alpha: 0.20),
-            const Color(0xFFD3A376).withValues(alpha: 0),
+            const Color(0xFFF59E0B).withValues(alpha: 0.18),
+            const Color(0xFFF59E0B).withValues(alpha: 0),
           ],
         ).createShader(Rect.fromCircle(center: mc, radius: haloR)),
     );
@@ -350,11 +350,11 @@ class _NaturePainter extends CustomPainter {
     final cutPath = Path()
       ..addOval(Rect.fromCircle(center: mc.translate(-moonR * 0.45, -moonR * 0.35), radius: moonR * 0.95));
     final crescent = Path.combine(PathOperation.difference, moonPath, cutPath);
-    canvas.drawPath(crescent, Paint()..color = const Color(0xFFF5F0E8));
+    canvas.drawPath(crescent, Paint()..color = const Color(0xFFF8FAFC));
   }
 
   void _mountains(Canvas canvas, double w, double h) {
-    final backColor = dark ? const Color(0xFF1F1714) : const Color(0xFFE2E8F0);
+    final backColor = dark ? const Color(0xFF111827) : const Color(0xFFE2E8F0);
     final backPath = Path()
       ..moveTo(0, h * 0.69)
       ..cubicTo(w * 0.22, h * 0.63, w * 0.38, h * 0.66, w * 0.58, h * 0.61)
@@ -364,7 +364,7 @@ class _NaturePainter extends CustomPainter {
       ..close();
     canvas.drawPath(backPath, Paint()..color = backColor);
 
-    final midColor = dark ? const Color(0xFF160F0C) : const Color(0xFFCBD5E1);
+    final midColor = dark ? const Color(0xFF0D121F) : const Color(0xFFCBD5E1);
     final midPath = Path()
       ..moveTo(0, h * 0.73)
       ..cubicTo(w * 0.18, h * 0.68, w * 0.35, h * 0.74, w * 0.52, h * 0.69)
@@ -377,7 +377,7 @@ class _NaturePainter extends CustomPainter {
 
   void _pineTreeline(Canvas canvas, double w, double h) {
     final treelineColor = dark
-        ? const Color(0xFF120C0A)
+        ? const Color(0xFF090D16)
         : const Color(0xFF94A3B8).withValues(alpha: 0.45);
     final ridgePath = Path()
       ..moveTo(0, h * 0.78)
@@ -398,7 +398,7 @@ class _NaturePainter extends CustomPainter {
 
   void _foregroundHills(Canvas canvas, double w, double h) {
     final hillColor = dark
-        ? const Color(0xFF0D0A08)
+        ? const Color(0xFF060910)
         : const Color(0xFFCBD5E1).withValues(alpha: 0.35);
     final hillPath = Path()
       ..moveTo(0, h * 0.84)

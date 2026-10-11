@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
@@ -41,8 +42,11 @@ class BookDetailScreen extends StatelessWidget {
           icon: const Icon(Icons.ios_share_rounded, size: 19),
           onPressed: () {
             AppFeedback.tap();
+            Clipboard.setData(ClipboardData(
+              text: '${book.title}\nby ${book.author}\nISBN ${book.isbn}',
+            ));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Share link copied')),
+              const SnackBar(content: Text('Book details copied')),
             );
           },
         ),
@@ -195,16 +199,23 @@ class BookDetailScreen extends StatelessWidget {
             ? PrimaryButton(
                 label: 'Reserve book',
                 icon: Icons.bookmark_add_outlined,
-                onPressed: () {
-                    final reservation = AppScope.read(context).reserveBook(book);
-                    if (reservation == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('You have already reserved this book'),
-                        ),
-                      );
-                      return;
-                    }
+                onPressed: () async {
+                  final state = AppScope.read(context);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final already = state.hasOpenReservation(book.id);
+                  final reservation = await state.reserveBook(book);
+                  if (reservation == null) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(already
+                            ? 'You have already reserved this book'
+                            : "Couldn't reserve the book. Check your "
+                                'connection and try again.'),
+                      ),
+                    );
+                    return;
+                  }
+                  if (!context.mounted) return;
                   AppRoute.push(
                     context,
                     ReservationConfirmationScreen(

@@ -43,11 +43,16 @@ class StaffReservationsScreen extends StatefulWidget {
 }
 
 class _StaffReservationsScreenState extends State<StaffReservationsScreen> {
-  static const _filters = ['All', 'Active', 'Expired', 'Completed', 'Cancelled'];
+  static const _filters = [
+    'All',
+    'Active',
+    'Expired',
+    'Completed',
+    'Cancelled'
+  ];
 
-  late String _filter = _filters.contains(widget.initialFilter)
-      ? widget.initialFilter
-      : 'All';
+  late String _filter =
+      _filters.contains(widget.initialFilter) ? widget.initialFilter : 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -176,8 +181,7 @@ class _ReservationCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _KVRow(
-                    label: isBook ? 'Book' : 'Seat', value: r.itemTitle),
+                _KVRow(label: isBook ? 'Book' : 'Seat', value: r.itemTitle),
                 _KVRow(label: 'Location / detail', value: r.itemSubtitle),
                 _KVRow(
                   label: 'Reserved',
@@ -219,8 +223,7 @@ class _ReservationCard extends StatelessWidget {
                       style: AppText.title(20, w: FontWeight.w800),
                     ),
                   ),
-                  StaffStatusBadge(
-                      label: _label, tone: _tone),
+                  StaffStatusBadge(label: _label, tone: _tone),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),

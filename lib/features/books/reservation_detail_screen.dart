@@ -36,7 +36,7 @@ class ReservationDetailScreen extends StatelessWidget {
     state.cancelReservation(reservation.id);
     AppRoute.pushReplacement(
       context,
-      const ReservationCancelledScreen(),
+      ReservationCancelledScreen(reservation: reservation),
     );
   }
 
@@ -44,6 +44,10 @@ class ReservationDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final book = reservation.book;
     final cancelled = reservation.status == ReservationStatus.cancelled;
+    // Only a hold that still reserves the book can be cancelled.
+    final open = reservation.status == ReservationStatus.ready ||
+        reservation.status == ReservationStatus.active ||
+        reservation.status == ReservationStatus.expiringSoon;
     final expired =
         AppScope.of(context).pickupRemaining(reservation) == Duration.zero;
     final (statusLabel, statusColor) = switch (reservation.status) {
@@ -159,7 +163,7 @@ class ReservationDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
-          if (!cancelled) ...[
+          if (open) ...[
             const SizedBox(height: AppSpacing.md),
             // Secondary destructive: outlined, never the loudest thing here.
             StaggeredEntrance(

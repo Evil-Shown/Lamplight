@@ -17,10 +17,34 @@ export function requireAuth(req: CallableRequest<unknown>): string {
 
 export function requireStaff(req: CallableRequest<unknown>): string {
   const uid = requireAuth(req);
-  if (req.auth?.token["role"] !== "staff") {
+  const role = req.auth?.token["role"];
+  if (role !== "staff" && role !== "admin") {
     throw new HttpsError("permission-denied", "Staff only.");
   }
   return uid;
+}
+
+export function requireAdmin(req: CallableRequest<unknown>): string {
+  const uid = requireAuth(req);
+  if (req.auth?.token["role"] !== "admin") {
+    throw new HttpsError("permission-denied", "Admin only.");
+  }
+  return uid;
+}
+
+export type Role = "admin" | "staff" | "student";
+
+function listHas(list: unknown, email: string): boolean {
+  return Array.isArray(list) && list.some((e) => typeof e === "string" && e.trim().toLowerCase() === email);
+}
+
+/** Role precedence: admin > staff > student. An empty email is always a student. */
+export function pickRole(email: string, staffEmails: unknown, adminEmails: unknown): Role {
+  const e = email.trim().toLowerCase();
+  if (!e) return "student";
+  if (listHas(adminEmails, e)) return "admin";
+  if (listHas(staffEmails, e)) return "staff";
+  return "student";
 }
 
 export function asObject(data: unknown): Record<string, unknown> {

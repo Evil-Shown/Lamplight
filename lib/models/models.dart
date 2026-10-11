@@ -10,7 +10,7 @@ enum WaitlistType { book, seat }
 
 enum NotificationChannel { push, email, sms }
 
-enum UserRole { student, staff }
+enum UserRole { student, staff, admin }
 
 enum ReservationStatus { ready, active, expiringSoon, completed, cancelled }
 

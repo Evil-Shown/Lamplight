@@ -6,7 +6,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require("@firebase/rules-unit-testing");
-const { doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp } = require("firebase/firestore");
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp } = require("firebase/firestore");
 
 let env;
 const hour = 3600 * 1000;
@@ -14,6 +14,7 @@ const inFuture = (ms) => Timestamp.fromMillis(Date.now() + ms);
 
 const student = (uid = "alice") => env.authenticatedContext(uid, { role: "student", email: `${uid}@sliit.lk` }).firestore();
 const staff = () => env.authenticatedContext("staff1", { role: "staff", email: "staff1@sliit.lk" }).firestore();
+const admin = () => env.authenticatedContext("admin1", { role: "admin", email: "admin1@sliit.lk" }).firestore();
 const noClaim = (uid = "carol") => env.authenticatedContext(uid).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
 
@@ -118,6 +119,26 @@ describe("books and seats", () => {
     await assertSucceeds(updateDoc(doc(db, "seats/s1_1"), { status: "available", heldBy: null, bookingId: null }));
   });
 
+  it("student cannot flip a seat to occupied without a matching booking; can with one", async () => {
+    // booking for a different seat
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const c = ctx.firestore();
+      await setDoc(doc(c, "users/alice/bookings/other"), booking({ seatId: "s9_9" }));
+      await setDoc(doc(c, "users/bob/bookings/bobs"), booking({ userId: "bob" }));
+    });
+    await assertFails(updateDoc(doc(student("alice"), "seats/s1_1"), { status: "occupied", heldBy: "alice", bookingId: "other" }));
+    // no such booking
+    await assertFails(updateDoc(doc(student("alice"), "seats/s1_1"), { status: "occupied", heldBy: "alice", bookingId: "nope" }));
+    // someone else's booking id
+    await assertFails(updateDoc(doc(student("alice"), "seats/s1_1"), { status: "occupied", heldBy: "alice", bookingId: "bobs" }));
+    // matching booking in the same batch as the seat flip (what the client does)
+    const db = student("alice");
+    const batch = writeBatch(db);
+    batch.set(doc(db, "users/alice/bookings/bk2"), booking());
+    batch.update(doc(db, "seats/s1_1"), { status: "occupied", heldBy: "alice", bookingId: "bk2" });
+    await assertSucceeds(batch.commit());
+  });
+
   it("student cannot free someone else's seat, take a held seat, or touch other fields", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await updateDoc(doc(ctx.firestore(), "seats/s1_1"), { status: "occupied", heldBy: "bob", bookingId: "x" });
@@ -218,11 +239,27 @@ describe("collection-group reads", () => {
 });
 
 describe("config and default deny", () => {
-  it("config/staffAllowlist is denied to everyone, including staff", async () => {
+  it("config/staffAllowlist is admin-only (read and validated write)", async () => {
     await assertFails(getDoc(doc(student(), "config/staffAllowlist")));
     await assertFails(getDoc(doc(staff(), "config/staffAllowlist")));
     await assertFails(setDoc(doc(staff(), "config/staffAllowlist"), { emails: ["me@x.com"] }));
+    await assertFails(setDoc(doc(student(), "config/staffAllowlist"), { emails: ["me@x.com"] }));
     await assertFails(getDoc(doc(anon(), "config/staffAllowlist")));
+    await assertSucceeds(getDoc(doc(admin(), "config/staffAllowlist")));
+    await assertSucceeds(setDoc(doc(admin(), "config/staffAllowlist"), { emails: ["me@x.com"] }));
+    await assertFails(setDoc(doc(admin(), "config/staffAllowlist"), { emails: "me@x.com" }));
+    await assertFails(setDoc(doc(admin(), "config/staffAllowlist"), { emails: [], extra: 1 }));
+  });
+
+  it("config/adminAllowlist is readable by admin only and never writable", async () => {
+    await assertSucceeds(getDoc(doc(admin(), "config/adminAllowlist")));
+    await assertFails(getDoc(doc(staff(), "config/adminAllowlist")));
+    await assertFails(getDoc(doc(student(), "config/adminAllowlist")));
+    await assertFails(setDoc(doc(admin(), "config/adminAllowlist"), { emails: ["me@x.com"] }));
+  });
+
+  it("admin counts as staff for staff-only collections", async () => {
+    await assertSucceeds(setDoc(doc(admin(), "books/b9"), { title: "X" }));
   });
 
   it("config/library is readable when signed in and never writable", async () => {

@@ -88,8 +88,11 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                             (constraints.maxWidth / 104).clamp(3, 8).round();
                         return GridView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(AppSpacing.base,
-                              AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.base,
+                              AppSpacing.sm,
+                              AppSpacing.base,
+                              AppNavInset.bottom),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: columns,
@@ -137,7 +140,9 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              _SheetRow(label: 'Location', value: 'Floor ${seat.floor} · ${seat.section}'),
+              _SheetRow(
+                  label: 'Location',
+                  value: 'Floor ${seat.floor} · ${seat.section}'),
               _SheetRow(label: 'Seat type', value: seat.zoneLabel),
               _SheetRow(
                   label: 'Power outlet',
@@ -176,19 +181,50 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                   onPressed: chosen == seat.status
                       ? null
                       : () {
-                          AppFeedback.success();
-                          _applyStatus(seat, chosen);
                           Navigator.pop(context);
+                          if (seat.status == SeatStatus.occupied &&
+                              chosen == SeatStatus.available) {
+                            _release(seat);
+                          } else {
+                            AppFeedback.success();
+                            _applyStatus(seat, chosen);
+                          }
                         },
                   icon: const Icon(Icons.check_rounded),
                   label: const Text('Update status'),
                 ),
               ),
+              if (seat.status == SeatStatus.occupied) ...[
+                const SizedBox(height: AppSpacing.sm),
+                PrimaryButton(
+                  label: 'Release seat',
+                  icon: Icons.event_seat_outlined,
+                  tone: ButtonTone.secondary,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _release(seat);
+                  },
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Frees an occupied seat after the staff member confirms which one.
+  Future<void> _release(Seat seat) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Release seat ${seat.label}?',
+      body: 'Seat ${seat.label} (Floor ${seat.floor}) will be marked '
+          'available. Only do this if the student has left.',
+      confirmLabel: 'Release seat',
+    );
+    if (!confirmed || !mounted) return;
+    AppFeedback.success();
+    await _applyStatus(seat, SeatStatus.available);
   }
 
   Future<void> _applyStatus(Seat seat, SeatStatus status) async {

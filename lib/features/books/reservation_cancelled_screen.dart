@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/state/app_state.dart';
+import '../../models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 
@@ -9,12 +9,14 @@ import '../../core/widgets/shared_widgets.dart';
 /// The receipt shown after a hold is cancelled: confirmation, then the
 /// details of what was released.
 class ReservationCancelledScreen extends StatelessWidget {
-  const ReservationCancelledScreen({super.key});
+  const ReservationCancelledScreen({super.key, this.reservation});
+
+  /// The hold that was just cancelled.
+  final BookReservation? reservation;
 
   @override
   Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final last = state.reservations.isEmpty ? null : state.reservations.last;
+    final last = reservation;
 
     return AppScaffold(
       title: 'Reservation Cancelled',

@@ -46,8 +46,8 @@ class _StaffWaitlistScreenState extends State<StaffWaitlistScreen> {
     final state = AppScope.of(context);
     final all = state.adminWaitlist;
     final entries = all
-        .where((w) =>
-            _filter == 'All' || _statusLabel(w.entry.status) == _filter)
+        .where(
+            (w) => _filter == 'All' || _statusLabel(w.entry.status) == _filter)
         .toList();
 
     return AppScaffold(
