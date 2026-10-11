@@ -34,7 +34,7 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
       noiseLevel: 'Silent (< 25 dB)',
       rating: '9.9 Focus Score',
       amenities: ['Power Sockets', 'Acoustic Tinted Glass', 'Air Conditioning', 'LED Task Light'],
-      color: Color(0xFFD99246),
+      color: Color(0xFFD3A376),
     ),
     _ZoneInfo(
       id: 'design-studio',
@@ -85,7 +85,7 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
         : _zones.where((z) => z.category == _selectedVibe).toList();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF051F20) : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -133,13 +133,13 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: _selectedVibe == vibe
-                            ? (isDark ? const Color(0xFF8EB69B) : const Color(0xFF163832))
-                            : (isDark ? const Color(0xFF0B2B26) : Colors.white),
+                            ? AppColors.primary
+                            : (isDark ? const Color(0xFF1F1714) : Colors.white),
                         borderRadius: BorderRadius.circular(AppRadii.full),
                         border: Border.all(
                           color: _selectedVibe == vibe
                               ? Colors.transparent
-                              : (isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6)),
+                              : AppColors.border,
                         ),
                       ),
                       child: Text(
@@ -148,7 +148,7 @@ class _StudyZonesScreenState extends State<StudyZonesScreen> {
                           12,
                           w: FontWeight.w700,
                           color: _selectedVibe == vibe
-                              ? (isDark ? const Color(0xFF051F20) : Colors.white)
+                              ? (isDark ? const Color(0xFF140F0D) : Colors.white)
                               : AppColors.textPrimary,
                         ),
                       ),
@@ -211,12 +211,10 @@ class _ZoneCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+        color: isDark ? const Color(0xFF1F1714) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF163832)
-              : const Color(0xFFD8C9B6).withValues(alpha: 0.7),
+          color: AppColors.border,
         ),
         boxShadow: [
           BoxShadow(
@@ -241,7 +239,7 @@ class _ZoneCard extends StatelessWidget {
                     zone.imageAsset,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
-                      color: const Color(0xFF163832),
+                      color: AppColors.surfaceMuted,
                     ),
                   ),
                 ),
@@ -285,7 +283,7 @@ class _ZoneCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF163832).withValues(alpha: 0.85),
+                      color: Colors.black.withValues(alpha: 0.75),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                     ),
                     child: Text(
@@ -293,7 +291,7 @@ class _ZoneCard extends StatelessWidget {
                       style: AppText.label(
                         11,
                         w: FontWeight.w700,
-                        color: const Color(0xFFDAF1DE),
+                        color: const Color(0xFFFFE0B2),
                       ),
                     ),
                   ),
@@ -324,7 +322,7 @@ class _ZoneCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF8EB69B)),
+                    const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFFD3A376)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -339,7 +337,7 @@ class _ZoneCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.people_alt_outlined, size: 16, color: Color(0xFF8EB69B)),
+                    const Icon(Icons.people_alt_outlined, size: 16, color: Color(0xFFD3A376)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -354,7 +352,7 @@ class _ZoneCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.volume_down_outlined, size: 16, color: Color(0xFF8EB69B)),
+                    const Icon(Icons.volume_down_outlined, size: 16, color: Color(0xFFD3A376)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -379,7 +377,7 @@ class _ZoneCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.05)
-                              : const Color(0xFFF5F0E8),
+                              : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

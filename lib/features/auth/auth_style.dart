@@ -8,22 +8,22 @@ class AuthPalette {
   AuthPalette._();
 
   /// Lamp-light amber: primary buttons, links, highlights.
-  static const accent = Color(0xFFD99246);
+  static const accent = Color(0xFFD3A376);
 
   /// Near-black brown: text on amber, wordmark outline, deepest scrim.
-  static const espresso = Color(0xFF140E0B);
+  static const espresso = Color(0xFF1E1512);
 
   /// Dark walnut: backdrops and scrims.
-  static const walnut = Color(0xFF2A1B12);
+  static const walnut = Color(0xFF3E2522);
 
   /// Dark sheet the forms sit on.
-  static const sheet = Color(0xFF1D1511);
+  static const sheet = Color(0xFF2A201C);
 
   /// Paper cream: headlines, pills, text on the sheet.
-  static const cream = Color(0xFFF3E8D6);
+  static const cream = Color(0xFFFFF2DF);
   static const onSheet = cream;
-  static const fieldFill = Color(0xFF2B211B);
-  static const muted = Color(0xFFB3A391);
+  static const fieldFill = Color(0xFF3A2D28);
+  static const muted = Color(0xFFC0A78F);
   static const error = Color(0xFFFF9C8F);
   static const errorSoft = Color(0xFF3B1D19);
 }

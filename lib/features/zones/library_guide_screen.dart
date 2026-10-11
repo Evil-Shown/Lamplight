@@ -13,7 +13,7 @@ class LibraryGuideScreen extends StatelessWidget {
     final isDark = AppColors.isDark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF051F20) : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -61,7 +61,7 @@ class LibraryGuideScreen extends StatelessWidget {
                       fit: BoxFit.cover,
                       alignment: const Alignment(0, -0.3),
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFF163832),
+                        color: AppColors.surfaceMuted,
                       ),
                     ),
                   ),
@@ -70,7 +70,7 @@ class LibraryGuideScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            (isDark ? const Color(0xFF051F20) : const Color(0xFF163832))
+                            (isDark ? const Color(0xFF140F0D) : const Color(0xFF1E293B))
                                 .withValues(alpha: 0.9),
                             Colors.transparent,
                           ],
@@ -99,7 +99,7 @@ class LibraryGuideScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           'Preserving harmony for every student',
-                          style: AppText.body(11.5, color: const Color(0xFFDAF1DE)),
+                          style: AppText.body(11.5, color: const Color(0xFFFFE0B2)),
                         ),
                       ],
                     ),
@@ -169,7 +169,7 @@ class LibraryGuideScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.isDark ? const Color(0xFF0B2B26) : Colors.white,
+        color: AppColors.isDark ? const Color(0xFF2A201C) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
@@ -205,10 +205,10 @@ class LibraryGuideScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.isDark ? const Color(0xFF0B2B26) : Colors.white,
+        color: AppColors.isDark ? const Color(0xFF1F1714) : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
-          color: AppColors.isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6).withValues(alpha: 0.7),
+          color: AppColors.border,
         ),
       ),
       child: Row(
@@ -218,10 +218,10 @@ class LibraryGuideScreen extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFF163832).withValues(alpha: 0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF163832), size: 20),
+            child: Icon(icon, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

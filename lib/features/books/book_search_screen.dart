@@ -441,7 +441,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                   errorBuilder:
                                       (context, error, stackTrace) =>
                                           Container(
-                                    color: const Color(0xFF163832),
+                                    color: AppColors.surfaceMuted,
                                   ),
                                 ),
                               ),
@@ -451,8 +451,8 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                     gradient: LinearGradient(
                                       colors: [
                                         (AppColors.isDark
-                                                ? const Color(0xFF051F20)
-                                                : const Color(0xFF163832))
+                                                ? const Color(0xFF140F0D)
+                                                : const Color(0xFF1E293B))
                                             .withValues(alpha: 0.9),
                                         Colors.transparent,
                                       ],
@@ -477,7 +477,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                         vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF8EB69B)
+                                        color: const Color(0xFFD3A376)
                                             .withValues(alpha: 0.25),
                                         borderRadius:
                                             BorderRadius.circular(AppRadii.full),
@@ -487,7 +487,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                         style: AppText.overline(
                                           10,
                                           ls: 1.0,
-                                          color: const Color(0xFFDAF1DE),
+                                          color: const Color(0xFFFFE0B2),
                                         ),
                                       ),
                                     ),
@@ -505,7 +505,7 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                                       'Over 12,000 academic titles by lamplight',
                                       style: AppText.body(
                                         11.5,
-                                        color: const Color(0xFFDAF1DE)
+                                        color: const Color(0xFFFFE0B2)
                                             .withValues(alpha: 0.85),
                                       ),
                                     ),

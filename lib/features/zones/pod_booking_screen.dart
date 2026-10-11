@@ -19,11 +19,11 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
   bool _booked = false;
 
   final List<({String number, String tintName, Color tintColor, bool isAvailable, String features})> _pods = const [
-    (number: '01', tintName: 'Warm Amber', tintColor: Color(0xFFD99246), isAvailable: true, features: 'Dual 27" 4K Monitors · Standing desk'),
+    (number: '01', tintName: 'Warm Amber', tintColor: Color(0xFFD3A376), isAvailable: true, features: 'Dual 27" 4K Monitors · Standing desk'),
     (number: '02', tintName: 'Ocean Cyan', tintColor: Color(0xFF0D7EE8), isAvailable: true, features: 'Quiet Mic for Presentations · Ergonomic chair'),
-    (number: '03', tintName: 'Forest Mint', tintColor: Color(0xFF235347), isAvailable: false, features: 'Natural Skylight Angle · Dual sockets'),
+    (number: '03', tintName: 'Forest Mint', tintColor: Color(0xFF10B981), isAvailable: false, features: 'Natural Skylight Angle · Dual sockets'),
     (number: '04', tintName: 'Deep Cobalt', tintColor: Color(0xFF1E3A8A), isAvailable: true, features: 'High-speed Ethernet · Ultra-quiet air filter'),
-    (number: '05', tintName: 'Solar Gold', tintColor: Color(0xFFE5A65D), isAvailable: true, features: 'Wall whiteboard · USB-C fast charging 65W'),
+    (number: '05', tintName: 'Solar Gold', tintColor: Color(0xFFD3A376), isAvailable: true, features: 'Wall whiteboard · USB-C fast charging 65W'),
   ];
 
   @override
@@ -32,7 +32,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
     final activePod = _pods[_selectedPodIndex];
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF051F20) : const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -63,7 +63,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
-                color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                color: AppColors.border,
               ),
               boxShadow: [
                 BoxShadow(
@@ -83,7 +83,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                       fit: BoxFit.cover,
                       alignment: const Alignment(0, -0.2),
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFF163832),
+                        color: AppColors.surfaceMuted,
                       ),
                     ),
                   ),
@@ -129,7 +129,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
 
           Text(
             'SELECT A POD',
-            style: AppText.overline(11.5, ls: 1.0, color: const Color(0xFF8EB69B)),
+            style: AppText.overline(11.5, ls: 1.0, color: const Color(0xFFD3A376)),
           ),
           const SizedBox(height: AppSpacing.sm),
 
@@ -154,12 +154,12 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                       decoration: BoxDecoration(
                         color: _selectedPodIndex == i
                             ? _pods[i].tintColor.withValues(alpha: isDark ? 0.35 : 0.15)
-                            : (isDark ? const Color(0xFF0B2B26) : Colors.white),
+                            : (isDark ? const Color(0xFF1F1714) : Colors.white),
                         borderRadius: BorderRadius.circular(AppRadii.card),
                         border: Border.all(
                           color: _selectedPodIndex == i
                               ? _pods[i].tintColor
-                              : (isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6)),
+                              : AppColors.border,
                           width: _selectedPodIndex == i ? 2 : 1,
                         ),
                       ),
@@ -200,10 +200,10 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0B2B26) : Colors.white,
+              color: isDark ? const Color(0xFF1F1714) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.card),
               border: Border.all(
-                color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+                color: AppColors.border,
               ),
             ),
             child: Column(
@@ -229,12 +229,12 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF163832).withValues(alpha: 0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         'Max 2 hrs',
-                        style: AppText.label(11, w: FontWeight.w700, color: const Color(0xFF163832)),
+                        style: AppText.label(11, w: FontWeight.w700, color: AppColors.primary),
                       ),
                     ),
                   ],
@@ -265,11 +265,11 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               color: _durationMinutes == d
-                                  ? const Color(0xFF163832)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF5F0E8)),
+                                  ? AppColors.primary
+                                  : (isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.scheme.surfaceContainer),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: _durationMinutes == d ? const Color(0xFF8EB69B) : Colors.transparent,
+                                color: _durationMinutes == d ? AppColors.primary : Colors.transparent,
                               ),
                             ),
                             alignment: Alignment.center,
@@ -308,8 +308,10 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF163832), Color(0xFF0B2B26)],
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? const [Color(0xFF241B17), Color(0xFF140F0D)]
+                      : const [Color(0xFF1E293B), Color(0xFF0F172A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -343,7 +345,7 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                         ),
                         child: Text(
                           'ACTIVE NOW',
-                          style: AppText.overline(10, color: const Color(0xFFDAF1DE)),
+                          style: AppText.overline(10, color: const Color(0xFFFFE0B2)),
                         ),
                       ),
                     ],
@@ -351,12 +353,12 @@ class _PodBookingScreenState extends State<PodBookingScreen> {
                   const SizedBox(height: 14),
                   Text(
                     'SMART DIGITAL PASSCODE',
-                    style: AppText.overline(11, ls: 1.5, color: const Color(0xFF8EB69B)),
+                    style: AppText.overline(11, ls: 1.5, color: const Color(0xFFD3A376)),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '7 4 9 2',
-                    style: AppText.display(36, w: FontWeight.w800, color: const Color(0xFFDAF1DE), ls: 8),
+                    style: AppText.display(36, w: FontWeight.w800, color: const Color(0xFFFFE0B2), ls: 8),
                   ),
                   const SizedBox(height: 8),
                   Text(
