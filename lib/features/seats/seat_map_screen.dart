@@ -98,7 +98,10 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     final noMotion = MediaQuery.disableAnimationsOf(context);
     final selected = _selected;
 
+    // Static backdrop: the looping aurora repaints behind the map on every
+    // frame, which makes scrolling the dense seat grid stutter.
     return AuroraBackground(
+      animate: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: canPop
@@ -143,91 +146,15 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                     AppSpacing.screenMargin,
                                     AppSpacing.sm,
                                     AppSpacing.screenMargin,
-                                    AppSpacing.xl + 88,
+                                    // Constant, so selecting a seat never changes
+                                    // the scroll extent mid-gesture.
+                                    100,
                                   ),
-                                  child: _content(state, visible, mySeatIds),
+                                  child: RepaintBoundary(
+                                    child: _content(state, visible, mySeatIds),
+                                  ),
                                 ),
                               ),
-                    if (selected != null)
-                      Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: 12,
-                        child: AnimatedSwitcher(
-                          duration: noMotion ? Duration.zero : AppMotion.fast,
-                          child: Container(
-                            key: ValueKey('float-bar-${selected.id}'),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.isDark
-                                  ? const Color(0xFF1E293B)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(AppRadii.full),
-                              border: Border.all(
-                                color: AppColors.isDark
-                                    ? const Color(0xFF334155)
-                                    : const Color(0xFFE2E8F0),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(
-                                    alpha: AppColors.isDark ? 0.45 : 0.14,
-                                  ),
-                                  blurRadius: 18,
-                                  spreadRadius: -2,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                _MiniSeat(
-                                  label: selected.label,
-                                  mine: mySeatIds.contains(selected.id),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Seat ${selected.label}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppText.title(
-                                          14.5,
-                                          w: FontWeight.w700,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${_statusText(selected.status)} · ${selected.zoneLabel}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppText.body(
-                                          11,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                PrimaryButton(
-                                  label: 'Book seat',
-                                  trailingIcon: Icons.arrow_forward_rounded,
-                                  onPressed: () => _openDetail(selected),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -281,9 +208,9 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: AppSpacing.sm),
                       PrimaryButton(
-                        label: 'Continue',
+                        label: 'Book seat',
                         trailingIcon: Icons.arrow_forward_rounded,
                         onPressed: () => _openDetail(selected),
                       ),
@@ -392,6 +319,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         else ...[
           if (top != null)
             StaggeredEntrance(
+              index: 3,
               child: _RecommendedCard(
                 seat: top.seat,
                 reasons: top.reasons,
@@ -432,14 +360,17 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             )
           else
             StaggeredEntrance(
-              child: _SeatGridCard(
-                visible: visible,
-                floorSeats: floorSeats,
-                selected: _selected,
-                mySeatIds: mySeatIds,
-                onSelect: (seat) => setState(() => _selected = seat),
-                onOpen: _openDetail,
-                floorNo: floorNo,
+              index: 4,
+              child: RepaintBoundary(
+                child: _SeatGridCard(
+                  visible: visible,
+                  floorSeats: floorSeats,
+                  selected: _selected,
+                  mySeatIds: mySeatIds,
+                  onSelect: (seat) => setState(() => _selected = seat),
+                  onOpen: _openDetail,
+                  floorNo: floorNo,
+                ),
               ),
             ),
         ],
@@ -1573,7 +1504,7 @@ class _SeatGridCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.xl),
         child: Stack(
           children: [
-            const Positioned.fill(child: ForestScene()),
+            const Positioned.fill(child: RepaintBoundary(child: ForestScene())),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 96, 12, 26),
               child: panel,

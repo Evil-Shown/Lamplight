@@ -1102,12 +1102,14 @@ class PrimaryButton extends StatelessWidget {
           };
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
           Icon(icon, size: 19, color: tone == ButtonTone.primary ? fg : null),
           const SizedBox(width: 9),
         ],
         Flexible(
+          fit: FlexFit.loose,
           child: Text(
             label,
             maxLines: 1,
