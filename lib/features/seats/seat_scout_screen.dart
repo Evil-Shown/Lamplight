@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/feedback/app_feedback.dart';
@@ -289,6 +290,7 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
                   onTap: () {
                     AppFeedback.tap();
                     setState(() => _selectedSeatIndex = i);
+                    _showSeatDetailModal(context, _seats[i]);
                   },
                 ),
                 const SizedBox(height: 8),
@@ -341,6 +343,118 @@ class _SeatScoutScreenState extends State<SeatScoutScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showSeatDetailModal(BuildContext context, _ScoutSeat seat) {
+    AppFeedback.select();
+    final isDark = AppColors.isDark;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F332D) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadii.lg + 4),
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF163832) : const Color(0xFFD8C9B6),
+            ),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: seat.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                      border: Border.all(color: seat.color.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      seat.section,
+                      style: AppText.label(11.5, w: FontWeight.w700, color: seat.color),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D7EE8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '★ ${seat.score} ${seat.scoreLabel}',
+                      style: AppText.label(11, w: FontWeight.w800, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                seat.rowSeat,
+                style: AppText.display(20, w: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Floor ${seat.floor} · ${seat.category}',
+                style: AppText.body(13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ModalPill(icon: Icons.power_rounded, label: 'Dual AC Sockets'),
+                  _ModalPill(icon: Icons.wifi_rounded, label: 'Wi-Fi 6E (480 Mbps)'),
+                  _ModalPill(icon: Icons.volume_mute_rounded, label: '<25 dB Quiet'),
+                  _ModalPill(icon: Icons.wb_sunny_rounded, label: 'Natural Daylight'),
+                ],
+              ),
+              const SizedBox(height: 22),
+              PrimaryButton(
+                label: 'Reserve This Desk Now',
+                icon: Icons.check_circle_outline_rounded,
+                onPressed: () {
+                  AppFeedback.success();
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Reserved ${seat.rowSeat} on Floor ${seat.floor}!'),
+                      backgroundColor: const Color(0xFF163832),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -461,6 +575,41 @@ class _ScoutSeatTile extends StatelessWidget {
   }
 }
 
+class _ModalPill extends StatelessWidget {
+  const _ModalPill({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF163832).withValues(alpha: 0.5)
+            : const Color(0xFFF0EBE1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.label(11.5, w: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RadialCampusMapPainter extends CustomPainter {
   _RadialCampusMapPainter({required this.isDark, required this.selectedIndex});
 
@@ -470,28 +619,113 @@ class _RadialCampusMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
+
+    // Track paints
     final trackPaint = Paint()
-      ..color = (isDark ? Colors.white12 : Colors.black12)
+      ..color = (isDark
+          ? Colors.white.withValues(alpha: 0.12)
+          : const Color(0xFFD8C9B6).withValues(alpha: 0.5))
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 1.5;
 
-    canvas.drawCircle(center, 90, trackPaint);
-    canvas.drawCircle(center, 65, trackPaint);
+    // Draw concentric radar tracks
+    canvas.drawCircle(center, 94, trackPaint);
+    canvas.drawCircle(center, 70, trackPaint);
+    canvas.drawCircle(center, 46, trackPaint);
 
-    final nodePaint = Paint()..style = PaintingStyle.fill;
+    // Colored Sector Arcs
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0
+      ..strokeCap = StrokeCap.round;
 
-    // Outer ring nodes (Seats)
-    for (var i = 0; i < 16; i++) {
-      final angle = (i * 22.5) * 3.14159 / 180;
-      final x = center.dx + 90 * (3.14159 * 0 + (i.isEven ? 1 : 1)) * 0 + 90 * (i == 0 ? 1 : (i == 4 ? 0 : -1));
-      final offset = Offset(center.dx + 90 * (angle < 3.14 ? 1 : -1) * 0.7, center.dy + 90 * 0.7);
+    final sectorColors = [
+      const Color(0xFF0D7EE8), // Sector 01: Glass Pods (Cyan)
+      const Color(0xFFE56A2B), // Sector 02: Design Studio (Tangerine)
+      const Color(0xFFD4A017), // Sector 03: Knowledge Line (Gold)
+      const Color(0xFF235347), // Sector 04: Startup Lab (Emerald)
+    ];
 
-      final isAvailable = i % 3 != 0;
-      nodePaint.color = isAvailable ? const Color(0xFF4CAF50) : const Color(0xFFE53935);
-      canvas.drawCircle(Offset(center.dx + 90 * (angle - 1.57).abs() / 3, center.dy + 90 * (i % 2 == 0 ? 0.8 : -0.8)), 5, nodePaint);
+    const double arcGap = 0.18; // gap between sector arcs in radians
+    const double sectorSpan = (2 * math.pi / 4) - arcGap;
+
+    for (var s = 0; s < 4; s++) {
+      arcPaint.color = sectorColors[s].withValues(alpha: 0.85);
+      final startAngle = -math.pi / 2 + (s * (math.pi / 2)) + (arcGap / 2);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: 94),
+        startAngle,
+        sectorSpan,
+        false,
+        arcPaint,
+      );
+    }
+
+    // Radial spokes
+    final spokePaint = Paint()
+      ..color = (isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.black.withValues(alpha: 0.06))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    for (var s = 0; s < 4; s++) {
+      final angle = -math.pi / 2 + (s * (math.pi / 2));
+      final p1 = Offset(center.dx + 48 * math.cos(angle), center.dy + 48 * math.sin(angle));
+      final p2 = Offset(center.dx + 98 * math.cos(angle), center.dy + 98 * math.sin(angle));
+      canvas.drawLine(p1, p2, spokePaint);
+    }
+
+    // Outer & inner seat nodes
+    final nodeFillPaint = Paint()..style = PaintingStyle.fill;
+    final nodeStrokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+
+    // 16 outer seats
+    const totalOuterSeats = 16;
+    for (var i = 0; i < totalOuterSeats; i++) {
+      final angle = -math.pi / 2 + (i * (2 * math.pi / totalOuterSeats));
+      final pos = Offset(center.dx + 82 * math.cos(angle), center.dy + 82 * math.sin(angle));
+      final sector = (i / (totalOuterSeats / 4)).floor().clamp(0, 3);
+      final isSeatAvailable = i % 3 != 0;
+      final isSelected = selectedIndex != null && selectedIndex == sector;
+
+      if (isSelected && i % 4 == 0) {
+        // Halo for selected seat
+        final haloPaint = Paint()
+          ..color = sectorColors[sector].withValues(alpha: 0.35)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(pos, 11, haloPaint);
+
+        nodeStrokePaint.color = Colors.white;
+        canvas.drawCircle(pos, 7, nodeStrokePaint);
+
+        nodeFillPaint.color = sectorColors[sector];
+        canvas.drawCircle(pos, 6, nodeFillPaint);
+      } else {
+        nodeFillPaint.color = isSeatAvailable
+            ? sectorColors[sector].withValues(alpha: 0.9)
+            : (isDark ? Colors.white24 : Colors.black26);
+        canvas.drawCircle(pos, 4.5, nodeFillPaint);
+      }
+    }
+
+    // 8 inner ring seats
+    const totalInnerSeats = 8;
+    for (var j = 0; j < totalInnerSeats; j++) {
+      final angle = -math.pi / 4 + (j * (2 * math.pi / totalInnerSeats));
+      final pos = Offset(center.dx + 58 * math.cos(angle), center.dy + 58 * math.sin(angle));
+      final isSeatAvailable = j % 2 == 0;
+
+      nodeFillPaint.color = isSeatAvailable
+          ? const Color(0xFF8EB69B)
+          : (isDark ? Colors.white12 : Colors.black12);
+      canvas.drawCircle(pos, 3.5, nodeFillPaint);
     }
   }
 
   @override
-  bool shouldRepaint(_RadialCampusMapPainter oldDelegate) => false;
+  bool shouldRepaint(_RadialCampusMapPainter oldDelegate) =>
+      oldDelegate.isDark != isDark || oldDelegate.selectedIndex != selectedIndex;
 }
