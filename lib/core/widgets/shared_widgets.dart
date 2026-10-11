@@ -1144,6 +1144,11 @@ class SettingRow extends StatelessWidget {
     this.valueColor,
     this.switchValue,
     this.onSwitchChanged,
+    this.iconColor,
+    this.iconBgColor,
+    this.labelColor,
+    this.subtitle,
+    this.trailing,
   });
 
   final String label;
@@ -1154,6 +1159,11 @@ class SettingRow extends StatelessWidget {
   final Color? valueColor;
   final bool? switchValue;
   final ValueChanged<bool>? onSwitchChanged;
+  final Color? iconColor;
+  final Color? iconBgColor;
+  final Color? labelColor;
+  final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1171,6 +1181,10 @@ class SettingRow extends StatelessWidget {
                 AppFeedback.tap();
                 onTap!();
               });
+    final effIconColor = iconColor ?? AppColors.primary;
+    final effIconBg = iconBgColor ?? AppColors.primarySoft;
+    final effLabelColor = labelColor ?? AppColors.textPrimary;
+
     return InkWell(
       onTap: rowTap,
       child: Padding(
@@ -1179,36 +1193,58 @@ class SettingRow extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: effIconBg,
                   borderRadius: BorderRadius.circular(AppRadii.sm),
                   border: Border.all(color: AppGlass.rim.withValues(alpha: 0.5)),
                 ),
-                child: Icon(icon, size: 18, color: AppColors.primary),
+                child: Icon(icon, size: 19, color: effIconColor),
               ),
-              const SizedBox(width: 13),
+              const SizedBox(width: 14),
             ],
             Expanded(
-              child: Text(
-                label,
-                style: AppText.body(14.5, color: AppColors.textPrimary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: AppText.body(14.5, w: FontWeight.w600, color: effLabelColor),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: AppText.body(12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (value != null)
-              Text(
-                value!,
-                style: AppText.body(14, color: valueColor ?? AppColors.textSecondary),
-              ),
-            if (hasSwitch)
-              IgnorePointer(
-                child: Switch(value: switchValue!, onChanged: onSwitchChanged == null ? null : (_) {}),
-              )
-            else if (showChevron) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded,
-                  size: 20, color: AppColors.textFaint),
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              trailing!,
+            ] else ...[
+              if (value != null)
+                Text(
+                  value!,
+                  style: AppText.body(14, color: valueColor ?? AppColors.textSecondary),
+                ),
+              if (hasSwitch)
+                IgnorePointer(
+                  child: Switch(
+                    value: switchValue!,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: onSwitchChanged == null ? null : (_) {},
+                  ),
+                )
+              else if (showChevron) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded,
+                    size: 20, color: AppColors.textFaint),
+              ],
             ],
           ],
         ),
