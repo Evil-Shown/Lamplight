@@ -12,26 +12,53 @@ real effect.
 
 ---
 
+## 🚀 Live Deployment & Credentials (Quick Reference)
+
+| Resource | Value / URL |
+| :--- | :--- |
+| **Firebase Project** | `sliit-quick-book` |
+| **Firebase Console** | [console.firebase.google.com/project/sliit-quick-book](https://console.firebase.google.com/project/sliit-quick-book/overview) |
+| **Live Admin Dashboard URL** | **[https://sliit-quick-book.web.app](https://sliit-quick-book.web.app)** |
+| **Alternative Web Domain** | [https://sliit-quick-book.firebaseapp.com](https://sliit-quick-book.firebaseapp.com) |
+
+### Sample Test Logins
+
+| Role | Email | Password | Allowed Access |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@lamplight.test` | `Lamplight#2026` | Full Admin Web Dashboard + Mobile App |
+| **Staff** | `staff@lamplight.test` | `Lamplight#2026` | Staff Web Dashboard + Mobile App Staff Mode |
+| **Student** | `student@lamplight.test` | `Lamplight#2026` | Mobile App (Student bookings & catalog) |
+
+> **Note**: These accounts are created and verified in Firebase Authentication with custom claims (`role`) and Firestore allowlists (`config/adminAllowlist`, `config/staffAllowlist`).
+
+### Live Firestore Seed Status
+* **16 Seats** (`s0_0` to `s3_3`): All set to `available` with 0 active bookings/holds for clean testing.
+* **7 Catalogue Books**: Full metadata with cover images, ISBNs, and stock copies.
+
+---
+
 ## Table of contents
 
-1. [Features](#features)
-2. [Screenshots](#screenshots)
-3. [High-level architecture](#high-level-architecture)
-4. [Layer guide](#layer-guide)
+1. [Live deployment & credentials](#-live-deployment--credentials-quick-reference)
+2. [Features](#features)
+3. [Screenshots](#screenshots)
+4. [High-level architecture](#high-level-architecture)
+5. [Layer guide](#layer-guide)
    - [Presentation — widgets & screens](#1-presentation--widgets--screens)
    - [State — AppState (ChangeNotifier)](#2-state--appstate-changenotifier)
    - [Data — FirestoreService & mock data](#3-data--firestoreservice--mock-data)
    - [Models](#4-models)
-5. [Design system](#design-system)
-6. [Motion & 3D animation system](#motion--3d-animation-system)
-7. [Navigation model](#navigation-model)
-8. [Firebase layout](#firebase-layout)
-9. [Screen inventory](#screen-inventory)
-10. [Accessibility](#accessibility)
-11. [Getting started](#getting-started)
-12. [Testing](#testing)
-13. [Project structure](#project-structure)
-14. [Roadmap & known gaps](#roadmap--known-gaps)
+6. [Design system](#design-system)
+7. [Motion & 3D animation system](#motion--3d-animation-system)
+8. [Navigation model](#navigation-model)
+9. [Firebase layout](#firebase-layout)
+10. [Screen inventory](#screen-inventory)
+11. [Accessibility](#accessibility)
+12. [Getting started](#getting-started)
+13. [Testing](#testing)
+14. [Staff web dashboard](#staff-web-dashboard)
+15. [Project structure](#project-structure)
+16. [Roadmap & known gaps](#roadmap--known-gaps)
 
 ---
 
@@ -375,6 +402,13 @@ Run the rules tests with `cd rules-tests && npm run test:emulator` and the
 functions unit tests with `cd functions && npm test`.
 
 ---
+
+## Staff web dashboard
+
+`admin-web/` is a zero-build static web app (plain HTML + ES modules + the Firebase JS SDK) for library staff and
+administrators: live overview, reservations, seat bookings, waiting list, book catalogue, seats, QR pass
+verification and (admins only) the staff allow-list. It is hosted on Firebase Hosting. See
+[admin-web/README.md](admin-web/README.md) for running it locally and deploying it.
 
 ## Testing
 
