@@ -589,10 +589,11 @@ class Callout extends StatelessWidget {
       margin: margin,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: bg.withValues(alpha: AppColors.isDark ? 0.95 : 0.92),
+        color: AppColors.isDark ? bg.withValues(alpha: 0.88) : bg.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(AppRadii.md),
         border: Border.all(
-          color: fg.withValues(alpha: AppColors.isDark ? 0.35 : 0.18),
+          color: fg.withValues(alpha: AppColors.isDark ? 0.38 : 0.22),
+          width: 1.1,
         ),
       ),
       child: Row(
@@ -2212,24 +2213,34 @@ Future<bool> showConfirmDialog(
         body,
         style: AppText.body(14.5, height: 1.5, color: AppColors.textSecondary),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            foregroundColor: AppColors.isDark ? AppColors.textSecondary : AppColors.primary,
+          ),
           child: Text(
             cancelLabel,
             style: AppText.label(14, w: FontWeight.w600,
-                color: AppColors.primary),
+                color: AppColors.isDark ? AppColors.textSecondary : AppColors.primary),
           ),
         ),
-        TextButton(
+        FilledButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.error,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.error,
+            foregroundColor: AppColors.scheme.onError,
+            minimumSize: const Size(0, 42),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.full),
+            ),
           ),
           child: Text(
             confirmLabel,
-            style: AppText.label(14, w: FontWeight.w700,
-                color: AppColors.error),
+            style: AppText.label(14, w: FontWeight.w700, color: Colors.white),
           ),
         ),
       ],
