@@ -45,7 +45,118 @@ class QrTicketScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppText.body(13.5, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
+          // Amber Monolith Turnstile Pass Banner
+          Container(
+            margin: const EdgeInsets.only(bottom: 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2329),
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(
+                color: const Color(0xFFD99246).withValues(alpha: 0.4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD99246).withValues(alpha: 0.15),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/amber_monolith.png',
+                      fit: BoxFit.cover,
+                      alignment: const Alignment(0, -0.2),
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFF1C2329),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF1C2329).withValues(alpha: 0.9),
+                            Colors.transparent,
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          stops: const [0.55, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'LAMPLIGHT TURNSTILE PASS',
+                                style: AppText.overline(
+                                  10.5,
+                                  ls: 1.2,
+                                  color: const Color(0xFFFFAA2A),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Fast-Track Smart Entry',
+                                style: AppText.title(
+                                  15.5,
+                                  w: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Hold near gate optical scanner',
+                                style: AppText.body(
+                                  11,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFD99246).withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFFFAA2A),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.nfc_rounded,
+                            color: Color(0xFFFFAA2A),
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           StaggeredEntrance(
             child: TicketCard(
               top: Column(
