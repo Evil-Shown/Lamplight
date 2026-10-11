@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/reservation_repository.dart';
@@ -25,13 +24,13 @@ class _CancelConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.surfaceCard,
+      backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
       title: Row(
         children: [
-          const IconBadge(
+          IconBadge(
             icon: Icons.warning_amber_rounded,
             color: AppColors.error,
             size: 40,
