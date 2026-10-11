@@ -348,45 +348,155 @@ class _HomeGreeting extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(AppRadii.full),
-              border: Border.all(color: AppColors.scheme.outlineVariant),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.success,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.success.withValues(alpha: 0.4),
-                        blurRadius: 6,
-                        spreadRadius: 1,
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.scheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(color: AppColors.scheme.outlineVariant),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.success,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.success.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        'Campus library · open',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body(
+                          12,
+                          w: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD99246).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(
+                    color: const Color(0xFFD99246).withValues(alpha: 0.35),
                   ),
                 ),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    'Campus library · open',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.body(
-                      12,
-                      w: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.electric_bolt_rounded,
+                      size: 13,
+                      color: Color(0xFFD99246),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '84 seats free',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.label(
+                          11,
+                          w: FontWeight.w700,
+                          color: const Color(0xFFD99246),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          PressScale(
+            onTap: () {
+              AppFeedback.tap();
+              AppShell.switchTab(context, AppTab.books);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.scheme.surfaceContainerLow.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(AppRadii.card),
+                border: Border.all(
+                  color: AppColors.scheme.outlineVariant.withValues(alpha: 0.8),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: AppColors.isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Search catalog, authors, glass pods...',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(
+                        13.5,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Filter',
+                          style: AppText.label(
+                            11,
+                            w: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -628,10 +738,62 @@ class _EmptySessionHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          _HeroButton(
-            label: 'Book a seat',
-            icon: Icons.event_seat_rounded,
-            onTap: () => AppShell.switchTab(context, AppTab.seats),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: _HeroButton(
+                  label: 'Book a seat',
+                  icon: Icons.event_seat_rounded,
+                  onTap: () => AppShell.switchTab(context, AppTab.seats),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                flex: 2,
+                child: PressScale(
+                  onTap: () {
+                    AppFeedback.tap();
+                    AppRoute.push(context, const SeatScoutScreen());
+                  },
+                  child: Container(
+                    height: 52,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.radar_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Scout Map',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.label(
+                              13.5,
+                              w: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -933,16 +1095,28 @@ class _GoalCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    width: 32,
-                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
+                      color: const Color(0xFFD99246).withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                      border: Border.all(
+                        color: const Color(0xFFD99246).withValues(alpha: 0.5),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 16,
-                      color: Colors.white,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '5d streak',
+                          style: AppText.label(
+                            11,
+                            w: FontWeight.w800,
+                            color: const Color(0xFFFFAA2A),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
