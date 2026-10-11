@@ -60,4 +60,25 @@ void main() {
     expect(find.text('Floor 2 has no seats yet'), findsOneWidget);
     expect(find.text('No seats to show'), findsOneWidget);
   });
+
+  testWidgets('selecting a seat shows Book seat button', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(AppScope(
+      state: _Hydrated(),
+      child: MaterialApp(theme: AppTheme.light(), home: const SeatMapScreen()),
+    ));
+    await tester.pumpAndSettle();
+
+    // Select a seat in the list view or grid
+    final seatFinder = find.text('2A');
+    expect(seatFinder, findsOneWidget);
+    await tester.ensureVisible(seatFinder);
+    await tester.tap(seatFinder);
+    await tester.pumpAndSettle();
+
+    // "Book seat" button should appear in bottom bar
+    expect(find.text('Book seat'), findsOneWidget);
+  });
 }
