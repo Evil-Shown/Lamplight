@@ -836,7 +836,14 @@ class _CatalogCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: canReserve
                           ? AppColors.primary
-                          : AppColors.surfaceMuted,
+                          : (AppColors.isDark
+                              ? const Color(0xFF1E293B)
+                              : AppColors.surfaceMuted),
+                      border: canReserve
+                          ? null
+                          : (AppColors.isDark
+                              ? Border.all(color: const Color(0xFF475569))
+                              : null),
                       borderRadius: BorderRadius.circular(AppRadii.full),
                       boxShadow: canReserve
                           ? [
@@ -861,8 +868,12 @@ class _CatalogCard extends StatelessWidget {
                               12.5,
                               w: FontWeight.w700,
                               color: canReserve
-                                  ? AppColors.textInverse
-                                  : AppColors.textSecondary,
+                                  ? (AppColors.isDark
+                                      ? const Color(0xFF0F172A)
+                                      : AppColors.textInverse)
+                                  : (AppColors.isDark
+                                      ? const Color(0xFFF1F5F9)
+                                      : AppColors.textSecondary),
                             ),
                           ),
                         ),
@@ -871,8 +882,12 @@ class _CatalogCard extends StatelessWidget {
                           Icons.arrow_forward_rounded,
                           size: 14,
                           color: canReserve
-                              ? AppColors.textInverse
-                              : AppColors.textSecondary,
+                              ? (AppColors.isDark
+                                  ? const Color(0xFF0F172A)
+                                  : AppColors.textInverse)
+                              : (AppColors.isDark
+                                  ? const Color(0xFFF1F5F9)
+                                  : AppColors.textSecondary),
                         ),
                       ],
                     ),
