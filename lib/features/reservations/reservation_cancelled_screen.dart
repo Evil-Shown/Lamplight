@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/reservation_repository.dart';
@@ -47,8 +46,8 @@ class ReservationCancelledScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              const Padding(
-                padding: EdgeInsets.only(
+              Padding(
+                padding: const EdgeInsets.only(
                   left: AppSpacing.xs,
                   bottom: AppSpacing.sm,
                 ),
@@ -58,7 +57,7 @@ class ReservationCancelledScreen extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
-                    color: AppColors.textTertiary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -120,7 +119,7 @@ class _ReceiptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
+    return SurfaceCard(
       elevated: true,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -135,7 +134,7 @@ class _ReceiptCard extends StatelessWidget {
                   height: 72,
                 )
               else
-                const IconBadge(
+                IconBadge(
                   icon: Icons.event_seat_rounded,
                   color: AppColors.info,
                   size: 52,
@@ -164,16 +163,17 @@ class _ReceiptCard extends StatelessWidget {
             ],
           ),
           const Divider(),
-          SummaryRow(label: 'Reservation ID', value: record.id),
+          InfoRow(label: 'Reservation ID', value: record.id),
           const Divider(),
-          SummaryRow(
+          InfoRow(
             label: 'Cancelled On',
             value: DateFormat('yyyy-MM-dd').format(cancelledOn),
           ),
           const Divider(),
-          const SummaryRow(label: 'Status', value: 'Cancelled'),
+          const InfoRow(label: 'Status', value: 'Cancelled'),
         ],
       ),
     );
   }
 }
+
