@@ -1353,11 +1353,11 @@ class BookCover extends StatelessWidget {
         child: imageUrl == null
             ? plate()
             : Image.network(
-            imageUrl,
+              imageUrl,
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
-            headers: const {'Accept': 'image/*'},
-            webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+              headers: const {'Accept': 'image/*'},
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                 errorBuilder: (_, __, ___) => plate(),
                 loadingBuilder: (context, child, progress) =>
                     progress == null
