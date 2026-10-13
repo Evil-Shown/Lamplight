@@ -14,6 +14,7 @@ import '../../models/models.dart';
 import 'book_detail_screen.dart';
 import 'book_filters.dart';
 import 'reservation_confirmation_screen.dart';
+import 'search_results_screen.dart';
 
 /// book-search-v2 "Library Catalog".
 ///
@@ -85,6 +86,13 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
 
   String get _query => _controller.text.trim();
   bool get _browsing => _query.isEmpty && _filters.activeCount == 0;
+
+  void _openSearchResults() {
+    final query = _query;
+    if (query.isEmpty) return;
+    AppFeedback.tap();
+    AppRoute.push(context, SearchResultsScreen(query: query));
+  }
 
   void _onScroll() {
     if (!_scroll.hasClients) return;
@@ -339,18 +347,20 @@ class _BookSearchScreenState extends State<BookSearchScreen> {
                           child: TextField(
                             controller: _controller,
                             textInputAction: TextInputAction.search,
-                            onSubmitted: (_) {
-                              AppFeedback.tap();
-                              _runSearch();
-                            },
+                            onSubmitted: (_) => _openSearchResults(),
                             style: AppText.body(15),
                             decoration: InputDecoration(
                               hintText: AppStrings.searchBooksHint,
                               filled: false,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.base, vertical: 14),
-                              prefixIcon: Icon(Icons.search_rounded,
-                                  size: 22, color: AppColors.primary),
+                              prefixIcon: IconButton(
+                                tooltip: 'Search',
+                                icon: const Icon(Icons.search_rounded,
+                                    size: 22),
+                                color: AppColors.primary,
+                                onPressed: _openSearchResults,
+                              ),
                               suffixIcon: _controller.text.isEmpty
                                   ? null
                                   : IconButton(
