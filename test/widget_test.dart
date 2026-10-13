@@ -47,21 +47,27 @@ void main() {
   testWidgets('staff shell swaps in the staff navigation', (tester) async {
     await _signIn(tester, role: UserRole.staff);
 
-    expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Scan'), findsOneWidget);
-    expect(find.text('Manage'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Seats'), findsOneWidget);
+    expect(find.text('Catalog'), findsWidgets);
+    expect(find.text('Bookings'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
-    expect(find.text('Catalog'), findsNothing);
+    expect(find.text('Scan'), findsNothing);
+    expect(find.text('Manage'), findsNothing);
     expect(find.text('Staff Dashboard'), findsOneWidget);
 
-    await tester.tap(find.text('Manage'));
+    await tester.tap(find.text('Bookings'));
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
-    expect(find.text('Reservations'), findsOneWidget);
-    expect(find.text('Waiting list'), findsOneWidget);
-    expect(find.text('Books'), findsOneWidget);
-    expect(find.text('Seats'), findsOneWidget);
+    expect(find.text('Export Log'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
+
+    await tester.tap(find.text('Seats'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.text('Seat Availability'), findsOneWidget);
 
     await tester.tap(find.text('Account'));
     for (var i = 0; i < 8; i++) {

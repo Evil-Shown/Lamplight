@@ -39,12 +39,21 @@ class _AuroraScope extends InheritedWidget {
 /// per frame, no blur filters. Static when animations are disabled (or in
 /// tests). Nested instances pass through to their child.
 class AuroraBackground extends StatefulWidget {
-  const AuroraBackground({super.key, required this.child, this.animate = true});
+  const AuroraBackground({
+    super.key,
+    required this.child,
+    this.animate = true,
+    this.showNature = true,
+  });
 
   final Widget child;
 
   /// Set false to force a static backdrop.
   final bool animate;
+
+  /// Decorative landscape used by the member experience. Dense operational
+  /// screens can disable it while keeping the shared aurora and nesting scope.
+  final bool showNature;
 
   @override
   State<AuroraBackground> createState() => _AuroraBackgroundState();
@@ -109,7 +118,7 @@ class _AuroraBackgroundState extends State<AuroraBackground>
               ),
             ),
           ),
-          _NatureBackdrop(dark: AppColors.isDark),
+          if (widget.showNature) _NatureBackdrop(dark: AppColors.isDark),
           widget.child,
         ],
       ),
@@ -348,7 +357,9 @@ class _NaturePainter extends CustomPainter {
     final moonPath = Path()
       ..addOval(Rect.fromCircle(center: mc, radius: moonR));
     final cutPath = Path()
-      ..addOval(Rect.fromCircle(center: mc.translate(-moonR * 0.45, -moonR * 0.35), radius: moonR * 0.95));
+      ..addOval(Rect.fromCircle(
+          center: mc.translate(-moonR * 0.45, -moonR * 0.35),
+          radius: moonR * 0.95));
     final crescent = Path.combine(PathOperation.difference, moonPath, cutPath);
     canvas.drawPath(crescent, Paint()..color = const Color(0xFFF8FAFC));
   }
@@ -409,7 +420,8 @@ class _NaturePainter extends CustomPainter {
     canvas.drawPath(hillPath, Paint()..color = hillColor);
   }
 
-  void _pineTree(Canvas canvas, double x, double base, double height, Color color) {
+  void _pineTree(
+      Canvas canvas, double x, double base, double height, Color color) {
     final paint = Paint()..color = color;
     final trunkW = height * 0.12;
 

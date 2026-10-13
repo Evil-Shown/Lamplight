@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
+import '../../app_shell.dart' show AppShell, AppTab;
 import '../../core/constants/app_constants.dart' show AppNavInset;
-import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
+import '../../core/state/staff_logic.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/glass.dart';
-import '../../core/widgets/ledger_widgets.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
+import 'admin/staff_books_screen.dart';
+import 'admin/staff_reservations_screen.dart';
+import 'admin/staff_seats_screen.dart';
+import 'admin/staff_waitlist_screen.dart';
 import 'admin/widgets/staff_live_states.dart';
-import '../../app_shell.dart' show AppShell, AppTab;
+import 'admin/widgets/staff_status_badge.dart';
+import 'extend_time_screen.dart';
+import 'staff_actions.dart';
 import 'staff_scanner_screen.dart';
 
 /// P-13 Staff Dashboard.
 ///
-/// The staff home: a search field over the queue, four stat tiles, and the
-/// dispatch list with per-entry actions.
+/// The staff home: a search field over today's seat bookings, four tappable
+/// stat tiles, and the dispatch list with per-state actions.
 class StaffDashboardScreen extends StatefulWidget {
   const StaffDashboardScreen({super.key});
 
@@ -25,7 +30,10 @@ class StaffDashboardScreen extends StatefulWidget {
   State<StaffDashboardScreen> createState() => _StaffDashboardScreenState();
 }
 
-class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
+class _StaffDashboardScreenState extends State<StaffDashboardScreen>
+    with StaffClockMixin {
+  static const _filters = ['All', 'Active', 'Urgent'];
+
   final _searchController = TextEditingController();
   String _queueFilter = 'All';
 
@@ -35,30 +43,101 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     super.dispose();
   }
 
-  List<QueueEntry> _filtered(List<QueueEntry> queue) {
+  /// Open seat bookings whose window touches today, plus any that ran out
+  /// and were never released (they still hold the seat, whatever the day).
+  List<AdminReservation> _today(List<AdminReservation> all) {
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    return all.where((r) {
+      if (!r.isSeat) return false;
+      final s = staffReservationState(r, now);
+      if (s == StaffResState.completed || s == StaffResState.cancelled) {
+        return false;
+      }
+      if (s == StaffResState.expired) return true;
+      final start = r.startAt ?? r.reservedAt;
+      final end = r.endAt ?? r.dueAt ?? start;
+      return end.isAfter(startOfDay) && start.isBefore(endOfDay);
+    }).toList();
+  }
+
+  /// Expired first, then pending, then active by soonest end.
+  int _rank(StaffResState s) => switch (s) {
+        StaffResState.expired => 0,
+        StaffResState.pending => 1,
+        _ => 2,
+      };
+
+  List<AdminReservation> _dispatch(List<AdminReservation> all) {
     final q = _searchController.text.trim().toLowerCase();
-    return queue.where((entry) {
+    final list = _today(all).where((r) {
+      final s = staffReservationState(r, now);
       final matchesQuery = q.isEmpty ||
-          entry.studentName.toLowerCase().contains(q) ||
-          entry.location.toLowerCase().contains(q);
+          r.studentName.toLowerCase().contains(q) ||
+          r.studentId.toLowerCase().contains(q) ||
+          r.itemTitle.toLowerCase().contains(q) ||
+          r.itemSubtitle.toLowerCase().contains(q);
       final matchesFilter = switch (_queueFilter) {
-        'Active' => entry.status == QueueStatus.active,
-        'Urgent' => entry.status == QueueStatus.pending,
+        'Active' => s == StaffResState.active,
+        'Urgent' => s == StaffResState.pending || s == StaffResState.expired,
         _ => true,
       };
       return matchesQuery && matchesFilter;
     }).toList();
+    DateTime endOf(AdminReservation r) =>
+        r.endAt ?? r.dueAt ?? r.startAt ?? r.reservedAt;
+    list.sort((a, b) {
+      final byRank = _rank(staffReservationState(a, now))
+          .compareTo(_rank(staffReservationState(b, now)));
+      return byRank != 0 ? byRank : endOf(a).compareTo(endOf(b));
+    });
+    return list;
+  }
+
+  void _goTab(int tab, Widget fallback) {
+    if (!AppShell.switchTab(context, tab)) AppRoute.push(context, fallback);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
-    final stats = state.dashboardStats;
     final loading = staffLoading(state);
-    final failed = staffFailed(state) && state.queue.isEmpty;
-    final queue = _filtered(state.queue);
-    final waiting =
-        state.queue.where((e) => e.status != QueueStatus.expired).length;
+    final all = state.adminReservations;
+    final failed = staffFailed(state) && all.isEmpty;
+    final queue = _dispatch(all);
+    final todayCount = _today(all).length;
+    needsSecondTicks = queue.any((r) => staffShowsGrace(r, now));
+
+    // Stat figures.
+    final open = all.where((r) {
+      final s = staffReservationState(r, now);
+      return s == StaffResState.active || s == StaffResState.pending;
+    }).toList();
+    final createdToday = open
+        .where((r) =>
+            r.reservedAt.year == now.year &&
+            r.reservedAt.month == now.month &&
+            r.reservedAt.day == now.day)
+        .length;
+    final waiting = state.adminWaitlist
+        .where((w) => w.entry.status == WaitlistStatus.waiting)
+        .length;
+    final offered = state.adminWaitlist
+        .where((w) => w.entry.status == WaitlistStatus.offered)
+        .length;
+    var copiesFree = 0;
+    var copiesTotal = 0;
+    for (final b in state.adminBooks) {
+      final total = b.totalCopies ?? b.copiesAvailable;
+      copiesFree += b.copiesAvailable;
+      copiesTotal += total < b.copiesAvailable ? b.copiesAvailable : total;
+    }
+    final catalogPct =
+        copiesTotal == 0 ? 0.0 : (copiesFree / copiesTotal).clamp(0.0, 1.0);
+    final seats = state.adminSeats;
+    final seatsFree =
+        seats.where((s) => s.status == SeatStatus.available).length;
+    final seatPct = seats.isEmpty ? 0.0 : seatsFree / seats.length;
 
     // The staff shell already paints the aurora behind this tab.
     return Scaffold(
@@ -74,13 +153,13 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             children: [
               // App-level cached-data banner (D-14).
               ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
-              GlassSurface(
+              SurfaceCard(
                 radius: AppRadii.xl,
-                padding: const EdgeInsets.all(AppSpacing.base),
+                elevated: true,
+                color: AppColors.surface,
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
-                    const CampusMark(size: 44),
-                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,33 +181,18 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        CountUp(
-                          value: waiting,
-                          style: AppText.display(AppText.displayLg,
-                              w: FontWeight.w800, color: AppColors.primary),
-                        ),
-                        Text('in queue',
-                            style: AppText.label(12, w: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    PressScale(
-                      onTap: () {
-                        if (!AppShell.switchTab(context, AppTab.scan)) {
-                          AppRoute.push(context, const StaffScannerScreen());
-                        }
-                      },
-                      child: Tooltip(
-                        message: 'Scan a pass',
+                    Tooltip(
+                      message: 'Scan a pass',
+                      child: PressScale(
+                        onTap: () =>
+                            AppRoute.push(context, const StaffScannerScreen()),
                         child: Container(
-                          width: 48,
-                          height: 48,
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
                             gradient: AppGradients.hero,
-                            borderRadius: BorderRadius.circular(AppRadii.md),
+                            borderRadius: BorderRadius.circular(AppRadii.lg),
+                            boxShadow: AppShadows.layered(AppColors.primary),
                           ),
                           child: Icon(Icons.qr_code_scanner_rounded,
                               size: 24, color: AppColors.textInverse),
@@ -143,11 +207,12 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search students or locations',
+                  hintText: 'Search students, seats or IDs',
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   suffixIcon: _searchController.text.isEmpty
                       ? null
                       : IconButton(
+                          tooltip: 'Clear search',
                           icon: const Icon(Icons.close_rounded, size: 18),
                           onPressed: () =>
                               setState(() => _searchController.clear()),
@@ -158,22 +223,30 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: StatTile(
-                      label: 'Due today',
-                      value: stats.reservationsDueToday,
-                      caption: 'Book pickups',
-                      color: AppColors.primary,
+                    child: _DashTile(
+                      label: 'Reservations',
                       icon: Icons.confirmation_num_outlined,
+                      color: AppColors.primary,
+                      value: open.length,
+                      word: 'active',
+                      pill: '+$createdToday today',
+                      pillColor: AppColors.primary,
+                      onTap: () => _goTab(AppTab.staffBookings,
+                          const StaffReservationsScreen()),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: StatTile(
-                      label: 'Waitlisted',
-                      value: stats.waitingCount,
-                      caption: 'Waiting for a book or seat',
-                      color: AppColors.warning,
+                    child: _DashTile(
+                      label: 'Waitlist',
                       icon: Icons.hourglass_top_rounded,
+                      color: AppColors.warning,
+                      value: waiting,
+                      word: 'queued',
+                      pill: offered > 0 ? '$offered offered' : null,
+                      pillColor: AppColors.warning,
+                      onTap: () =>
+                          AppRoute.push(context, const StaffWaitlistScreen()),
                     ),
                   ),
                 ],
@@ -182,24 +255,30 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: StatTile(
-                      label: 'In session',
-                      value: stats.activeSessions,
-                      caption: 'Seated now',
-                      color: AppColors.success,
-                      icon: Icons.schedule_rounded,
+                    child: _DashTile(
+                      label: 'Catalog',
+                      icon: Icons.auto_stories_outlined,
+                      color: AppColors.accent,
+                      value: (catalogPct * 100).round(),
+                      suffix: '%',
+                      word: 'available',
+                      meter: catalogPct,
+                      onTap: () =>
+                          _goTab(AppTab.staffCatalog, const StaffBooksScreen()),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: StatTile(
-                      label: 'Seat fill',
-                      value: stats.seatFillPercent,
-                      suffix: '%',
-                      caption:
-                          '${stats.seatsOccupied} of ${stats.seatsTotal} seats',
-                      color: AppColors.accent,
+                    child: _DashTile(
+                      label: 'Seat Avail',
                       icon: Icons.event_seat_outlined,
+                      color: AppColors.success,
+                      value: (seatPct * 100).round(),
+                      suffix: '%',
+                      word: 'free',
+                      meter: seatPct,
+                      onTap: () =>
+                          _goTab(AppTab.staffSeats, const StaffSeatsScreen()),
                     ),
                   ),
                 ],
@@ -208,24 +287,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Dispatch queue · ${queue.length}',
-                            style: AppText.title(15.5, w: FontWeight.w700)),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Updates in real time',
-                          style: AppText.body(12, color: AppColors.textFaint),
-                        ),
-                      ],
-                    ),
+                    child: Text('Queue Dispatch',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.title(18, w: FontWeight.w800)),
                   ),
+                  StatusPill(
+                      label: '${queue.length} items',
+                      color: AppColors.primary,
+                      compact: true),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              FilterChipRow(
-                options: const ['All', 'Active', 'Urgent'],
+              const SizedBox(height: AppSpacing.sm),
+              SegmentedTabs(
+                options: _filters,
                 selected: _queueFilter,
                 onSelected: (value) => setState(() => _queueFilter = value),
                 padding: EdgeInsets.zero,
@@ -246,21 +321,20 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   onRetry: state.refresh,
                 )
               else if (queue.isEmpty)
-                const EmptyState(
+                EmptyState(
                   icon: Icons.inbox_rounded,
-                  title: 'Queue is clear',
-                  message: 'No students waiting. Queue updates in real time.',
+                  title: todayCount == 0 ? 'All clear' : 'No matches',
+                  message: todayCount == 0
+                      ? 'No seat bookings need attention right now.'
+                      : 'No bookings match this search or filter.',
                 )
               else
                 for (var i = 0; i < queue.length; i++) ...[
                   if (i > 0) const SizedBox(height: AppSpacing.md),
                   StaggeredEntrance(
                     index: i,
-                    child: _QueueRow(
-                      entry: queue[i],
-                      onApprove: () => state.approveQueueEntry(queue[i].id),
-                      onDismiss: () => state.dismissQueueEntry(queue[i].id),
-                    ),
+                    child: _DispatchCard(
+                        reservation: queue[i], index: i, now: now),
                   ),
                 ],
             ],
@@ -269,29 +343,164 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       ),
     );
   }
+
+  String _firstName(String name) {
+    final trimmed = name.trim();
+    return trimmed.isEmpty ? 'Staff' : trimmed.split(RegExp(r'\s+')).first;
+  }
+
+  String _dayPart(DateTime value) {
+    if (value.hour < 12) return 'morning';
+    if (value.hour < 17) return 'afternoon';
+    return 'evening';
+  }
 }
 
-class _QueueRow extends StatelessWidget {
-  const _QueueRow({
-    required this.entry,
-    required this.onApprove,
-    required this.onDismiss,
+/// A tappable stat tile: figure, word, and either a pill or a meter.
+class _DashTile extends StatelessWidget {
+  const _DashTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.value,
+    required this.word,
+    required this.onTap,
+    this.suffix = '',
+    this.pill,
+    this.pillColor,
+    this.meter,
   });
 
-  final QueueEntry entry;
-  final VoidCallback onApprove;
-  final VoidCallback onDismiss;
-
-  (Color, String) get _status => switch (entry.status) {
-        QueueStatus.active => (AppColors.success, 'Active'),
-        QueueStatus.pending => (AppColors.warning, 'Pending'),
-        QueueStatus.expired => (AppColors.error, 'Expired'),
-      };
+  final String label;
+  final IconData icon;
+  final Color color;
+  final int value;
+  final String suffix;
+  final String word;
+  final String? pill;
+  final Color? pillColor;
+  final double? meter;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final (color, label) = _status;
-    final waited = DateTime.now().difference(entry.requestedAt);
+    return Semantics(
+      button: true,
+      label: '$label, $value$suffix $word',
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(15),
+        color: AppColors.surface,
+        borderColor: AppColors.border,
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label(12.5, w: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color:
+                        color.withValues(alpha: AppColors.isDark ? 0.20 : 0.10),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: Icon(icon, size: 17, color: color),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 6,
+              children: [
+                CountUp(
+                  value: value,
+                  suffix: suffix,
+                  style: AppText.display(28, w: FontWeight.w800, color: color),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(word, style: AppText.label(12)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (meter != null)
+              MeterBar(value: meter!, color: color)
+            else if (pill != null)
+              StatusPill(label: pill!, color: pillColor ?? color, compact: true)
+            else
+              // Keeps the tiles in a row the same height.
+              const SizedBox(height: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DispatchCard extends StatelessWidget {
+  const _DispatchCard(
+      {required this.reservation, required this.index, required this.now});
+
+  final AdminReservation reservation;
+  final int index;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reservation;
+    final s = staffReservationState(r, now);
+    final color = staffStateColor(s);
+    final badge = staffReservationStatusLabel(r, now).toUpperCase();
+
+    final actions = switch (s) {
+      StaffResState.active => [
+          StaffMiniButton(
+            label: 'Monitor',
+            tone: ButtonTone.secondary,
+            onPressed: () => showStaffReservationDetails(context, r, now: now),
+          ),
+          StaffMiniButton(
+            label: 'Extend',
+            onPressed: () =>
+                AppRoute.push(context, ExtendTimeScreen(reservation: r)),
+          ),
+        ],
+      StaffResState.pending => [
+          StaffMiniButton(
+            label: 'Notify',
+            tone: ButtonTone.secondary,
+            onPressed: () => staffNotifyReservation(context, r, now: now),
+          ),
+          StaffMiniButton(
+            label: 'Check In',
+            onPressed: () => staffCheckInAction(context, r),
+          ),
+        ],
+      _ => [
+          StaffMiniButton(
+            label: 'Alert',
+            tone: ButtonTone.secondary,
+            onPressed: () => staffNotifyReservation(context, r, now: now),
+          ),
+          StaffMiniButton(
+            label: 'Release Desk',
+            tone: ButtonTone.danger,
+            onPressed: () => staffReleaseAction(context, r),
+          ),
+        ],
+    };
 
     return SurfaceCard(
       tint: color.withValues(alpha: 0.22),
@@ -299,182 +508,70 @@ class _QueueRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.xs),
-                ),
-                child: Text(
-                  entry.studentName.isEmpty
-                      ? '?'
-                      : entry.studentName.substring(0, 1).toUpperCase(),
-                  style: AppText.title(14, w: FontWeight.w700, color: color),
-                ),
-              ),
-              const SizedBox(width: 12),
+              StaffAvatar(name: r.studentName, color: color),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${entry.studentName} ${entry.studentId}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.title(15, w: FontWeight.w700),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            r.studentName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.title(15, w: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        StaffIndexChip(staffIndexLabel(index, pad: 3)),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${entry.location} · waited ${waited.inMinutes}m',
-                      maxLines: 1,
+                      '${r.itemTitle} · ${r.itemSubtitle}',
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppText.body(12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
-              StatusPill(label: label, color: color, compact: true),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _RowAction(
-                  label: 'Copy ID',
-                  icon: Icons.copy_rounded,
-                  onTap: () => _showContact(context, entry),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _RowAction(
-                  label: entry.status == QueueStatus.expired
-                      ? 'Dismiss'
-                      : 'Approve',
-                  icon: entry.status == QueueStatus.expired
-                      ? Icons.close_rounded
-                      : Icons.check_rounded,
-                  tone: entry.status == QueueStatus.expired
-                      ? AppColors.error
-                      : AppColors.success,
-                  onTap: entry.status == QueueStatus.expired
-                      ? onDismiss
-                      : onApprove,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Glass sheet with the student's identity and what can be done from the
-/// device. A queue entry only carries name, ID and location (no phone or
-/// email), and `url_launcher` is not a dependency, so copying the ID is the
-/// working action.
-void _showContact(BuildContext context, QueueEntry entry) {
-  showGlassSheet<void>(
-    context,
-    builder: (sheetContext) => Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Copy student ID', style: AppText.title(20, w: FontWeight.w800)),
-          const SizedBox(height: AppSpacing.base),
-          Text(
-              entry.studentName.isEmpty ? 'Unknown student' : entry.studentName,
-              style: AppText.title(17, w: FontWeight.w700)),
-          const SizedBox(height: 2),
-          Text(
-            entry.studentId.isEmpty ? 'No student ID on file' : entry.studentId,
-            style: AppText.body(13.5, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 2),
-          Text(entry.location,
-              style: AppText.body(13, color: AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.base),
-          Text(
-            'No phone number or email is on file for this request. '
-            'Use the student ID to look them up at the desk.',
-            style: AppText.body(12.5, color: AppColors.textFaint),
-          ),
-          const SizedBox(height: AppSpacing.base),
-          PrimaryButton(
-            label: 'Copy student ID',
-            icon: Icons.copy_rounded,
-            onPressed: entry.studentId.isEmpty
-                ? null
-                : () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    await Clipboard.setData(
-                        ClipboardData(text: entry.studentId));
-                    AppFeedback.success();
-                    if (sheetContext.mounted) Navigator.pop(sheetContext);
-                    messenger.showSnackBar(
-                        const SnackBar(content: Text('Student ID copied')));
-                  },
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _RowAction extends StatelessWidget {
-  const _RowAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.tone,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveTone = tone ?? AppColors.primary;
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: PressScale(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: effectiveTone.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            border: Border.all(color: effectiveTone.withValues(alpha: 0.28)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 17, color: effectiveTone),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm),
               Flexible(
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.label(13.5,
-                        w: FontWeight.w700, color: effectiveTone)),
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    StaffStatusBadge(
+                        label: badge, tone: staffStateTone(s), compact: true),
+                    const SizedBox(height: 4),
+                    Text(
+                      staffTimeNote(r, now),
+                      textAlign: TextAlign.end,
+                      style:
+                          AppText.label(12, w: FontWeight.w700, color: color),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: actions,
+            ),
+          ),
+        ],
       ),
     );
   }

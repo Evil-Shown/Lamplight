@@ -9,7 +9,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/firebase/auth_failure.dart';
-import '../../models/models.dart';
 import '../help/legal_screens.dart';
 import 'auth_style.dart';
 import 'library_scenes.dart';
@@ -45,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _confirmPasswordFocus = FocusNode();
 
   late AuthMode _mode = widget.initialMode;
-  UserRole _role = UserRole.student;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -142,17 +140,15 @@ class _LoginScreenState extends State<LoginScreen> {
         await state.signInWithEmail(
           email: email,
           password: password,
-          role: _role,
         );
       } else {
         await state.signUpWithEmail(
           email: email,
           password: password,
           fullName: fullName,
-          role: _role,
         );
       }
-      _announceRole(state, messenger);
+      _announceNotice(state, messenger);
     } on AuthFailure catch (f) {
       if (mounted) _showFailure(f);
     } catch (_) {
@@ -188,17 +184,12 @@ class _LoginScreenState extends State<LoginScreen> {
     focus?.requestFocus();
   }
 
-  /// Staff access comes from the server. If the user asked for staff but did
-  /// not get it, say so plainly; the message outlives this screen.
-  void _announceRole(AppState state, ScaffoldMessengerState messenger) {
+  /// The role comes from the account on the server; surface any notice the
+  /// sign-in left behind. The message outlives this screen.
+  void _announceNotice(AppState state, ScaffoldMessengerState messenger) {
     final notice = state.roleNotice;
     if (notice != null) {
       messenger.showSnackBar(SnackBar(content: Text(notice)));
-    } else if (_role == UserRole.staff && !state.isStaff) {
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Signed in as a student. This account is not on the '
-            'library staff list.'),
-      ));
     }
   }
 
@@ -211,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final state = AppScope.read(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await state.signInWithGoogle(role: _role);
-      _announceRole(state, messenger);
+      await state.signInWithGoogle();
+      _announceNotice(state, messenger);
     } on AuthFailure catch (f) {
       if (mounted) {
         if (f.isCancelled) {
@@ -469,20 +460,6 @@ class _LoginScreenState extends State<LoginScreen> {
           style: AppText.body(12.5, color: AuthPalette.muted),
         ),
         const SizedBox(height: 20),
-        _RoleRow(
-          role: _role,
-          onChanged: (role) {
-            AppFeedback.select();
-            setState(() => _role = role);
-          },
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Staff access is granted by the library.',
-          textAlign: TextAlign.center,
-          style: AppText.body(11, color: AuthPalette.muted),
-        ),
-        const SizedBox(height: 18),
         if (_formError != null) ...[
           _ErrorNote(
             title: signingIn
@@ -754,94 +731,6 @@ class _ErrorNote extends StatelessWidget {
                       style: AppText.body(12.5, color: AuthPalette.onSheet),
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleRow extends StatelessWidget {
-  const _RoleRow({required this.role, required this.onChanged});
-
-  final UserRole role;
-  final ValueChanged<UserRole> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _RolePill(
-            label: "I'm a student",
-            icon: Icons.school_rounded,
-            selected: role == UserRole.student,
-            onTap: () => onChanged(UserRole.student),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _RolePill(
-            label: "I'm staff",
-            icon: Icons.badge_rounded,
-            selected: role == UserRole.staff,
-            onTap: () => onChanged(UserRole.staff),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RolePill extends StatelessWidget {
-  const _RolePill({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tone = selected ? AuthPalette.accent : AuthPalette.muted;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: PressScale(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.fast,
-          curve: AppMotion.press,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: selected
-                ? AuthPalette.accent.withValues(alpha: 0.12)
-                : AuthPalette.fieldFill,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? AuthPalette.accent : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 17, color: tone),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  style: AppText.label(13, w: FontWeight.w600, color: tone),
                 ),
               ),
             ],

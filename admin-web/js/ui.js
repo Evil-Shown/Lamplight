@@ -1,5 +1,6 @@
 // Small DOM/UI toolkit. Never uses innerHTML with data: everything is built with
 // createElement + textContent (book titles / names are user-controlled).
+import { icon } from "./icons.js";
 
 export function el(tag, props, ...children) {
   const n = document.createElement(tag);
@@ -92,7 +93,7 @@ export function openOverlay({ title, kind = "dialog", onClose, wide = false }) {
   const titleId = `ov-${Math.random().toString(36).slice(2, 8)}`;
   const body = el("div", { class: "ov-body" });
   const footer = el("div", { class: "ov-footer" });
-  const closeBtn = el("button", { class: "btn btn-ghost icon-btn", type: "button", "aria-label": "Close" }, "✕");
+  const closeBtn = el("button", { class: "btn btn-ghost icon-btn", type: "button", "aria-label": "Close" }, icon("close", { size: 16 }));
   const panel = el("div", {
     class: `ov-panel ov-${kind}${wide ? " ov-wide" : ""}`, role: "dialog",
     "aria-modal": "true", "aria-labelledby": titleId, tabindex: "-1",

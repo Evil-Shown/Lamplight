@@ -48,10 +48,15 @@ class StaffStatusBadge extends StatelessWidget {
             Icon(icon, size: compact ? 12 : 14, color: color),
             SizedBox(width: compact ? 3 : 4),
           ],
-          Text(
-            label,
-            style: AppText.label(compact ? 11.5 : 12.5,
-                w: FontWeight.w700, color: color),
+          // Flexible so a long label shrinks instead of overflowing a tight row.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.label(compact ? 11.5 : 12.5,
+                  w: FontWeight.w700, color: color),
+            ),
           ),
         ],
       ),

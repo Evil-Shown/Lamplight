@@ -1,5 +1,5 @@
-// Login page (shown to signed-out visitors only).
 import { el, mount, field } from "../ui.js";
+import { icon } from "../icons.js";
 import { signInEmail, signInGoogle, resetPassword, resendVerification, recheckVerification, signOutNow, friendlyAuthError } from "../auth.js";
 
 export function renderLogin(root, st) {
@@ -10,8 +10,8 @@ export function renderLogin(root, st) {
   if (st.notice) setMsg(st.notice.text);
 
   const card = el("main", { class: "login-card", id: "main" });
-  const brand = el("div", { class: "login-brand" }, el("img", { src: "favicon.png", alt: "", width: "48", height: "48" }),
-    el("h1", { text: "Lamplight Staff" }), el("p", { class: "muted", text: "Library administration dashboard" }));
+  const brand = el("div", { class: "login-brand" }, el("img", { src: "favicon.png", alt: "", width: "52", height: "52" }),
+    el("h1", { text: "Lamplight Staff" }), el("p", { class: "muted", text: "Library operations & administration" }));
   root.className = "login-page";
 
   if (st.status === "unverified") {
@@ -42,10 +42,12 @@ export function renderLogin(root, st) {
     return;
   }
 
-  const email = el("input", { type: "email", autocomplete: "username", required: true, inputmode: "email", autofocus: true });
-  const pw = el("input", { type: "password", autocomplete: "current-password", required: true });
+  const email = el("input", { type: "email", autocomplete: "username", required: true, inputmode: "email", autofocus: true, placeholder: "staff@university.edu" });
+  const pw = el("input", { type: "password", autocomplete: "current-password", required: true, placeholder: "••••••••" });
   const submit = el("button", { class: "btn btn-primary btn-block", type: "submit" }, "Sign in");
-  const google = el("button", { class: "btn btn-block", type: "button" }, "Continue with Google");
+  const google = el("button", { class: "btn btn-block btn-google", type: "button" },
+    icon("google", { size: 18 }),
+    el("span", { text: "Continue with Google" }));
   const forgot = el("button", { class: "link-btn", type: "button" }, "Forgot password?");
 
   const busy = (b) => { submit.disabled = b; google.disabled = b; };

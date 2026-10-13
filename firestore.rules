@@ -204,6 +204,7 @@ service cloud.firestore {
 
         // Owner: cancel an open booking, or complete (early checkout) one that
         // has been checked in. checkedInAt is set only by verifyQrPass / staff.
+        // Staff may also move `endTime` (extend a booking) and set status.
         allow update: if (isOwner(uid)
             && changed(['status'])
             && isOpenStatus(resource.data.status)
@@ -211,8 +212,10 @@ service cloud.firestore {
                 || (request.resource.data.status == 'completed'
                     && resource.data.get('checkedInAt', null) != null)))
           || (isStaff()
-            && changed(['status', 'checkedInAt'])
-            && validStatus(request.resource.data.status));
+            && changed(['status', 'checkedInAt', 'endTime'])
+            && validStatus(request.resource.data.status)
+            && request.resource.data.endTime is timestamp
+            && request.resource.data.endTime > resource.data.startTime);
 
         // Withdrawing a booking that was never checked in.
         allow delete: if isOwner(uid)

@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { adminAuth, db } from "./admin";
-import { Role, logError, logInfo, pickRole, requireAuth } from "./util";
+import { Role, decideClaim, logError, logInfo, pickRole, requireAuth } from "./util";
 
 /** Reads both allow-lists and returns the role for a (verified) email. */
 export async function roleForEmail(email: string): Promise<Role> {
@@ -39,6 +39,9 @@ export async function applyRoleToUser(uid: string, role: Role): Promise<boolean>
  *   sign-in is verified). In the Auth emulator (FUNCTIONS_EMULATOR=true)
  *   verification is not required so local email/password accounts work.
  * - Precedence: admin > staff > student. Everyone else is 'student'.
+ * - If the email is on a list but not verified, the role stays 'student' and the
+ *   response carries `pendingVerification: true` so the client can explain why.
+ * Returns `{ role, pendingVerification }`.
  * The client must call getIdToken(true) afterwards to pick up the claim.
  */
 export const claimRole = onCall(async (request) => {
@@ -48,11 +51,14 @@ export const claimRole = onCall(async (request) => {
     const verified = request.auth?.token.email_verified === true;
     const emulator = process.env["FUNCTIONS_EMULATOR"] === "true";
 
-    let role: Role = "student";
-    if (email && (verified || emulator)) role = await roleForEmail(email);
+    let decision = { role: "student" as Role, pendingVerification: false };
+    if (email) {
+      const [staff, admin] = await Promise.all([db.doc("config/staffAllowlist").get(), db.doc("config/adminAllowlist").get()]);
+      decision = decideClaim(email, verified, emulator, staff.get("emails"), admin.get("emails"));
+    }
 
-    await applyRoleToUser(uid, role);
-    return { role };
+    await applyRoleToUser(uid, decision.role);
+    return decision;
   } catch (err) {
     if (err instanceof HttpsError) throw err;
     logError("claimRole", err, { uid });

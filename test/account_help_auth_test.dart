@@ -11,7 +11,6 @@ import 'package:library_app/features/account/account_screen.dart';
 import 'package:library_app/features/auth/login_screen.dart';
 import 'package:library_app/features/help/help_screen.dart';
 import 'package:library_app/features/settings/settings_screen.dart';
-import 'package:library_app/models/models.dart';
 
 class _FakeState extends AppState {
   _FakeState(this._status, {this.source = DataSource.live, this.error});
@@ -36,7 +35,6 @@ class _FailingState extends AppState {
   Future<void> signInWithEmail({
     required String email,
     required String password,
-    required UserRole role,
   }) async =>
       throw const AuthFailure('wrong-password', 'Incorrect email or password.');
 }
@@ -106,6 +104,23 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Incorrect email or password.'), findsOneWidget);
+  });
+
+  testWidgets('login offers no role choice in either mode', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+    for (final mode in AuthMode.values) {
+      await tester.pumpWidget(AppScope(
+        state: AppState(),
+        child: MaterialApp(
+            theme: AppTheme.light(), home: LoginScreen(initialMode: mode)),
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(TextField), findsWidgets);
+      expect(find.text("I'm a student"), findsNothing);
+      expect(find.text("I'm staff"), findsNothing);
+    }
   });
 
   testWidgets('delete confirm requires the typed word', (tester) async {

@@ -17,6 +17,7 @@ import '../../services/reminder_planner.dart';
 import '../feedback/app_feedback.dart';
 import 'data_mode.dart';
 import 'session_timing.dart' as timing;
+import 'staff_logic.dart';
 import 'sync_status.dart';
 import 'test_env.dart';
 
@@ -94,7 +95,8 @@ class AppState extends ChangeNotifier {
   QuerySnapshot<Map<String, dynamic>>? _allReservationsSnap;
   QuerySnapshot<Map<String, dynamic>>? _allBookingsSnap;
   QuerySnapshot<Map<String, dynamic>>? _allWaitlistSnap;
-  List<AdminReservation> _adminReservations = [];
+  List<AdminReservation> _adminReservations =
+      mockDataAllowed ? MockData.buildAdminReservations() : [];
   List<AdminWaitlistItem> _adminWaitlist = [];
 
   // Raw user snapshots, so reservations/bookings re-join on catalogue change.
@@ -189,8 +191,8 @@ class AppState extends ChangeNotifier {
   UserProfile? get profile => _profile;
   bool get isSignedIn => _profile != null;
 
-  /// Privileges come from the server-issued token claim, never from the
-  /// role pills on the sign-in screen.
+  /// Privileges come from the server-issued token claim, never from anything
+  /// the user picks at sign-in.
   UserRole get role => _profile?.role ?? UserRole.student;
   bool get isStaff =>
       _profile?.role == UserRole.staff || _profile?.role == UserRole.admin;
@@ -333,14 +335,13 @@ class AppState extends ChangeNotifier {
   Future<void> signIn({required String identifier, required UserRole role}) =>
       _completeSignIn(_service.signIn(identifier, role));
 
-  Future<void> signInWithGoogle({required UserRole role}) =>
-      _completeSignIn(_service.signInWithGoogle(role));
+  Future<void> signInWithGoogle() =>
+      _completeSignIn(_service.signInWithGoogle());
 
   Future<void> signUpWithEmail({
     required String email,
     required String password,
     required String fullName,
-    required UserRole role,
     String? studentId,
   }) =>
       _completeSignIn(
@@ -348,7 +349,6 @@ class AppState extends ChangeNotifier {
           email: email,
           password: password,
           fullName: fullName,
-          role: role,
           studentId: studentId,
         ),
         signUp: true,
@@ -357,12 +357,10 @@ class AppState extends ChangeNotifier {
   Future<void> signInWithEmail({
     required String email,
     required String password,
-    required UserRole role,
   }) =>
       _completeSignIn(_service.signInWithEmail(
         email: email,
         password: password,
-        role: role,
       ));
 
   Future<void> _completeSignIn(Future<UserProfile> pending,
@@ -402,6 +400,8 @@ class AppState extends ChangeNotifier {
     final saved = _profile?.prefs;
     if (saved != null) _preferences = saved;
     _queue = mockOnly && mockDataAllowed ? MockData.buildQueue() : [];
+    _adminReservations =
+        mockOnly && mockDataAllowed ? MockData.buildAdminReservations() : [];
     if (mockOnly && !isRunningInTest) _hydrated = true;
     _startListeners();
     _watchAuth();
@@ -1298,8 +1298,141 @@ class AppState extends ChangeNotifier {
 
   Future<void> editBook(Book book) => _service.editBook(book);
 
-  Future<void> setSeatStatus(String seatId, SeatStatus status) =>
-      _service.setSeatStatus(seatId, status);
+  /// Changes a seat's status. Shown at once; rolled back if the write fails.
+  Future<void> setSeatStatus(String seatId, SeatStatus status) async {
+    final previous = _seatStatus[seatId];
+    _seatStatus[seatId] = status;
+    notifyListeners();
+    try {
+      await _service.setSeatStatus(seatId, status);
+    } catch (e) {
+      if (previous == null) {
+        _seatStatus.remove(seatId);
+      } else {
+        _seatStatus[seatId] = previous;
+      }
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // ------------------------------------------------ staff booking actions
+  //
+  // Each updates the local list first (so demo/test builds work without a
+  // backend), writes to Firestore, and rolls back and throws a
+  // [StaffActionException] if the write fails. The live stream then replaces
+  // the local copy with server truth.
+
+  void _replaceAdmin(AdminReservation from, AdminReservation to) {
+    final i = _adminReservations
+        .indexWhere((r) => r.id == from.id && r.path == from.path);
+    if (i == -1) return;
+    _adminReservations = [..._adminReservations]..[i] = to;
+    notifyListeners();
+  }
+
+  /// Runs [write]; on failure puts [from] back and throws [failure].
+  Future<void> _staffWrite(
+    AdminReservation from,
+    AdminReservation to,
+    Future<void> Function() write,
+    String failure, {
+    String? seatId,
+  }) async {
+    final previousSeat = seatId == null ? null : _seatStatus[seatId];
+    _replaceAdmin(from, to);
+    if (seatId != null) {
+      _seatStatus[seatId] = SeatStatus.available;
+      notifyListeners();
+    }
+    try {
+      await write();
+    } catch (e) {
+      _replaceAdmin(to, from);
+      if (seatId != null) {
+        if (previousSeat == null) {
+          _seatStatus.remove(seatId);
+        } else {
+          _seatStatus[seatId] = previousSeat;
+        }
+        notifyListeners();
+      }
+      _recordWriteError(e);
+      throw StaffActionException(failure);
+    }
+  }
+
+  /// Moves a seat booking's end time out by [by] (at most [kMaxExtension]),
+  /// refusing when another booking of the same seat would be overlapped.
+  Future<void> extendSeatBooking(AdminReservation r, Duration by) async {
+    final end = r.endAt ?? r.dueAt;
+    if (!r.isSeat || end == null) {
+      throw const StaffActionException('Only seat bookings can be extended.');
+    }
+    if (by <= Duration.zero || by > kMaxExtension) {
+      throw const StaffActionException(
+          'An extension can add at most 2 hours.');
+    }
+    final newEnd = end.add(by);
+    final clash = seatExtensionConflict(r, newEnd, _adminReservations);
+    if (clash != null) {
+      final at = clash.startAt;
+      throw StaffActionException(at == null
+          ? 'Conflicts with the next booking.'
+          : 'Conflicts with the next booking at '
+              '${at.hour.toString().padLeft(2, '0')}:'
+              '${at.minute.toString().padLeft(2, '0')}.');
+    }
+    await _staffWrite(r, r.copyWith(endAt: newEnd),
+        () => _service.extendSeatBooking(r.path, newEnd),
+        'Could not extend this booking. Check the connection and try again.');
+  }
+
+  /// Marks a seat booking checked in, as scanning its pass would.
+  Future<void> staffCheckIn(AdminReservation r) async {
+    if (!r.isSeat) {
+      throw const StaffActionException(
+          'Book handover goes through the scanner.');
+    }
+    await _staffWrite(
+        r,
+        r.copyWith(
+            status: ReservationStatus.active, checkedInAt: DateTime.now()),
+        () => _service.staffCheckIn(r.path),
+        'Could not check this student in. Try again.');
+  }
+
+  /// Cancels a booking or reservation; a seat booking frees its seat.
+  Future<void> staffCancelReservation(AdminReservation r) => _staffWrite(
+      r,
+      r.copyWith(status: ReservationStatus.cancelled),
+      () => _service.staffSetReservationStatus(r.path,
+          ReservationStatus.cancelled,
+          freeSeatId: r.isSeat ? r.resourceId : null),
+      'Could not cancel this reservation. Try again.',
+      seatId: r.isSeat && r.resourceId.isNotEmpty ? r.resourceId : null);
+
+  /// Ends a seat booking and frees the seat.
+  Future<void> staffReleaseSeat(AdminReservation r) => _staffWrite(
+      r,
+      r.copyWith(status: ReservationStatus.completed),
+      () => _service.staffSetReservationStatus(r.path,
+          ReservationStatus.completed,
+          freeSeatId: r.isSeat ? r.resourceId : null),
+      'Could not release this seat. Try again.',
+      seatId: r.isSeat && r.resourceId.isNotEmpty ? r.resourceId : null);
+
+  /// Drops an in-app notification into a student's feed.
+  Future<void> notifyStudent(String ownerUid,
+      {required String title, required String body}) async {
+    try {
+      await _service.notifyUser(ownerUid, title: title, body: body);
+    } catch (e) {
+      _recordWriteError(e);
+      throw const StaffActionException(
+          'Could not send the message. Try again.');
+    }
+  }
 
   // ----------------------------------------------------------- preferences
 

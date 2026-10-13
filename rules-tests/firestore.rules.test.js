@@ -177,6 +177,29 @@ describe("reservations and bookings", () => {
     await assertSucceeds(updateDoc(doc(staff(), "users/alice/reservations/r1"), { status: "completed" }));
   });
 
+  it("staff can extend, check in and release a booking", async () => {
+    const bk = doc(staff(), "users/alice/bookings/bk1");
+    await assertSucceeds(updateDoc(bk, { endTime: inFuture(4 * hour) }));
+    await assertSucceeds(updateDoc(bk, { checkedInAt: Timestamp.now(), status: "active" }));
+    await assertSucceeds(updateDoc(bk, { status: "completed" }));
+    await assertSucceeds(updateDoc(doc(staff(), "users/alice/reservations/r1"), { status: "cancelled" }));
+  });
+
+  it("staff cannot move a booking's end before its start or change other fields", async () => {
+    const bk = doc(staff(), "users/alice/bookings/bk1");
+    await assertFails(updateDoc(bk, { endTime: inFuture(30 * 60 * 1000) }));
+    await assertFails(updateDoc(bk, { endTime: "later" }));
+    await assertFails(updateDoc(bk, { seatId: "s9_9" }));
+    await assertFails(updateDoc(bk, { startTime: inFuture(2 * hour) }));
+    await assertFails(updateDoc(doc(staff(), "users/alice/reservations/r1"), { pickupBy: inFuture(hour) }));
+  });
+
+  it("staff cannot create or delete bookings, and students cannot extend them", async () => {
+    await assertFails(setDoc(doc(staff(), "users/alice/bookings/bk9"), booking()));
+    await assertFails(deleteDoc(doc(staff(), "users/alice/bookings/bk1")));
+    await assertFails(updateDoc(doc(student("alice"), "users/alice/bookings/bk1"), { endTime: inFuture(5 * hour) }));
+  });
+
   it("student cannot self check in a booking", async () => {
     await assertFails(updateDoc(doc(student("alice"), "users/alice/bookings/bk1"), { checkedInAt: Timestamp.now() }));
   });

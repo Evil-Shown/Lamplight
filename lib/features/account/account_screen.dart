@@ -97,9 +97,8 @@ class AccountScreen extends StatelessWidget {
                   onPressed: state.clearRoleNotice,
                   style: TextButton.styleFrom(
                     minimumSize: const Size(44, 44),
-                    foregroundColor: isDark
-                        ? const Color(0xFFFBBF24)
-                        : AppColors.primary,
+                    foregroundColor:
+                        isDark ? const Color(0xFFFBBF24) : AppColors.primary,
                   ),
                   child: const Text('Dismiss'),
                 ),
@@ -120,7 +119,7 @@ class AccountScreen extends StatelessWidget {
                           runSpacing: 4,
                           children: [
                             Text(
-                              staff ? 'Account' : 'Profile',
+                              staff ? 'Staff account' : 'Profile',
                               style: AppText.title(28,
                                   w: FontWeight.w800, ls: -0.8),
                             ),
@@ -136,8 +135,8 @@ class AccountScreen extends StatelessWidget {
                                 borderRadius:
                                     BorderRadius.circular(AppRadii.full),
                                 border: Border.all(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.35),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.35),
                                 ),
                               ),
                               child: Row(
@@ -168,10 +167,10 @@ class AccountScreen extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           staff
-                              ? 'Campus staff & desk administration'
+                              ? 'Your desk profile & access'
                               : 'Member identity & reading preferences',
-                          style: AppText.body(13,
-                              color: AppColors.textSecondary),
+                          style:
+                              AppText.body(13, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -203,6 +202,17 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sectionGap),
+            if (staff) ...[
+              const _SectionHeader(
+                label: 'Desk workspace',
+                icon: Icons.space_dashboard_outlined,
+              ),
+              StaggeredEntrance(
+                index: 2,
+                child: _StaffWorkspaceCard(state: state),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap),
+            ],
             if (!staff) ...[
               const _MemberStats(),
               const SizedBox(height: AppSpacing.sectionGap),
@@ -253,8 +263,8 @@ class AccountScreen extends StatelessWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFEF3C7),
-                                      borderRadius: BorderRadius.circular(
-                                          AppRadii.full),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadii.full),
                                     ),
                                     child: Text(
                                       '$activeLoansCount active',
@@ -299,8 +309,8 @@ class AccountScreen extends StatelessWidget {
                     icon: Icons.admin_panel_settings_outlined,
                     iconColor: const Color(0xFF4F46E5),
                     iconBgColor: const Color(0xFFEEF2FF),
-                    onTap: () => AppRoute.push(
-                        context, const StaffManagementScreen()),
+                    onTap: () =>
+                        AppRoute.push(context, const StaffManagementScreen()),
                   ),
                 ),
               ),
@@ -319,8 +329,7 @@ class AccountScreen extends StatelessWidget {
                     if (!staff) ...[
                       SettingRow(
                         label: 'Staff-only visibility',
-                        subtitle:
-                            'Hide your reservations from other members',
+                        subtitle: 'Hide your reservations from other members',
                         icon: Icons.visibility_off_outlined,
                         iconColor: const Color(0xFF4F46E5),
                         iconBgColor: const Color(0xFFEEF2FF),
@@ -342,7 +351,8 @@ class AccountScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadii.sm),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFF334155).withValues(alpha: 0.6)
+                                  ? const Color(0xFF334155)
+                                      .withValues(alpha: 0.6)
                                   : const Color(0xFFE2E8F0),
                             ),
                           ),
@@ -385,8 +395,7 @@ class AccountScreen extends StatelessWidget {
                       const _RowDivider(),
                       SettingRow(
                         label: 'Delete my account',
-                        subtitle:
-                            'Permanently erase your account and history',
+                        subtitle: 'Permanently erase your account and history',
                         icon: Icons.delete_outline_rounded,
                         iconColor: AppColors.error,
                         iconBgColor: AppColors.errorContainer,
@@ -683,9 +692,8 @@ void showDigitalPassSheet(
     context,
     builder: (sheetContext) {
       final isDark = AppColors.isDark;
-      final studentId = profile.studentId.isNotEmpty
-          ? profile.studentId
-          : 'STU-2026-8819';
+      final studentId =
+          profile.studentId.isNotEmpty ? profile.studentId : 'STU-2026-8819';
       return Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenMargin,
@@ -722,8 +730,7 @@ void showDigitalPassSheet(
                       ),
                       Text(
                         'Turnstile entry & circulation desk scan',
-                        style: AppText.body(12,
-                            color: AppColors.textSecondary),
+                        style: AppText.body(12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -796,8 +803,8 @@ void showDigitalPassSheet(
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSunken,
                       borderRadius: BorderRadius.circular(AppRadii.full),
@@ -925,8 +932,8 @@ class _IdentityCard extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.12),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.12),
                                   borderRadius:
                                       BorderRadius.circular(AppRadii.full),
                                   border: Border.all(
@@ -1038,8 +1045,7 @@ class _IdentityCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.12),
+                              color: AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Icon(
@@ -1254,8 +1260,7 @@ String? validateStudentId(String id) {
 class _EditProfileSheetState extends State<EditProfileSheet> {
   late final _name = TextEditingController(text: widget.profile.name);
   late final _phone = TextEditingController(text: widget.profile.phone);
-  late final _studentId =
-      TextEditingController(text: widget.profile.studentId);
+  late final _studentId = TextEditingController(text: widget.profile.studentId);
   String? _nameError;
   String? _phoneError;
   String? _idError;
@@ -1623,7 +1628,9 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        _typing ? 'Type $kDeleteConfirmWord to confirm' : 'Delete your account?',
+        _typing
+            ? 'Type $kDeleteConfirmWord to confirm'
+            : 'Delete your account?',
         style: AppText.title(19, w: FontWeight.w700),
       ),
       content: SingleChildScrollView(
@@ -1646,7 +1653,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                 autofocus: true,
                 textCapitalization: TextCapitalization.characters,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(labelText: kDeleteConfirmWord),
+                decoration:
+                    const InputDecoration(labelText: kDeleteConfirmWord),
               ),
             ],
           ],
@@ -1656,9 +1664,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context, false),
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.isDark
-                ? const Color(0xFFFBBF24)
-                : AppColors.primary,
+            foregroundColor:
+                AppColors.isDark ? const Color(0xFFFBBF24) : AppColors.primary,
           ),
           child: const Text('Cancel'),
         ),
@@ -1687,6 +1694,141 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
 
 /// A compact interactive stat strip under the identity card — the numbers a student
 /// actually cares about with rich iconography and tap shortcuts.
+class _StaffWorkspaceCard extends StatelessWidget {
+  const _StaffWorkspaceCard({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final freeSeats = state.adminSeats
+        .where((seat) => seat.status == SeatStatus.available)
+        .length;
+    final active = state.adminReservations.where((reservation) {
+      final status = reservation.status;
+      return status != ReservationStatus.completed &&
+          status != ReservationStatus.cancelled;
+    }).length;
+
+    return _ProfileCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _WorkspaceMetric(
+                  value: '$active',
+                  label: 'Open bookings',
+                  color: AppColors.primary,
+                ),
+              ),
+              Container(width: 1, height: 42, color: AppColors.border),
+              Expanded(
+                child: _WorkspaceMetric(
+                  value: '$freeSeats',
+                  label: 'Seats free',
+                  color: AppColors.success,
+                ),
+              ),
+              Container(width: 1, height: 42, color: AppColors.border),
+              Expanded(
+                child: _WorkspaceMetric(
+                  value: state.isAdmin ? 'Admin' : 'Staff',
+                  label: 'Access level',
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.base),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _WorkspaceShortcut(
+                  icon: Icons.event_seat_outlined,
+                  label: 'Seats',
+                  onTap: () => AppShell.switchTab(context, AppTab.staffSeats),
+                ),
+              ),
+              Expanded(
+                child: _WorkspaceShortcut(
+                  icon: Icons.auto_stories_outlined,
+                  label: 'Catalog',
+                  onTap: () => AppShell.switchTab(context, AppTab.staffCatalog),
+                ),
+              ),
+              Expanded(
+                child: _WorkspaceShortcut(
+                  icon: Icons.confirmation_number_outlined,
+                  label: 'Bookings',
+                  onTap: () =>
+                      AppShell.switchTab(context, AppTab.staffBookings),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceMetric extends StatelessWidget {
+  const _WorkspaceMetric({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.title(18, w: FontWeight.w800, color: color),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppText.label(10.5, color: AppColors.textSecondary),
+          ),
+        ],
+      );
+}
+
+class _WorkspaceShortcut extends StatelessWidget {
+  const _WorkspaceShortcut({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.textPrimary,
+          textStyle: AppText.label(11.5, w: FontWeight.w700),
+        ),
+      );
+}
+
 class _MemberStats extends StatelessWidget {
   const _MemberStats();
 

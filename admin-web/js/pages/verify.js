@@ -2,19 +2,20 @@
 // The callable supports consume:false (peek), so by default we only look; staff
 // opt in to "Verify and check in / hand over" which consumes the pass.
 import { el, mount, field, fmtDateTime, toast, confirmDialog } from "../ui.js";
+import { icon } from "../icons.js";
 import { call } from "../firebase.js";
 import { pageHeader, kv } from "./_common.js";
 
 export const OUTCOMES = {
-  valid: { tone: "ok", title: "Valid", text: "The pass is valid." },
-  alreadyUsed: { tone: "warn", title: "Already used", text: "This pass has already been used." },
-  tooEarly: { tone: "warn", title: "Too early", text: "The booking hasn't opened for check-in yet." },
-  expired: { tone: "bad", title: "Expired", text: "This pass has expired (or the booking was a no-show)." },
-  cancelled: { tone: "bad", title: "Cancelled", text: "This booking or reservation was cancelled." },
-  invalid: { tone: "bad", title: "Invalid", text: "The pass is missing required details." },
-  malformed: { tone: "bad", title: "Invalid code", text: "That doesn't look like a Lamplight pass, or its signature didn't match." },
-  ambiguous: { tone: "warn", title: "Ambiguous", text: "More than one booking uses that short code. Scan the full QR code instead." },
-  notFound: { tone: "bad", title: "Not found", text: "No reservation or booking matches that code." },
+  valid: { tone: "ok", title: "Valid Pass", iconName: "checkCircle", text: "The pass is valid and ready for check-in or handover." },
+  alreadyUsed: { tone: "warn", title: "Already Used", iconName: "alertCircle", text: "This pass has already been used." },
+  tooEarly: { tone: "warn", title: "Too Early", iconName: "clock", text: "The booking hasn't opened for check-in yet." },
+  expired: { tone: "bad", title: "Pass Expired", iconName: "alertCircle", text: "This pass has expired (or the booking was a no-show)." },
+  cancelled: { tone: "bad", title: "Cancelled", iconName: "alertCircle", text: "This booking or reservation was cancelled." },
+  invalid: { tone: "bad", title: "Invalid Pass", iconName: "alertCircle", text: "The pass is missing required details." },
+  malformed: { tone: "bad", title: "Invalid Code", iconName: "alertCircle", text: "That doesn't look like a Lamplight pass, or its signature didn't match." },
+  ambiguous: { tone: "warn", title: "Ambiguous Code", iconName: "alertCircle", text: "More than one booking uses that short code. Scan the full QR code instead." },
+  notFound: { tone: "bad", title: "Pass Not Found", iconName: "alertCircle", text: "No reservation or booking matches that code." },
 };
 
 export function verifyErrorMessage(err) {
@@ -26,7 +27,7 @@ export function verifyErrorMessage(err) {
 }
 
 function outcomeCard(r, consumed) {
-  const o = OUTCOMES[r.result] || { tone: "bad", title: "Unknown result", text: `Unexpected result: ${String(r.result)}` };
+  const o = OUTCOMES[r.result] || { tone: "bad", title: "Unknown Result", iconName: "alertCircle", text: `Unexpected result: ${String(r.result)}` };
   const details = r.docPath ? kv([
     ["Type", r.kind === "seat" ? "Seat booking" : "Book reservation"],
     ["Student", `${r.ownerName || "Student"}${r.ownerStudentId ? ` (${r.ownerStudentId})` : ""}`],
@@ -35,17 +36,22 @@ function outcomeCard(r, consumed) {
     ["Current status", r.status || "-"],
   ]) : null;
   return el("section", { class: `outcome outcome-${o.tone}`, role: "status", "aria-live": "polite" },
-    el("h3", { text: o.title }), el("p", { text: o.text }),
-    r.consumed ? el("p", { class: "strong", text: r.kind === "seat" ? "Checked in. The booking is now active." : "Marked as collected." })
-      : (r.result === "valid" && !consumed ? el("p", { class: "muted", text: "Nothing has been changed yet. Use \"Verify and use\" to check the student in or hand over the book." }) : null),
+    el("div", { class: "outcome-header" },
+      icon(o.iconName, { size: 24, className: "outcome-icon" }),
+      el("h3", { text: o.title })),
+    el("p", { class: "outcome-text", text: o.text }),
+    r.consumed ? el("div", { class: "outcome-alert outcome-alert-consumed", text: r.kind === "seat" ? "Checked in successfully. The booking is now active." : "Marked as collected successfully." })
+      : (r.result === "valid" && !consumed ? el("p", { class: "muted small", text: "Nothing has been changed yet. Use \"Verify and use\" to check the student in or hand over the book." }) : null),
     details);
 }
 
 export function render({ container }) {
-  const input = el("input", { type: "text", autocomplete: "off", spellcheck: "false", maxlength: 400, autofocus: true, placeholder: "Paste the QR text or type the short code" });
+  const input = el("input", { type: "text", autocomplete: "off", spellcheck: "false", maxlength: 400, autofocus: true, placeholder: "Paste full QR text or enter short code" });
   const result = el("div", { class: "verify-result" });
-  const peekBtn = el("button", { class: "btn btn-primary", type: "submit" }, "Check pass");
-  const useBtn = el("button", { class: "btn", type: "button" }, "Verify and use");
+  const peekBtn = el("button", { class: "btn btn-primary", type: "submit" },
+    icon("search", { size: 16 }), el("span", { text: "Check pass" }));
+  const useBtn = el("button", { class: "btn btn-outline", type: "button" },
+    icon("check", { size: 16 }), el("span", { text: "Verify and use" }));
   let lastCode = "";
 
   async function run(consume) {
