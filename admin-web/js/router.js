@@ -3,14 +3,14 @@
 import { mount, el, closeAllOverlays } from "./ui.js";
 
 export const ROUTES = [
-  { path: "overview", label: "Overview", icon: "▦", load: () => import("./pages/overview.js") },
-  { path: "reservations", label: "Reservations", icon: "❙", load: () => import("./pages/reservations.js") },
-  { path: "bookings", label: "Seat bookings", icon: "▣", load: () => import("./pages/bookings.js") },
-  { path: "waitlist", label: "Waiting list", icon: "⌛", load: () => import("./pages/waitlist.js") },
-  { path: "books", label: "Books", icon: "☱", load: () => import("./pages/books.js") },
-  { path: "seats", label: "Seats", icon: "☖", load: () => import("./pages/seats.js") },
-  { path: "verify", label: "Verify pass", icon: "✓", load: () => import("./pages/verify.js") },
-  { path: "staff", label: "Staff", icon: "☺", admin: true, load: () => import("./pages/staff.js") },
+  { path: "overview", label: "Overview", iconKey: "overview", section: "Main", icon: "▦", load: () => import("./pages/overview.js") },
+  { path: "reservations", label: "Reservations", iconKey: "reservations", section: "Operations", icon: "❙", load: () => import("./pages/reservations.js") },
+  { path: "bookings", label: "Seat bookings", iconKey: "bookings", section: "Operations", icon: "▣", load: () => import("./pages/bookings.js") },
+  { path: "waitlist", label: "Waiting list", iconKey: "waitlist", section: "Operations", icon: "⌛", load: () => import("./pages/waitlist.js") },
+  { path: "verify", label: "Verify pass", iconKey: "verify", section: "Operations", icon: "✓", load: () => import("./pages/verify.js") },
+  { path: "books", label: "Books", iconKey: "books", section: "Catalogue & Spaces", icon: "☱", load: () => import("./pages/books.js") },
+  { path: "seats", label: "Seats", iconKey: "seats", section: "Catalogue & Spaces", icon: "☖", load: () => import("./pages/seats.js") },
+  { path: "staff", label: "Staff", iconKey: "staff", section: "Administration", icon: "☺", admin: true, load: () => import("./pages/staff.js") },
 ];
 
 let cleanup = null;

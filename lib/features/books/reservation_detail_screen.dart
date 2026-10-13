@@ -147,6 +147,8 @@ class ReservationDetailScreen extends StatelessWidget {
           StaggeredEntrance(
             index: 1,
             child: SurfaceCard(
+              color: AppColors.surface,
+              borderColor: AppColors.border,
               child: _StatusTimeline(reservation: reservation),
             ),
           ),

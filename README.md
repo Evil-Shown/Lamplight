@@ -390,6 +390,29 @@ $env:GCLOUD_PROJECT="demo-library"; npm run seed:users
 $env:GCLOUD_PROJECT="<project-id>"; npm run seed:users -- --i-understand-this-is-a-real-project
 ```
 
+### Making the first admin and adding staff
+
+`functions/scripts/set-role.js` edits the allow-lists and updates the role claim
+of any matching account right away. Usage:
+`node scripts/set-role.js <admin|staff> <add|remove> <email> [more emails...]`.
+It has the same safety guards as the seed script (project id required, both
+emulator hosts or neither, explicit flag for a real project). A real project
+also needs Application Default Credentials (for example
+`gcloud auth application-default login`).
+
+```powershell
+cd functions
+$env:GCLOUD_PROJECT="<project-id>"
+# First admin
+npm run set-role -- admin add you@example.com --i-understand-this-is-a-real-project
+# Staff
+npm run set-role -- staff add a@example.com b@example.com --i-understand-this-is-a-real-project
+```
+
+Once an admin exists, they can manage staff from the in-app Staff management
+screen. Accounts whose email is listed but not yet verified stay `student`; the
+app tells them to open the verification link we emailed and sign in again.
+
 ### Deploying the backend changes
 
 ```bash

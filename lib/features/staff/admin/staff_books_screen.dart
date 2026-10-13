@@ -21,7 +21,10 @@ int _totalOf(Book b) {
 /// Staff-side book availability: live catalog with copy counts, quick
 /// +/- adjustments (debounced), search, and add / edit in a glass sheet.
 class StaffBooksScreen extends StatefulWidget {
-  const StaffBooksScreen({super.key});
+  const StaffBooksScreen({super.key, this.embedded = false});
+
+  /// True when shown as a shell tab (no back button); false when pushed.
+  final bool embedded;
 
   @override
   State<StaffBooksScreen> createState() => _StaffBooksScreenState();
@@ -111,6 +114,7 @@ class _StaffBooksScreenState extends State<StaffBooksScreen> {
 
     return AppScaffold(
       title: 'Book Availability',
+      showBack: !widget.embedded,
       contentUnderBar: true,
       actions: [
         IconButton(
@@ -176,8 +180,11 @@ class _StaffBooksScreenState extends State<StaffBooksScreen> {
                   state: state,
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.base,
-                        AppSpacing.sm, AppSpacing.base, AppNavInset.bottom),
+                    padding: EdgeInsets.fromLTRB(
+                        AppSpacing.base,
+                        AppSpacing.sm,
+                        AppSpacing.base,
+                        widget.embedded ? AppSpacing.xl : AppNavInset.bottom),
                     itemCount: visible.length,
                     separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSpacing.sm),

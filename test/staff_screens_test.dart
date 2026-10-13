@@ -5,7 +5,6 @@ import 'package:library_app/core/theme/app_theme.dart';
 import 'package:library_app/models/models.dart';
 import 'package:library_app/features/staff/admin/staff_books_screen.dart';
 import 'package:library_app/features/staff/admin/staff_management_screen.dart';
-import 'package:library_app/features/staff/staff_manage_screen.dart';
 import 'package:library_app/features/staff/staff_scanner_screen.dart';
 import 'package:library_app/features/staff/verification_result_screen.dart';
 
@@ -66,14 +65,6 @@ Future<void> _pumpScaled(
 }
 
 void main() {
-  testWidgets('manage hub lists the four areas at 1.5x text', (tester) async {
-    await _pumpScaled(tester, const StaffManageScreen(), AppState());
-    expect(find.text('Reservations'), findsOneWidget);
-    expect(find.text('Waiting list'), findsOneWidget);
-    expect(find.text('Books'), findsOneWidget);
-    expect(find.text('Seats'), findsOneWidget);
-  });
-
   testWidgets('scanner works as a tab with no back button', (tester) async {
     await _pumpScaled(
         tester, const StaffScannerScreen(embedded: true), AppState());

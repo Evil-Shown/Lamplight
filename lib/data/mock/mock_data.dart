@@ -390,6 +390,85 @@ class MockData {
     ];
   }
 
+  /// Student seat bookings and book reservations as staff see them, placed
+  /// relative to now: one active, one in its check-in grace, one upcoming, one
+  /// overrun, a later booking that blocks extending the active seat past
+  /// three hours, plus a pickup, a finished and a cancelled booking.
+  static List<AdminReservation> buildAdminReservations() {
+    final now = DateTime.now();
+    Seat seat(String id) => seats.firstWhere((s) => s.id == id);
+    AdminReservation booking(
+      String id,
+      String name,
+      String studentId,
+      String seatId, {
+      required Duration start,
+      required Duration end,
+      Duration? checkedIn,
+      ReservationStatus status = ReservationStatus.active,
+    }) {
+      final s = seat(seatId);
+      return AdminReservation(
+        id: id,
+        ownerUid: 'u-$id',
+        studentName: name,
+        studentId: studentId,
+        isSeat: true,
+        itemTitle: 'Seat ${s.label}',
+        itemSubtitle: '${s.section} · ${s.zoneLabel}',
+        reservedAt: now.add(start),
+        dueAt: now.add(end),
+        status: status,
+        path: 'users/u-$id/bookings/$id',
+        resourceId: s.id,
+        startAt: now.add(start),
+        endAt: now.add(end),
+        checkedInAt: checkedIn == null ? null : now.add(checkedIn),
+      );
+    }
+
+    return [
+      booking('B-1001', 'Nimal Perera', 'IT2023-0412', 's1_2',
+          start: const Duration(minutes: -42),
+          end: const Duration(hours: 1, minutes: 18),
+          checkedIn: const Duration(minutes: -40)),
+      booking('B-1002', 'Sara Fernando', 'IT2023-0777', 's2_3',
+          start: const Duration(minutes: -6),
+          end: const Duration(hours: 2, minutes: 54)),
+      booking('B-1003', 'Kasun Silva', 'IT2022-0190', 's3_1',
+          start: const Duration(hours: 2), end: const Duration(hours: 4)),
+      booking('B-1004', 'Amaya Jayasinghe', 'IT2023-0268', 's0_3',
+          start: const Duration(hours: -3),
+          end: const Duration(minutes: -35),
+          checkedIn: const Duration(hours: -2, minutes: -55)),
+      booking('B-1005', 'Dilan Wickrama', 'IT2024-0033', 's1_2',
+          start: const Duration(hours: 3), end: const Duration(hours: 5)),
+      booking('B-1006', 'Tharushi Gomes', 'IT2023-0555', 's2_0',
+          start: const Duration(hours: -5),
+          end: const Duration(hours: -3),
+          checkedIn: const Duration(hours: -5),
+          status: ReservationStatus.completed),
+      booking('B-1007', 'Ravindu Peris', 'IT2022-0721', 's3_2',
+          start: const Duration(hours: 1),
+          end: const Duration(hours: 3),
+          status: ReservationStatus.cancelled),
+      AdminReservation(
+        id: 'BR-2001',
+        ownerUid: 'u-BR-2001',
+        studentName: 'Hiruni Rathnayake',
+        studentId: 'IT2023-0309',
+        isSeat: false,
+        itemTitle: books[3].title,
+        itemSubtitle: '${books[3].author} · ${books[3].shelfLocation}',
+        reservedAt: now.subtract(const Duration(hours: 5)),
+        dueAt: now.add(const Duration(days: 2)),
+        status: ReservationStatus.ready,
+        path: 'users/u-BR-2001/reservations/BR-2001',
+        resourceId: books[3].id,
+      ),
+    ];
+  }
+
   static const dashboardStats = {
     'reservations': 18,
     'waitlisted': 7,

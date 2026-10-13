@@ -47,6 +47,23 @@ export function pickRole(email: string, staffEmails: unknown, adminEmails: unkno
   return "student";
 }
 
+/**
+ * Decides what claimRole grants. Admin / staff is granted only for a verified
+ * email (or in the emulator). When the email is on an allow-list but not
+ * verified, the role stays 'student' and `pendingVerification` is true.
+ */
+export function decideClaim(
+  email: string,
+  verified: boolean,
+  emulator: boolean,
+  staffEmails: unknown,
+  adminEmails: unknown,
+): { role: Role; pendingVerification: boolean } {
+  const listed = pickRole(email, staffEmails, adminEmails);
+  if (verified || emulator) return { role: listed, pendingVerification: false };
+  return { role: "student", pendingVerification: listed !== "student" };
+}
+
 export function asObject(data: unknown): Record<string, unknown> {
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     throw new HttpsError("invalid-argument", "Request body must be an object.");

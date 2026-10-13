@@ -40,6 +40,8 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
   final _manualController = TextEditingController();
   MobileScannerController? _camera;
   bool _handling = false;
+  bool _cameraUnavailable = false;
+  bool _cameraErrorScheduled = false;
   String? _error;
   bool get _cameraSupported =>
       !kIsWeb && (Platform.isAndroid || Platform.isIOS);
@@ -121,11 +123,19 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
         fit: StackFit.expand,
         children: [
           // Full-bleed camera, over a dark plate for the fallback.
-          ColoredBox(color: AppColors.textPrimary),
+          const ColoredBox(color: Color(0xFF071226)),
           if (_camera != null)
             MobileScanner(
               controller: _camera,
-              errorBuilder: (context, error) => const _CameraFallback(),
+              errorBuilder: (context, error) {
+                if (!_cameraUnavailable && !_cameraErrorScheduled) {
+                  _cameraErrorScheduled = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _cameraUnavailable = true);
+                  });
+                }
+                return const _CameraFallback();
+              },
               onDetect: (capture) {
                 final code = capture.barcodes.map((b) => b.rawValue).firstWhere(
                       (v) => v != null && v.trim().isNotEmpty,
@@ -174,33 +184,40 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
             left: AppSpacing.xl,
             right: AppSpacing.xl,
             top: GlassAppBar.contentTopPadding(context) + AppSpacing.base,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: GlassSurface(
-                radius: AppRadii.full,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.base, vertical: AppSpacing.md),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _handling
-                          ? Icons.hourglass_top_rounded
-                          : Icons.center_focus_strong_rounded,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Flexible(
-                      child: Text(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: GlassSurface(
+                  radius: AppRadii.full,
+                  fill: const Color(0xEB142038),
+                  shadows: false,
+                  highlight: false,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.base, vertical: AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Icon(
                         _handling
-                            ? 'Verifying code…'
-                            : 'Align the QR code inside the frame',
-                        style: AppText.label(13.5,
-                            w: FontWeight.w700, color: AppColors.textPrimary),
+                            ? Icons.hourglass_top_rounded
+                            : Icons.center_focus_strong_rounded,
+                        size: 18,
+                        color: const Color(0xFFF59E0B),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _handling
+                              ? 'Verifying code…'
+                              : _camera == null || _cameraUnavailable
+                                  ? 'Camera unavailable · enter code below'
+                                  : 'Align the QR code inside the frame',
+                          textAlign: TextAlign.center,
+                          style: AppText.label(13.5,
+                              w: FontWeight.w700, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -216,11 +233,28 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
               child: StaggeredEntrance(
                 child: GlassSurface(
                   radius: AppRadii.xl,
+                  fill: const Color(0xF2162238),
+                  highlight: false,
                   padding: const EdgeInsets.all(AppSpacing.base),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.keyboard_alt_outlined,
+                              size: 18, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: AppSpacing.sm),
+                          Flexible(
+                            child: Text('Manual verification',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppText.title(14,
+                                    w: FontWeight.w800, color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
                       Row(
                         children: [
                           Expanded(
@@ -257,9 +291,10 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Camera access is used only for verification.',
+                        'Codes are checked securely against library records.',
                         textAlign: TextAlign.center,
-                        style: AppText.body(11.5, color: AppColors.textFaint),
+                        style: AppText.body(11.5,
+                            color: Colors.white.withValues(alpha: 0.58)),
                       ),
                     ],
                   ),
@@ -328,17 +363,16 @@ class _CameraFallback extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.qr_code_2_rounded,
-              size: 148, color: Colors.white.withValues(alpha: 0.12)),
-          const SizedBox(height: 12),
-          Text(
-            'Camera unavailable — use the manual code below',
-            textAlign: TextAlign.center,
-            style: AppText.body(
-              12.5,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
+          Icon(
+            Icons.qr_code_2_rounded,
+            size: 104,
+            color: Colors.white.withValues(alpha: 0.16),
           ),
+          const SizedBox(height: AppSpacing.md),
+          Text('QR scan area',
+              style: AppText.label(12,
+                  w: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.52))),
         ],
       ),
     );
@@ -352,7 +386,7 @@ class _ViewfinderFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const length = 34.0;
-    const thickness = 3.5;
+    const thickness = 3.0;
     const color = _frameColor;
     const radius = BorderRadius.all(Radius.circular(10));
 
@@ -376,9 +410,14 @@ class _ViewfinderFrame extends StatelessWidget {
         );
 
     const side = BorderSide(color: color, width: thickness);
-    return SizedBox(
+    return Container(
       width: 240,
       height: 240,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.025),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
       child: Stack(
         children: [
           corner(left: 0, top: 0, border: const Border(top: side, left: side)),
