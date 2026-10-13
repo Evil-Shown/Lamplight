@@ -12,34 +12,8 @@ real effect.
 
 ---
 
-## 🚀 Live Deployment & Credentials (Quick Reference)
-
-| Resource | Value / URL |
-| :--- | :--- |
-| **Firebase Project** | `sliit-quick-book` |
-| **Firebase Console** | [console.firebase.google.com/project/sliit-quick-book](https://console.firebase.google.com/project/sliit-quick-book/overview) |
-| **Live Admin Dashboard URL** | **[https://sliit-quick-book.web.app](https://sliit-quick-book.web.app)** |
-| **Alternative Web Domain** | [https://sliit-quick-book.firebaseapp.com](https://sliit-quick-book.firebaseapp.com) |
-
-### Sample Test Logins
-
-| Role | Email | Password | Allowed Access |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@lamplight.test` | `Lamplight#2026` | Full Admin Web Dashboard + Mobile App |
-| **Staff** | `staff@lamplight.test` | `Lamplight#2026` | Staff Web Dashboard + Mobile App Staff Mode |
-| **Student** | `student@lamplight.test` | `Lamplight#2026` | Mobile App (Student bookings & catalog) |
-
-> **Note**: These accounts are created and verified in Firebase Authentication with custom claims (`role`) and Firestore allowlists (`config/adminAllowlist`, `config/staffAllowlist`).
-
-### Live Firestore Seed Status
-* **16 Seats** (`s0_0` to `s3_3`): All set to `available` with 0 active bookings/holds for clean testing.
-* **7 Catalogue Books**: Full metadata with cover images, ISBNs, and stock copies.
-
----
-
 ## Table of contents
-
-1. [Live deployment & credentials](#-live-deployment--credentials-quick-reference)
+1. [Readme]
 2. [Features](#features)
 3. [Screenshots](#screenshots)
 4. [High-level architecture](#high-level-architecture)
