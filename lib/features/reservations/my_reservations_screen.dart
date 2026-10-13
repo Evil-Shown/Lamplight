@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/notification_repository.dart';
@@ -34,8 +33,6 @@ class MyReservationsScreen extends StatelessWidget {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    settings: const RouteSettings(
-                        name: NotificationsScreen.routeName),
                     builder: (_) => const NotificationsScreen(),
                   ),
                 ),
@@ -110,8 +107,8 @@ class _ReservationsBodyState extends State<_ReservationsBody> {
                     separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return const Padding(
-                          padding: EdgeInsets.only(
+                        return Padding(
+                          padding: const EdgeInsets.only(
                             left: AppSpacing.xs,
                             bottom: AppSpacing.xs,
                             top: AppSpacing.xs,
@@ -124,7 +121,7 @@ class _ReservationsBodyState extends State<_ReservationsBody> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.1,
-                                color: AppColors.textTertiary,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -165,7 +162,7 @@ class _SegmentedTabs extends StatelessWidget {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadii.md),
         border: Border.all(color: AppColors.border),
       ),
@@ -219,12 +216,11 @@ class _Segment extends StatelessWidget {
           curve: Curves.easeOut,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.surfaceCard : Colors.transparent,
+            color: isSelected ? AppColors.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadii.sm),
             border: isSelected
                 ? Border.all(color: AppColors.border)
                 : Border.all(color: Colors.transparent),
-            boxShadow: isSelected ? AppShadows.soft : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -232,7 +228,7 @@ class _Segment extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
               const SizedBox(width: AppSpacing.xs + 2),
               Text(
@@ -263,7 +259,7 @@ class _ReservationCard extends StatelessWidget {
       ReservationStage.confirmed => ('Confirmed', AppColors.info),
       ReservationStage.readyForPickup => ('Ready for Pickup', AppColors.success),
       ReservationStage.waitingList => ('Waiting List', AppColors.warning),
-      ReservationStage.expired => ('Expired', AppColors.unavailable),
+      ReservationStage.expired => ('Expired', AppColors.neutral),
     };
   }
 
@@ -272,7 +268,7 @@ class _ReservationCard extends StatelessWidget {
     final isBook = record.kind == ReservationKind.book;
     final (stageLabel, stageColor) = _stageVisual;
 
-    return SoftCard(
+    return SurfaceCard(
       elevated: true,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -288,7 +284,7 @@ class _ReservationCard extends StatelessWidget {
                   height: 72,
                 )
               else
-                const IconBadge(
+                IconBadge(
                   icon: Icons.event_seat_rounded,
                   color: AppColors.info,
                   size: 52,
@@ -316,13 +312,12 @@ class _ReservationCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.schedule_rounded,
                           size: 13,
-                          color: AppColors.textTertiary,
+                          color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -334,7 +329,7 @@ class _ReservationCard extends StatelessWidget {
                                 .textTheme
                                 .bodySmall
                                 ?.copyWith(
-                                  color: AppColors.textTertiary,
+                                  color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
                             maxLines: 1,
@@ -345,10 +340,10 @@ class _ReservationCard extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.confirmation_number_outlined,
                           size: 13,
-                          color: AppColors.textTertiary,
+                          color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -357,7 +352,7 @@ class _ReservationCard extends StatelessWidget {
                               .textTheme
                               .bodySmall
                               ?.copyWith(
-                                color: AppColors.textTertiary,
+                                color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
@@ -366,13 +361,13 @@ class _ReservationCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
-                        StatusChip(
+                        StatusPill(
                           label: isBook ? 'Book' : 'Seat',
                           color: AppColors.info,
                           compact: true,
                         ),
                         const SizedBox(width: AppSpacing.xs + 2),
-                        StatusChip(
+                        StatusPill(
                           label: stageLabel,
                           color: stageColor,
                           compact: true,
@@ -407,7 +402,7 @@ class _ReservationCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                    side: BorderSide(color: AppColors.error),
                     textStyle: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,

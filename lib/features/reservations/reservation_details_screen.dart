@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../data/reservation_repository.dart';
@@ -63,7 +62,7 @@ class ReservationDetailsScreen extends StatelessWidget {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
-                      side: const BorderSide(
+                      side: BorderSide(
                         color: AppColors.error,
                         width: 1.5,
                       ),
@@ -74,12 +73,29 @@ class ReservationDetailsScreen extends StatelessWidget {
                   ),
                 ),
               ] else ...[
-                const AlertBanner(
-                  tone: AlertTone.danger,
-                  icon: Icons.cancel_rounded,
-                  message:
-                      'This reservation has been cancelled. It no longer '
-                      'appears in your active reservations.',
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorContainer,
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cancel_rounded, color: AppColors.error),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'This reservation has been cancelled. It no longer '
+                          'appears in your active reservations.',
+                          style: TextStyle(
+                            color: AppColors.onErrorContainer,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
               const SizedBox(height: AppSpacing.xl),
@@ -110,7 +126,7 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isBook = record.kind == ReservationKind.book;
 
-    return SoftCard(
+    return SurfaceCard(
       elevated: true,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
@@ -124,7 +140,7 @@ class _SummaryCard extends StatelessWidget {
               height: 86,
             )
           else
-            const IconBadge(
+            IconBadge(
               icon: Icons.event_seat_rounded,
               color: AppColors.info,
               size: 62,
@@ -150,13 +166,13 @@ class _SummaryCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
-                    StatusChip(
+                    StatusPill(
                       label: isBook ? 'Book' : 'Seat',
                       color: AppColors.info,
                       compact: true,
                     ),
                     const SizedBox(width: AppSpacing.xs + 2),
-                    StatusChip(
+                    StatusPill(
                       label: record.isActive ? 'Active' : 'Cancelled',
                       color: record.isActive ? AppColors.success : AppColors.error,
                       icon: record.isActive
@@ -182,7 +198,7 @@ class _InformationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
+    return SurfaceCard(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm + 2,
@@ -190,8 +206,8 @@ class _InformationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(
+          Padding(
+            padding: const EdgeInsets.only(
               top: AppSpacing.sm,
               bottom: AppSpacing.xs,
             ),
@@ -201,15 +217,15 @@ class _InformationCard extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
-                color: AppColors.textTertiary,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
-          SummaryRow(label: 'Reservation ID', value: record.id),
+          InfoRow(label: 'Reservation ID', value: record.id),
           const Divider(),
-          SummaryRow(label: 'Pickup Location', value: record.location),
+          InfoRow(label: 'Pickup Location', value: record.location),
           const Divider(),
-          SummaryRow(
+          InfoRow(
             label: record.kind == ReservationKind.book
                 ? 'Pickup By'
                 : 'Session',
@@ -218,7 +234,7 @@ class _InformationCard extends StatelessWidget {
                 : DateFormat('yyyy-MM-dd').format(record.pickupBy),
           ),
           const Divider(),
-          SummaryRow(
+          InfoRow(
             label: 'Reserved On',
             value: DateFormat('yyyy-MM-dd').format(record.reservedOn),
           ),
