@@ -1,16 +1,9 @@
 // Overview: live stat cards, today's activity, seat occupancy by floor.
 // Metric definitions mirror AppState.dashboardStats (lib/core/state/app_state.dart).
 import { el, mount, chip, fmtTime, isToday, toDate, emptyState } from "../ui.js";
+import { icon } from "../icons.js";
 import { watch, userLabel } from "../store.js";
 import { pageHeader, liveIndicator, watchView } from "./_common.js";
-
-const SVGNS = "http://www.w3.org/2000/svg";
-const svg = (tag, attrs, ...kids) => {
-  const n = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, String(v));
-  kids.forEach((k) => n.append(k));
-  return n;
-};
 
 export function computeStats(s, now = new Date()) {
   const reservations = s.reservations.docs;
@@ -31,9 +24,19 @@ export function computeStats(s, now = new Date()) {
   return { inSession, dueToday, waiting, occupied, total: seats.length, fill };
 }
 
-function statCard(label, value, hint, href) {
-  const body = [el("div", { class: "stat-value", text: String(value) }), el("div", { class: "stat-label", text: label }), hint ? el("div", { class: "muted small", text: hint }) : null];
-  return href ? el("a", { class: "card stat stat-link", href }, body) : el("div", { class: "card stat" }, body);
+function statCard(label, value, hint, href, iconName = "overview", tone = "caramel") {
+  const ico = icon(iconName, { size: 20, className: "stat-ico" });
+  const head = el("div", { class: "stat-head" },
+    el("div", { class: `stat-icon-wrap stat-icon-${tone}` }, ico),
+    href ? el("span", { class: "stat-arrow", "aria-hidden": "true" }, icon("arrowRight", { size: 14 })) : null);
+  const val = el("div", { class: "stat-value", text: String(value) });
+  const lbl = el("div", { class: "stat-label", text: label });
+  const hnt = hint ? el("div", { class: "stat-hint muted small", text: hint }) : null;
+  const content = el("div", { class: "stat-body" }, val, lbl, hnt);
+  const body = [head, content];
+  return href
+    ? el("a", { class: `card stat stat-link stat-tone-${tone}`, href, "aria-label": `${label}: ${value}. ${hint || ""}` }, body)
+    : el("div", { class: `card stat stat-tone-${tone}` }, body);
 }
 
 function floorChart(seats) {
@@ -46,29 +49,58 @@ function floorChart(seats) {
   }
   const rows = [...floors.entries()].sort((a, b) => a[0] - b[0]);
   if (!rows.length) return emptyState("No seats found", "Seats appear here once they exist in the seats collection.");
-  const rowH = 34, left = 64, width = 560, barW = width - left - 90;
-  const chart = svg("svg", { viewBox: `0 0 ${width} ${rows.length * rowH + 8}`, class: "chart", role: "img",
-    "aria-label": `Seat occupancy by floor: ${rows.map(([f, c]) => `floor ${f} ${c.occupied} occupied, ${c.limited} limited, ${c.available} available`).join("; ")}` });
-  rows.forEach(([f, c], i) => {
+
+  let totalOcc = 0, totalLim = 0, totalAv = 0;
+  const floorItems = rows.map(([f, c]) => {
     const total = c.occupied + c.limited + c.available;
-    const y = i * rowH + 4;
-    const t = svg("text", { x: 0, y: y + 18, class: "chart-label" }); t.textContent = `Floor ${f}`;
-    chart.append(t);
-    let x = left;
-    for (const [k, cls] of [["occupied", "seg-occ"], ["limited", "seg-lim"], ["available", "seg-av"]]) {
-      const w = total ? (c[k] / total) * barW : 0;
-      if (w > 0) chart.append(svg("rect", { x, y, width: w, height: 24, rx: 3, class: cls }));
-      x += w;
-    }
-    const pct = total ? Math.round((c.occupied / total) * 100) : 0;
-    const v = svg("text", { x: left + barW + 10, y: y + 18, class: "chart-label" }); v.textContent = `${c.occupied}/${total} (${pct}%)`;
-    chart.append(v);
+    totalOcc += c.occupied;
+    totalLim += c.limited;
+    totalAv += c.available;
+    const occPct = total ? (c.occupied / total) * 100 : 0;
+    const limPct = total ? (c.limited / total) * 100 : 0;
+    const avPct = total ? (c.available / total) * 100 : 0;
+    const pctOccupied = total ? Math.round((c.occupied / total) * 100) : 0;
+
+    const bar = el("div", { class: "floor-progress-track", "aria-hidden": "true" },
+      occPct > 0 ? el("div", { class: "floor-seg seg-occ", style: `width: ${occPct}%`, title: `Occupied: ${c.occupied}` }) : null,
+      limPct > 0 ? el("div", { class: "floor-seg seg-lim", style: `width: ${limPct}%`, title: `Limited: ${c.limited}` }) : null,
+      avPct > 0 ? el("div", { class: "floor-seg seg-av", style: `width: ${avPct}%`, title: `Available: ${c.available}` }) : null);
+
+    return el("div", { class: "floor-row" },
+      el("div", { class: "floor-row-head" },
+        el("span", { class: "floor-row-name", text: `Floor ${f}` }),
+        el("span", { class: "floor-row-stat muted small", text: `${c.occupied}/${total} occupied (${pctOccupied}%)` })),
+      bar);
   });
-  return el("div", {}, chart, el("ul", { class: "legend" },
-    el("li", {}, el("span", { class: "sw seg-occ" }), " Occupied"), el("li", {}, el("span", { class: "sw seg-lim" }), " Limited"), el("li", {}, el("span", { class: "sw seg-av" }), " Available")));
+
+  const totalSeats = totalOcc + totalLim + totalAv;
+  const totalFree = totalAv;
+  const summaryStrip = el("div", { class: "floor-summary-strip" },
+    el("div", { class: "summary-stat-box" },
+      el("span", { class: "summary-val", text: String(totalSeats) }),
+      el("span", { class: "summary-lbl muted small", text: "Total Seats" })),
+    el("div", { class: "summary-stat-box" },
+      el("span", { class: "summary-val text-success", text: String(totalFree) }),
+      el("span", { class: "summary-lbl muted small", text: "Free Now" })),
+    el("div", { class: "summary-stat-box" },
+      el("span", { class: "summary-val text-danger", text: String(totalOcc) }),
+      el("span", { class: "summary-lbl muted small", text: "In Session" })));
+
+  const legend = el("div", { class: "chart-legend" },
+    el("div", { class: "legend-item" },
+      el("span", { class: "sw seg-occ" }),
+      el("span", { class: "legend-text", text: `Occupied (${totalOcc})` })),
+    el("div", { class: "legend-item" },
+      el("span", { class: "sw seg-lim" }),
+      el("span", { class: "legend-text", text: `Limited (${totalLim})` })),
+    el("div", { class: "legend-item" },
+      el("span", { class: "sw seg-av" }),
+      el("span", { class: "legend-text", text: `Available (${totalAv})` })));
+
+  return el("div", { class: "floor-chart-wrap" }, summaryStrip, ...floorItems, legend);
 }
 
-function activity(s) {
+function activity(s, currentFilter = "all", onFilterChange) {
   const seatById = new Map(s.seats.docs.map((x) => [x.id, x]));
   const items = [];
   for (const r of s.reservations.docs) items.push({ t: toDate(r.reservedAt), kind: "Book", what: r.bookTitle || "Book", who: userLabel(r.uid), status: r.status });
@@ -77,37 +109,89 @@ function activity(s) {
     items.push({ t: toDate(b.startTime), kind: "Seat", what: seat ? `Seat ${seat.label}` : `Seat ${b.seatId || "?"}`, who: userLabel(b.uid), status: b.status });
   }
   const todays = items.filter((i) => i.t && isToday(i.t));
-  const list = (todays.length ? todays : items.filter((i) => i.t)).sort((a, b) => b.t - a.t).slice(0, 10);
-  if (!list.length) return emptyState("No activity yet", "New reservations and seat bookings show up here instantly.");
-  return el("ul", { class: "activity" }, list.map((i) => el("li", {},
-    el("span", { class: "act-kind", text: i.kind }), el("span", { class: "act-what", text: i.what }), el("span", { class: "muted", text: i.who }),
-    chip(i.status), el("time", { class: "muted small", text: fmtTime(i.t) }))));
+  let list = (todays.length ? todays : items.filter((i) => i.t)).sort((a, b) => b.t - a.t);
+
+  if (currentFilter === "book") list = list.filter((i) => i.kind === "Book");
+  else if (currentFilter === "seat") list = list.filter((i) => i.kind === "Seat");
+  list = list.slice(0, 10);
+
+  const filterTabs = el("div", { class: "activity-filters" },
+    ...["all", "book", "seat"].map((key) => {
+      const label = key === "all" ? "All" : key === "book" ? "Books" : "Seats";
+      const btn = el("button", {
+        class: `filter-pill-btn ${currentFilter === key ? "active" : ""}`,
+        type: "button",
+        text: label
+      });
+      btn.addEventListener("click", () => onFilterChange && onFilterChange(key));
+      return btn;
+    }));
+
+  const content = !list.length
+    ? emptyState("No activity matches", "Activity appears when reservations or seat bookings are placed.")
+    : el("ul", { class: "activity-list" }, list.map((i) => el("li", { class: "activity-row" },
+        el("div", { class: `act-badge act-badge-${i.kind.toLowerCase()}` },
+          icon(i.kind === "Book" ? "bookIcon" : "seatIcon", { size: 14 }),
+          el("span", { class: "act-kind-text", text: i.kind })),
+        el("div", { class: "act-meta" },
+          el("span", { class: "act-what", text: i.what }),
+          el("span", { class: "act-who muted small", text: i.who })),
+        el("div", { class: "act-status" }, chip(i.status)),
+        el("time", { class: "act-time muted small", text: fmtTime(i.t) }))));
+
+  return el("div", { class: "activity-wrapper" }, filterTabs, content);
 }
 
 export function render({ container }) {
   const live = liveIndicator();
-  const head = pageHeader("Overview", "Live library activity", live.el);
+  const quickActions = el("div", { class: "quick-actions-bar" },
+    el("a", { class: "btn btn-sm btn-ghost action-pill", href: "#/verify" },
+      icon("verify", { size: 15 }), el("span", { text: "Verify pass" })),
+    el("a", { class: "btn btn-sm btn-ghost action-pill", href: "#/seats" },
+      icon("seats", { size: 15 }), el("span", { text: "Seat map" })),
+    el("a", { class: "btn btn-sm btn-ghost action-pill", href: "#/reservations" },
+      icon("reservations", { size: 15 }), el("span", { text: "Reservations" })),
+    live.el);
+
+  const head = pageHeader("Overview", "Live library operations and dispatch hub", quickActions);
   const body = el("div", {});
   mount(container, head, body);
   const extras = { lowBooks: null, overdueLoans: null };
   let lastCore = null;
+  let currentActivityFilter = "all";
+
   const draw = () => {
     if (!lastCore || !["reservations", "bookings", "waitlist", "seats"].every((k) => lastCore[k] && lastCore[k].loaded && !lastCore[k].error)) return;
     const st = computeStats(lastCore);
     const ex = (k) => (extras[k] && !extras[k].error && extras[k].loaded ? extras[k].docs.length : null);
     const low = ex("lowBooks"), od = ex("overdueLoans");
+
     mount(body,
       el("div", { class: "stats" },
-        statCard("Due today", st.dueToday, "Book pickups due today", "#/reservations"),
-        statCard("Waitlisted", st.waiting, "People waiting for a book or seat", "#/waitlist"),
-        statCard("In session", st.inSession, "Checked-in seat sessions now", "#/bookings"),
-        statCard("Seat fill", `${st.fill}%`, `${st.occupied} of ${st.total} seats occupied`, "#/seats"),
-        statCard("Books low on copies", low === null ? "-" : low >= 200 ? "200+" : low, low === null ? "Not available" : "1 or no copies available", "#/books"),
-        statCard("Overdue loans", od === null ? "-" : od, od === null ? "Not available" : "Past due and not returned")),
+        statCard("Due today", st.dueToday, "Book pickups due today", "#/reservations", "dueToday", "caramel"),
+        statCard("Waitlisted", st.waiting, "People waiting for a book or seat", "#/waitlist", "waitlisted", "amber"),
+        statCard("In session", st.inSession, "Checked-in seat sessions now", "#/bookings", "inSession", "terracotta"),
+        statCard("Seat fill", `${st.fill}%`, `${st.occupied} of ${st.total} seats occupied`, "#/seats", "seatFill", "green"),
+        statCard("Books low on copies", low === null ? "-" : low >= 200 ? "200+" : low, low === null ? "Not available" : "1 or no copies available", "#/books", "lowCopies", "warm"),
+        statCard("Overdue loans", od === null ? "-" : od, od === null ? "Past due and not returned", null, "overdue", "red")),
       el("div", { class: "grid-2" },
-        el("section", { class: "card", "aria-labelledby": "h-act" }, el("h3", { id: "h-act", text: "Today's activity" }), activity(lastCore)),
-        el("section", { class: "card", "aria-labelledby": "h-floor" }, el("h3", { id: "h-floor", text: "Seat occupancy by floor" }), floorChart(lastCore.seats.docs))));
+        el("section", { class: "card", "aria-labelledby": "h-act" },
+          el("div", { class: "card-title-row" },
+            el("h3", { id: "h-act", text: "Today's activity" }),
+            el("span", { class: "card-subtitle-badge", text: "Live Feed" })),
+          activity(lastCore, currentActivityFilter, (newFilter) => {
+            currentActivityFilter = newFilter;
+            draw();
+          })),
+        el("section", { class: "card", "aria-labelledby": "h-floor" },
+          el("div", { class: "card-title-row" },
+            el("h3", { id: "h-floor", text: "Seat occupancy by floor" }),
+            el("a", { class: "card-link-action small muted", href: "#/seats" },
+              el("span", { text: "Manage seats" }),
+              icon("arrowRight", { size: 12 }))),
+          floorChart(lastCore.seats.docs))));
   };
+
   const stopCore = watchView(body, ["reservations", "bookings", "waitlist", "seats"], (snaps) => { lastCore = snaps; draw(); },
     { onSnap: (snaps) => { live.update(snaps); lastCore = snaps; }, rerenderOnUsers: true });
   // Optional extras: failures only blank their own card.

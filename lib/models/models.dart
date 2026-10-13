@@ -523,6 +523,10 @@ class AdminReservation {
     this.dueAt,
     required this.status,
     this.path = '',
+    this.resourceId = '',
+    this.startAt,
+    this.endAt,
+    this.checkedInAt,
   });
 
   final String id;
@@ -538,6 +542,40 @@ class AdminReservation {
 
   /// Firestore document path.
   final String path;
+
+  /// Seat id for a seat booking, book id for a book reservation.
+  final String resourceId;
+
+  /// Seat bookings: the booked window. Null for book reservations.
+  final DateTime? startAt;
+  final DateTime? endAt;
+
+  /// When staff checked the student in; null until then (seats only).
+  final DateTime? checkedInAt;
+
+  AdminReservation copyWith({
+    ReservationStatus? status,
+    DateTime? endAt,
+    DateTime? checkedInAt,
+  }) =>
+      AdminReservation(
+        id: id,
+        ownerUid: ownerUid,
+        studentName: studentName,
+        studentId: studentId,
+        isSeat: isSeat,
+        itemTitle: itemTitle,
+        itemSubtitle: itemSubtitle,
+        reservedAt: reservedAt,
+        // A seat booking's deadline is its end time.
+        dueAt: isSeat ? (endAt ?? dueAt) : dueAt,
+        status: status ?? this.status,
+        path: path,
+        resourceId: resourceId,
+        startAt: startAt,
+        endAt: endAt ?? this.endAt,
+        checkedInAt: checkedInAt ?? this.checkedInAt,
+      );
 }
 
 /// A waitlist entry of any student (staff view).

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_shell.dart';
 import 'core/constants/app_constants.dart';
@@ -56,20 +57,35 @@ class _LibraryAppState extends State<LibraryApp> with WidgetsBindingObserver {
           AppColors.isDark = switch (_state.themeMode) {
             ThemeMode.dark => true,
             ThemeMode.light => false,
-            ThemeMode.system => WidgetsBinding
-                    .instance.platformDispatcher.platformBrightness ==
-                Brightness.dark,
+            ThemeMode.system =>
+              WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                  Brightness.dark,
           };
-          return MaterialApp(
-            title: AppStrings.appName,
-            debugShowCheckedModeBanner: false,
-            scrollBehavior: NordicScrollBehavior(),
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: _state.themeMode,
-            builder: (context, child) =>
-                AppFrame(child: child ?? const SizedBox.shrink()),
-            home: const _AppEntry(),
+          final overlay = SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                AppColors.isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness:
+                AppColors.isDark ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness:
+                AppColors.isDark ? Brightness.light : Brightness.dark,
+            systemStatusBarContrastEnforced: false,
+            systemNavigationBarContrastEnforced: false,
+          );
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: overlay,
+            child: MaterialApp(
+              title: AppStrings.appName,
+              debugShowCheckedModeBanner: false,
+              scrollBehavior: NordicScrollBehavior(),
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: _state.themeMode,
+              builder: (context, child) =>
+                  AppFrame(child: child ?? const SizedBox.shrink()),
+              home: const _AppEntry(),
+            ),
           );
         },
       ),

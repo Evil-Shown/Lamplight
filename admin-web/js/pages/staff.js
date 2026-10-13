@@ -1,5 +1,6 @@
 // Staff allow-list (ADMIN ONLY). Callables: listStaff() and setStaffAllowlist({emails}).
 import { el, mount, field, dataTable, confirmDialog, toast, loadingState, errorState } from "../ui.js";
+import { icon } from "../icons.js";
 import { call } from "../firebase.js";
 import { pageHeader } from "./_common.js";
 
@@ -32,7 +33,8 @@ export function render({ container, role }) {
   const body = el("div", {});
   const input = el("input", { type: "email", autocomplete: "off", inputmode: "email", maxlength: 200, placeholder: "name@university.edu" });
   const err = el("p", { class: "field-error", role: "alert" });
-  const addBtn = el("button", { class: "btn btn-primary", type: "submit" }, "Add");
+  const addBtn = el("button", { class: "btn btn-primary", type: "submit" },
+    icon("plus", { size: 15 }), el("span", { text: "Add staff" }));
   const table = dataTable({
     caption: "Library staff allow-list", defaultSort: { key: "email", dir: "asc" }, emptyTitle: "No staff added yet", emptyHint: "Add an email above to grant library staff access.",
     columns: [
@@ -40,7 +42,8 @@ export function render({ container, role }) {
       { key: "name", label: "Name", value: (s) => (s.displayName || "").toLowerCase(), render: (s) => s.displayName || "-" },
       { key: "acct", label: "Account", value: (s) => (s.hasAccount ? 1 : 0), render: (s) => s.hasAccount ? "Has signed up" : "Not signed up yet" },
       { key: "act", label: "", value: () => null, render: (s) => {
-        const b = el("button", { class: "btn btn-sm btn-danger-outline", type: "button", "aria-label": `Remove ${s.email}` }, "Remove");
+        const b = el("button", { class: "btn btn-sm btn-danger-outline", type: "button", "aria-label": `Remove ${s.email}` },
+          icon("trash", { size: 13 }), el("span", { text: "Remove" }));
         b.addEventListener("click", () => remove(s, b));
         return b;
       } },

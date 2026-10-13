@@ -24,7 +24,11 @@ import 'package:library_app/features/settings/settings_screen.dart';
 import 'package:library_app/features/settings/value_proposition_screen.dart';
 import 'package:library_app/features/staff/admin/staff_management_screen.dart';
 import 'package:library_app/features/staff/staff_dashboard_screen.dart';
-import 'package:library_app/features/staff/staff_manage_screen.dart';
+import 'package:library_app/features/staff/admin/staff_books_screen.dart';
+import 'package:library_app/features/staff/admin/staff_reservations_screen.dart';
+import 'package:library_app/features/staff/admin/staff_seats_screen.dart';
+import 'package:library_app/features/staff/admin/staff_waitlist_screen.dart';
+import 'package:library_app/features/staff/extend_time_screen.dart';
 import 'package:library_app/features/staff/staff_scanner_screen.dart';
 import 'package:library_app/features/staff/verification_result_screen.dart';
 import 'package:library_app/features/waitlist/waitlist_joined_screen.dart';
@@ -83,6 +87,7 @@ void main() {
   final seat = MockData.seats.firstWhere((s) => s.label == '2C');
   final booking = MockData.buildBookings().first;
   final reservation = MockData.buildReservations().first;
+  final adminBooking = MockData.buildAdminReservations().first;
 
   final screens = <String, Widget>{
     'home': const HomeScreen(),
@@ -107,7 +112,14 @@ void main() {
     'staffDashboard': const StaffDashboardScreen(),
     'staffScanner': const StaffScannerScreen(),
     'staffScannerTab': const StaffScannerScreen(embedded: true),
-    'staffManage': const StaffManageScreen(),
+    'staffReservations': const StaffReservationsScreen(),
+    'staffReservationsTab': const StaffReservationsScreen(embedded: true),
+    'staffWaitlist': const StaffWaitlistScreen(),
+    'staffSeats': const StaffSeatsScreen(),
+    'staffSeatsTab': const StaffSeatsScreen(embedded: true),
+    'staffBooks': const StaffBooksScreen(),
+    'staffBooksTab': const StaffBooksScreen(embedded: true),
+    'staffExtendTime': ExtendTimeScreen(reservation: adminBooking),
     'staffManagement': const StaffManagementScreen(),
     'verification': const VerificationResultScreen(
       code: 'LIB-2026-4851',

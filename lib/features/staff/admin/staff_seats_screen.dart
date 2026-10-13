@@ -12,7 +12,10 @@ import 'widgets/staff_status_badge.dart';
 /// Staff-side seat availability: floor filter, live status grid and a
 /// status editor per seat that writes through [AppState.setSeatStatus].
 class StaffSeatsScreen extends StatefulWidget {
-  const StaffSeatsScreen({super.key});
+  const StaffSeatsScreen({super.key, this.embedded = false});
+
+  /// True when shown as a shell tab (no back button); false when pushed.
+  final bool embedded;
 
   @override
   State<StaffSeatsScreen> createState() => _StaffSeatsScreenState();
@@ -40,6 +43,7 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
 
     return AppScaffold(
       title: 'Seat Availability',
+      showBack: !widget.embedded,
       contentUnderBar: true,
       actions: [
         if (seats.isNotEmpty)
@@ -85,20 +89,22 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                       state: state,
                       child: LayoutBuilder(builder: (context, constraints) {
                         final columns =
-                            (constraints.maxWidth / 104).clamp(3, 8).round();
+                            (constraints.maxWidth / 112).floor().clamp(3, 6);
                         return GridView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
+                          padding: EdgeInsets.fromLTRB(
                               AppSpacing.base,
                               AppSpacing.sm,
                               AppSpacing.base,
-                              AppNavInset.bottom),
+                              widget.embedded
+                                  ? AppSpacing.xl
+                                  : AppNavInset.bottom),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: columns,
                             mainAxisSpacing: AppSpacing.sm,
                             crossAxisSpacing: AppSpacing.sm,
-                            childAspectRatio: 1.18,
+                            childAspectRatio: 1.04,
                           ),
                           itemCount: visible.length,
                           itemBuilder: (context, index) => _SeatTile(
@@ -120,64 +126,92 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
 
     showGlassSheet<void>(
       context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Seat ${seat.label}',
-                      style: AppText.title(20, w: FontWeight.w800),
+      opaque: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, 2, AppSpacing.lg, AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                      ),
+                      child: Icon(Icons.event_seat_rounded,
+                          color: AppColors.primary),
                     ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Seat ${seat.label}',
+                              style: AppText.title(21,
+                                  w: FontWeight.w800, ls: -0.3)),
+                          Text('Update availability and access',
+                              style: AppText.body(12.5,
+                                  color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    _statusBadge(seat.status),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.base),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  _statusBadge(seat.status),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _SheetRow(
-                  label: 'Location',
-                  value: 'Floor ${seat.floor} · ${seat.section}'),
-              _SheetRow(label: 'Seat type', value: seat.zoneLabel),
-              _SheetRow(
-                  label: 'Power outlet',
-                  value: seat.hasPowerOutlet ? 'Available' : 'Not available'),
-              const Divider(height: AppSpacing.xl),
-              Text(
-                'Change status',
-                style: AppText.title(15, w: FontWeight.w800),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              StatefulBuilder(
-                builder: (context, setSheetState) => RadioGroup<SeatStatus>(
-                  groupValue: chosen,
-                  onChanged: (v) {
-                    AppFeedback.select();
-                    setSheetState(() => chosen = v ?? chosen);
-                  },
                   child: Column(
                     children: [
-                      for (final status in SeatStatus.values)
-                        RadioListTile<SeatStatus>(
-                          value: status,
-                          title: Text(_statusLabel(status)),
-                          secondary: _statusBadge(status),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
+                      _SheetRow(
+                          icon: Icons.place_outlined,
+                          label: 'Location',
+                          value: 'Floor ${seat.floor} · ${seat.section}'),
+                      _SheetRow(
+                          icon: Icons.grid_view_rounded,
+                          label: 'Seat type',
+                          value: seat.zoneLabel),
+                      _SheetRow(
+                          icon: Icons.power_rounded,
+                          label: 'Power',
+                          value: seat.hasPowerOutlet ? 'Available' : 'None'),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
+                const SizedBox(height: AppSpacing.lg),
+                Text('Set status',
+                    style: AppText.title(15, w: FontWeight.w800)),
+                const SizedBox(height: AppSpacing.sm),
+                for (final status in SeatStatus.values) ...[
+                  _StatusChoice(
+                    status: status,
+                    selected: chosen == status,
+                    onTap: () {
+                      AppFeedback.select();
+                      setSheetState(() => chosen = status);
+                    },
+                  ),
+                  if (status != SeatStatus.values.last)
+                    const SizedBox(height: AppSpacing.sm),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                PrimaryButton(
+                  label: chosen == seat.status
+                      ? 'Select a different status'
+                      : 'Update to ${_statusLabel(chosen)}',
+                  icon: Icons.check_rounded,
                   onPressed: chosen == seat.status
                       ? null
                       : () {
@@ -190,23 +224,9 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
                             _applyStatus(seat, chosen);
                           }
                         },
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('Update status'),
-                ),
-              ),
-              if (seat.status == SeatStatus.occupied) ...[
-                const SizedBox(height: AppSpacing.sm),
-                PrimaryButton(
-                  label: 'Release seat',
-                  icon: Icons.event_seat_outlined,
-                  tone: ButtonTone.secondary,
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _release(seat);
-                  },
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -262,8 +282,10 @@ class _StaffSeatsScreenState extends State<StaffSeatsScreen> {
 }
 
 class _SheetRow extends StatelessWidget {
-  const _SheetRow({required this.label, required this.value});
+  const _SheetRow(
+      {required this.icon, required this.label, required this.value});
 
+  final IconData icon;
   final String label;
   final String value;
 
@@ -274,8 +296,10 @@ class _SheetRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 17, color: AppColors.textFaint),
+          const SizedBox(width: AppSpacing.sm),
           SizedBox(
-            width: 110,
+            width: 78,
             child: Text(
               label,
               style: AppText.label(12, w: FontWeight.w600),
@@ -295,6 +319,83 @@ class _SheetRow extends StatelessWidget {
   }
 }
 
+class _StatusChoice extends StatelessWidget {
+  const _StatusChoice({
+    required this.status,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SeatStatus status;
+  final bool selected;
+  final VoidCallback onTap;
+
+  Color get _color => switch (status) {
+        SeatStatus.available => AppColors.success,
+        SeatStatus.limited => AppColors.warning,
+        SeatStatus.occupied => AppColors.error,
+      };
+
+  String get _description => switch (status) {
+        SeatStatus.available => 'Ready for a new booking',
+        SeatStatus.limited => 'Keep visible with limited access',
+        SeatStatus.occupied => 'Currently in use',
+      };
+
+  @override
+  Widget build(BuildContext context) => PressScale(
+        onTap: onTap,
+        feedback: selected ? PressFeedback.none : PressFeedback.select,
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: selected
+                ? _color.withValues(alpha: AppColors.isDark ? 0.18 : 0.08)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(
+                color: selected ? _color : AppColors.border,
+                width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: AppMotion.fast,
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? _color : Colors.transparent,
+                  border: Border.all(
+                      color: selected ? _color : AppColors.borderStrong),
+                ),
+                child: selected
+                    ? const Icon(Icons.check_rounded,
+                        size: 15, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_StaffSeatsScreenState._statusLabel(status),
+                        style: AppText.label(13.5, w: FontWeight.w800)),
+                    Text(_description,
+                        style:
+                            AppText.body(11.5, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              _StaffSeatsScreenState._statusBadge(status),
+            ],
+          ),
+        ),
+      );
+}
+
 class _SeatLegend extends StatelessWidget {
   const _SeatLegend();
 
@@ -302,13 +403,13 @@ class _SeatLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: AppSpacing.base,
+        runSpacing: AppSpacing.xs,
         children: [
           _legendDot(AppColors.seatAvailable, 'Available'),
-          const SizedBox(width: AppSpacing.base),
           _legendDot(AppColors.seatLimited, 'Limited'),
-          const SizedBox(width: AppSpacing.base),
           _legendDot(AppColors.seatOccupied, 'Occupied'),
         ],
       ),
@@ -348,32 +449,55 @@ class _SeatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PressScale(
-      onTap: onTap,
-      feedback: PressFeedback.select,
-      child: FrostedCard(
-        radius: AppRadii.md,
-        tint: _color.withValues(alpha: AppColors.isDark ? 0.2 : 0.12),
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.chair_rounded, size: 22, color: _color),
-            const SizedBox(height: 4),
-            Text(seat.label, style: AppText.title(14, w: FontWeight.w800)),
-            Text(
-              'F${seat.floor} · ${_word(seat.status)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.label(11, w: FontWeight.w600),
+    return Tooltip(
+      message: 'Floor ${seat.floor} · ${_word(seat.status)}',
+      child: Semantics(
+        button: true,
+        label: 'Seat ${seat.label}, floor ${seat.floor}, ${_word(seat.status)}',
+        child: PressScale(
+          onTap: onTap,
+          feedback: PressFeedback.select,
+          child: FrostedCard(
+            radius: AppRadii.md,
+            tint: _color.withValues(alpha: AppColors.isDark ? 0.2 : 0.12),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chair_rounded, size: 22, color: _color),
+                const SizedBox(height: 4),
+                Text(seat.label, style: AppText.title(14, w: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration:
+                          BoxDecoration(color: _color, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _word(seat.status),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.label(10.5,
+                            w: FontWeight.w700, color: _color),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  /// Text companion so status never relies on colour alone.
+  /// The status remains available in the tile tooltip and semantic label.
   static String _word(SeatStatus s) => switch (s) {
         SeatStatus.available => 'Free',
         SeatStatus.limited => 'Few',

@@ -38,6 +38,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final isBooks = _tab == 'Books';
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
 
     // Resolve the current tab + filter into a concrete list (D-05).
     final Widget content;
@@ -87,21 +88,56 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('My Reservations',
-                        style:
-                            AppText.title(28, w: FontWeight.w800, ls: -0.7)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Books and reading-room seats',
-                      style: AppText.body(13, color: AppColors.textSecondary),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (canPop) ...[
+                    PressScale(
+                      onTap: () {
+                        AppFeedback.tap();
+                        Navigator.of(context).maybePop();
+                      },
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Icon(Icons.arrow_back_ios_new_rounded,
+                            size: 18, color: AppColors.textPrimary),
+                      ),
                     ),
+                    const SizedBox(width: AppSpacing.md),
                   ],
-                ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('My Reservations',
+                            style: AppText.title(27,
+                                w: FontWeight.w800, ls: -0.7)),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Books and reading-room seats',
+                          style:
+                              AppText.body(13, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                    child: Icon(Icons.bookmarks_outlined,
+                        size: 20, color: AppColors.primary),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.base),
@@ -201,6 +237,8 @@ class _BookHoldCard extends StatelessWidget {
     final pickupBy = DateFormat('d MMM').format(reservation.pickupBy);
 
     return SurfaceCard(
+      color: AppColors.surface,
+      borderColor: AppColors.border,
       onTap: () => AppRoute.push(
         context,
         ReservationDetailScreen(reservation: reservation),
@@ -347,6 +385,8 @@ class _SeatBookingCard extends StatelessWidget {
         '${DateFormat('h:mm a').format(booking.startTime)} – ${DateFormat('h:mm a').format(booking.endTime)}';
 
     return SurfaceCard(
+      color: AppColors.surface,
+      borderColor: AppColors.border,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

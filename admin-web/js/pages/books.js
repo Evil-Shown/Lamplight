@@ -1,6 +1,5 @@
-// Books catalogue management. Writes mirror FirestoreService.addBook / editBook / setCopies.
-// Reads are paged (orderBy title, limit 200, "Load more"); not live, so edits update the list locally.
 import { el, mount, chip, dataTable, field, openOverlay, confirmDialog, toast, loadingState, errorState } from "../ui.js";
+import { icon } from "../icons.js";
 import { db, F } from "../firebase.js";
 import { pageHeader, toolbar, searchBox } from "./_common.js";
 
@@ -191,7 +190,8 @@ export function render({ container }) {
   }
 
   const search = searchBox("Search", "Title, author or ISBN", runSearch);
-  const add = el("button", { class: "btn btn-primary", type: "button", onClick: () => editDialog(null) }, "Add book");
+  const add = el("button", { class: "btn btn-primary", type: "button", onClick: () => editDialog(null) },
+    icon("plus", { size: 16 }), el("span", { text: "Add book" }));
   mount(container, pageHeader("Books", "Catalogue and copy counts.", add), toolbar(search.el), body);
   mount(body, loadingState("Loading books…"));
   loadPage();

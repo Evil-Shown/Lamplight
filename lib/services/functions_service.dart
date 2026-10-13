@@ -12,7 +12,7 @@ class CallableFailure implements Exception {
 }
 
 /// Thin wrapper over the Cloud Functions callables the server exposes.
-/// Names and payloads follow docs/BACKEND_CONTRACT.md.
+/// Names and payloads follow the callables defined in functions/src.
 class FunctionsService {
   FunctionsService._();
   static final FunctionsService instance = FunctionsService._();
@@ -55,9 +55,15 @@ class FunctionsService {
     }
   }
 
-  /// Returns the role granted to the caller: 'staff' or 'student'.
-  Future<String?> claimRole() async =>
-      (await call('claimRole'))['role'] as String?;
+  /// Returns the role granted to the caller ('admin', 'staff' or 'student') and
+  /// whether the email is on a staff list but still unverified.
+  Future<({String? role, bool pendingVerification})> claimRole() async {
+    final res = await call('claimRole');
+    return (
+      role: res['role'] as String?,
+      pendingVerification: res['pendingVerification'] == true,
+    );
+  }
 
   Future<void> respondToWaitlistOffer(String entryId, bool accept) =>
       call('respondToWaitlistOffer', {'entryId': entryId, 'accept': accept});

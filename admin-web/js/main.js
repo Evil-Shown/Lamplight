@@ -2,7 +2,8 @@
 import { initAuth, signOutNow } from "./auth.js";
 import { startRouter, stopRouter, visibleRoutes, currentPath } from "./router.js";
 import { stopAll } from "./store.js";
-import { el, mount, toast } from "./ui.js";
+import { el, mount, clear, toast } from "./ui.js";
+import { icon } from "./icons.js";
 import { renderLogin } from "./pages/login.js";
 import { APP_VERSION } from "./firebase-config.js";
 import { usingEmulator } from "./firebase.js";
@@ -24,15 +25,41 @@ function effectiveTheme() {
 function buildShell(st) {
   const role = st.role;
   const user = st.user;
-  const navLinks = visibleRoutes(role).map((r) =>
-    el("a", { class: "nav-link", href: `#/${r.path}`, "data-path": r.path },
-      el("span", { class: "nav-ico", "aria-hidden": "true", text: r.icon }), el("span", { class: "nav-label", text: r.label })));
+  const routes = visibleRoutes(role);
+  const sections = [];
+  for (const r of routes) {
+    const secName = r.section || "Main";
+    let group = sections.find((s) => s.name === secName);
+    if (!group) {
+      group = { name: secName, items: [] };
+      sections.push(group);
+    }
+    group.items.push(r);
+  }
+
+  const navElements = [];
+  sections.forEach((sec, idx) => {
+    if (idx > 0 || sec.name !== "Main") {
+      navElements.push(el("div", { class: "nav-section-title", text: sec.name }));
+    }
+    sec.items.forEach((r) => {
+      navElements.push(
+        el("a", { class: "nav-link", href: `#/${r.path}`, "data-path": r.path },
+          el("span", { class: "nav-ico", "aria-hidden": "true" }, icon(r.iconKey || "overview", { size: 18 })),
+          el("span", { class: "nav-label", text: r.label }))
+      );
+    });
+  });
   const nav = el("nav", { class: "sidebar", id: "sidebar", "aria-label": "Main" },
-    el("div", { class: "side-brand" }, el("img", { src: "favicon.png", alt: "", width: "32", height: "32" }), el("span", { class: "brand-name", text: "Lamplight" })),
-    el("div", { class: "nav-list" }, navLinks));
+    el("div", { class: "side-brand" },
+      el("img", { src: "favicon.png", alt: "", width: "28", height: "28", class: "brand-logo" }),
+      el("span", { class: "brand-name", text: "Lamplight" }),
+      el("span", { class: "brand-badge", text: "STAFF" })),
+    el("div", { class: "nav-list" }, ...navElements));
   const scrim = el("div", { class: "nav-scrim" });
   const mobileQuery = window.matchMedia("(max-width: 900px)");
-  const menuBtn = el("button", { class: "btn btn-ghost icon-btn", type: "button", "aria-label": "Toggle navigation", "aria-controls": "sidebar", "aria-expanded": "false" }, "☰");
+  const menuBtn = el("button", { class: "btn btn-ghost icon-btn menu-btn", type: "button", "aria-label": "Toggle navigation", "aria-controls": "sidebar", "aria-expanded": "false" },
+    icon("menu", { size: 20 }));
   const setOpen = (open) => {
     document.body.classList.toggle("nav-open", open);
     menuBtn.setAttribute("aria-expanded", String(open));
@@ -51,11 +78,13 @@ function buildShell(st) {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("nav-open") && !document.querySelector(".ov-root")) { setOpen(false); menuBtn.focus(); } });
 
   const title = el("h1", { class: "page-title", id: "page-title", text: "" });
-  const themeBtn = el("button", { class: "btn btn-ghost icon-btn", type: "button" });
+  const themeBtn = el("button", { class: "btn btn-ghost icon-btn theme-toggle-btn", type: "button" });
   const syncTheme = () => {
     const dark = effectiveTheme() === "dark";
-    themeBtn.textContent = dark ? "☀" : "☾";
+    clear(themeBtn);
+    themeBtn.append(icon(dark ? "sun" : "moon", { size: 18 }));
     themeBtn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    themeBtn.setAttribute("title", dark ? "Switch to light theme" : "Switch to dark theme");
   };
   themeBtn.addEventListener("click", () => {
     const next = effectiveTheme() === "dark" ? "light" : "dark";
@@ -64,16 +93,25 @@ function buildShell(st) {
   syncTheme();
 
   const name = user.displayName || user.email || "Signed in";
+  const cleanName = (user.displayName || user.email || "").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const initials = (cleanName ? cleanName.split(/\s+/).map((w) => w[0]).slice(0, 2).join("") : "U").toUpperCase();
   const roleLabel = role === "admin" ? "Administrator" : "Library staff";
+  const avatar = el("div", { class: "who-avatar", "aria-hidden": "true", text: initials });
   const who = el("div", { class: "who" },
+    avatar,
     el("div", { class: "who-text" }, el("span", { class: "who-name", text: name }), user.displayName ? el("span", { class: "who-email muted small", text: user.email || "" }) : null),
     el("span", { class: `role-badge role-${role}`, text: roleLabel }));
-  const signOut = el("button", { class: "btn", type: "button" }, "Sign out");
+  const signOut = el("button", { class: "btn btn-ghost signout-btn", type: "button", "aria-label": "Sign out" },
+    icon("logout", { size: 16 }),
+    el("span", { class: "signout-text", text: "Sign out" }));
   signOut.addEventListener("click", () => signOutNow());
 
   const header = el("header", { class: "topbar" }, menuBtn, title, el("div", { class: "spacer" }), usingEmulator ? el("span", { class: "chip chip-warn", text: "Emulator" }) : null, themeBtn, who, signOut);
   const main = el("main", { class: "content", id: "main", tabindex: "-1", "aria-labelledby": "page-title" });
-  const footer = el("footer", { class: "footer muted small", text: `Lamplight Staff Dashboard v${APP_VERSION}` });
+  const footer = el("footer", { class: "footer muted small" },
+    el("span", { text: `Lamplight Staff Dashboard v${APP_VERSION}` }),
+    el("span", { class: "footer-dot", text: " • " }),
+    el("span", { text: "Library Administration" }));
   mount(app, el("div", { class: "shell" }, nav, scrim, el("div", { class: "shell-main" }, header, el("div", { class: "content-wrap" }, main), footer)));
   document.getElementById("app").className = "";
   return { main, title };

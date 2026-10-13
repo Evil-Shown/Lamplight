@@ -33,9 +33,12 @@ class QrVerifyException implements Exception {
 
   factory QrVerifyException.fromCode(String code, String? message) {
     final failure = switch (code) {
-      'unavailable' || 'deadline-exceeded' || 'network' =>
+      'unavailable' ||
+      'deadline-exceeded' ||
+      'network' =>
         QrVerifyFailure.network,
-      'permission-denied' || 'unauthenticated' =>
+      'permission-denied' ||
+      'unauthenticated' =>
         QrVerifyFailure.permissionDenied,
       _ => QrVerifyFailure.other,
     };
@@ -82,13 +85,20 @@ class FirestoreService {
   UserProfile _demoProfile(UserRole role) =>
       role == UserRole.student ? MockData.student : MockData.staff;
 
+  /// Demo mode only: the demo staff account is picked by its email, anyone
+  /// else is a student. Live roles come from the server claim.
+  UserRole _demoRoleFor(String email) =>
+      email.trim().toLowerCase() == MockData.staff.email.toLowerCase()
+          ? UserRole.staff
+          : UserRole.student;
+
   AuthFailure get _notConfigured => const AuthFailure('not-configured',
       'The library service is not available right now. Try again later.');
 
   /// Signs in via Google OAuth, using the Google account's name and photo.
-  Future<UserProfile> signInWithGoogle(UserRole role) async {
+  Future<UserProfile> signInWithGoogle() async {
     if (!_firebaseReady) {
-      if (mockDataAllowed) return _demoProfile(role);
+      if (mockDataAllowed) return MockData.student;
       throw _notConfigured;
     }
     try {
@@ -126,7 +136,6 @@ class FirestoreService {
     required String email,
     required String password,
     required String fullName,
-    required UserRole role,
     String? studentId,
   }) async {
     final cleanEmail = email.trim();
@@ -142,7 +151,7 @@ class FirestoreService {
           name: cleanName,
           studentId: cleanStudentId,
           email: cleanEmail,
-          role: role,
+          role: _demoRoleFor(cleanEmail),
         );
       }
       throw _notConfigured;
@@ -185,11 +194,10 @@ class FirestoreService {
   Future<UserProfile> signInWithEmail({
     required String email,
     required String password,
-    required UserRole role,
   }) async {
     final cleanEmail = email.trim();
     if (!_firebaseReady) {
-      if (mockDataAllowed) return _demoProfile(role);
+      if (mockDataAllowed) return _demoProfile(_demoRoleFor(cleanEmail));
       throw _notConfigured;
     }
     try {
@@ -287,9 +295,8 @@ class FirestoreService {
       name: (name != null && name.trim().isNotEmpty)
           ? name.trim()
           : (user.displayName ?? 'Library Member'),
-      studentId: studentId ??
-          user.email?.split('@').first ??
-          user.uid.substring(0, 8),
+      studentId:
+          studentId ?? user.email?.split('@').first ?? user.uid.substring(0, 8),
       email: user.email ?? '',
       role: UserRole.student,
       photoUrl: photoUrl ?? user.photoURL,
@@ -319,23 +326,40 @@ class FirestoreService {
       };
 
   /// Calls `claimRole`, force-refreshes the ID token and reads the `role`
-  /// claim. A cached claim is only used when [cachedFirst] is set and the
-  /// call fails (offline); otherwise it falls back to student, never staff.
+  /// claim. If `claimRole` is unreachable (offline, or the function is not
+  /// deployed) it falls back to the `role` claim already on the account's ID
+  /// token: that claim is server-set (Admin SDK or a past `claimRole`) and is
+  /// what the Firestore rules enforce. Only with no usable claim does it fall
+  /// back to student, never staff. [cachedFirst] (cold start) additionally
+  /// refreshes the token before `claimRole`, so a just-verified email is seen.
   Future<UserRole> _resolveRole(User user, {bool cachedFirst = false}) async {
     roleNotice = null;
     try {
-      await FunctionsService.instance.claimRole();
+      // On cold start the cached token may still say email_verified: false
+      // for a user who has verified since; refresh so claimRole sees it.
+      if (cachedFirst) await user.getIdToken(true);
+      final claim = await FunctionsService.instance.claimRole();
+      if (claim.pendingVerification) {
+        roleNotice = 'Your email is on the library staff list but is not '
+            'verified yet. Open the link we emailed you, then sign in again '
+            'to use the staff tools.';
+      }
       final token = await user.getIdTokenResult(true);
       return _roleFromClaim(token.claims?['role']);
     } catch (_) {
-      if (cachedFirst) {
+      try {
+        Object? existing;
         try {
-          final cached = (await user.getIdTokenResult()).claims?['role'];
-          if (cached == 'admin' || cached == 'staff' || cached == 'student') {
-            return _roleFromClaim(cached);
-          }
-        } catch (_) {}
-      }
+          existing = (await user.getIdTokenResult(true)).claims?['role'];
+        } catch (_) {
+          existing = (await user.getIdTokenResult()).claims?['role'];
+        }
+        if (existing == 'admin' ||
+            existing == 'staff' ||
+            existing == 'student') {
+          return _roleFromClaim(existing);
+        }
+      } catch (_) {}
       roleNotice = 'Could not verify your library role, so you are signed '
           'in as a student. Check your connection and sign in again.';
       return UserRole.student;
@@ -480,11 +504,11 @@ class FirestoreService {
   // All streams include metadata changes so AppState can tell cached data
   // (`metadata.isFromCache`) from server data and detect offline.
 
-  Stream<List<Book>> booksStream() => booksSnapshot()
-      .map((s) => s.docs.map(_bookFromDoc).toList());
+  Stream<List<Book>> booksStream() =>
+      booksSnapshot().map((s) => s.docs.map(_bookFromDoc).toList());
 
-  Stream<List<Seat>> seatsStream() => seatsSnapshot()
-      .map((s) => s.docs.map(_seatFromDoc).toList());
+  Stream<List<Seat>> seatsStream() =>
+      seatsSnapshot().map((s) => s.docs.map(_seatFromDoc).toList());
 
   Stream<QuerySnapshot<Map<String, dynamic>>> booksSnapshot() => _canStream
       ? _db.collection('books').snapshots(includeMetadataChanges: true)
@@ -514,10 +538,9 @@ class FirestoreService {
           ? _waitlistRef().snapshots(includeMetadataChanges: true)
           : const Stream.empty();
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> userLoansSnapshot() =>
-      _canStream
-          ? _loansQuery().snapshots(includeMetadataChanges: true)
-          : const Stream.empty();
+  Stream<QuerySnapshot<Map<String, dynamic>>> userLoansSnapshot() => _canStream
+      ? _loansQuery().snapshots(includeMetadataChanges: true)
+      : const Stream.empty();
 
   Stream<QuerySnapshot<Map<String, dynamic>>> queueSnapshot() => _canStream
       ? _db.collection('queue').snapshots(includeMetadataChanges: true)
@@ -738,6 +761,66 @@ class FirestoreService {
     await _db.collection('queue').doc(id).delete();
   }
 
+  // ------------------------------------------------------ staff booking writes
+
+  /// Moves a seat booking's end time. The rules let staff change only
+  /// `endTime`, `status` and `checkedInAt` on a booking.
+  Future<void> extendSeatBooking(String path, DateTime newEnd) async {
+    if (!_canStream) return;
+    await _db.doc(path).update({'endTime': Timestamp.fromDate(newEnd)});
+  }
+
+  /// Checks a seat booking in (same fields as [consumeVerifiedCode]), but
+  /// lets a failure reach the caller.
+  Future<void> staffCheckIn(String path) async {
+    if (!_canStream) return;
+    await _db.doc(path).update({
+      'checkedInAt': Timestamp.fromDate(DateTime.now()),
+      'status': ReservationStatus.active.name,
+    });
+  }
+
+  /// Sets a booking or reservation to [status]. For a seat booking the seat
+  /// is freed too; sample seats have no document, so a missing one is ignored.
+  Future<void> staffSetReservationStatus(
+    String path,
+    ReservationStatus status, {
+    String? freeSeatId,
+  }) async {
+    if (!_canStream) return;
+    await _db.doc(path).update({'status': status.name});
+    if (freeSeatId == null || freeSeatId.isEmpty) return;
+    try {
+      await _db.collection('seats').doc(freeSeatId).update({
+        'status': SeatStatus.available.name,
+        'heldBy': null,
+        'bookingId': null,
+      });
+    } on FirebaseException catch (e) {
+      if (e.code != 'not-found') rethrow;
+    }
+  }
+
+  /// Writes an in-app notification into a student's feed (staff only, per the
+  /// rules). Same document shape as [addNotification].
+  Future<void> notifyUser(String ownerUid,
+      {required String title, required String body}) async {
+    if (!_canStream) return;
+    await _db
+        .collection('users')
+        .doc(ownerUid)
+        .collection('notifications')
+        .add({
+      'title': title,
+      'body': body,
+      'timestamp': Timestamp.fromDate(DateTime.now()),
+      'tone': BannerToneKind.warning.name,
+      'iconCodePoint': Icons.notifications_none_rounded.codePoint,
+      'type': NotificationType.info.name,
+      'read': false,
+    });
+  }
+
   // ----------------------------------------------------- notification writes
 
   /// Notifications are written by the server (clients cannot create them);
@@ -784,10 +867,9 @@ class FirestoreService {
     await _db.collection('books').doc(bookId).update({
       'copiesAvailable': available,
       if (total != null) 'copiesTotal': total,
-      'availability': (available > 0
-              ? BookAvailability.available
-              : BookAvailability.onLoan)
-          .name,
+      'availability':
+          (available > 0 ? BookAvailability.available : BookAvailability.onLoan)
+              .name,
     });
   }
 
@@ -912,8 +994,7 @@ class FirestoreService {
         byTitle: titleDocs.length >= pageSize ? titleDocs.last : null,
         byAuthor: authorDocs.length >= pageSize ? authorDocs.last : null,
       ),
-      hasMore:
-          titleDocs.length >= pageSize || authorDocs.length >= pageSize,
+      hasMore: titleDocs.length >= pageSize || authorDocs.length >= pageSize,
     );
   }
 
@@ -1068,7 +1149,8 @@ class FirestoreService {
           Map<String, dynamic> m, String id, List<Seat> seats) =>
       _bookingFromMap(m, id, _joinSeat(m['seatId'] as String?, seats));
 
-  AppNotification notificationFromMapPublic(Map<String, dynamic> m, String id) =>
+  AppNotification notificationFromMapPublic(
+          Map<String, dynamic> m, String id) =>
       _notificationFromMap(m, id);
 
   WaitlistEntry waitlistFromMapPublic(Map<String, dynamic> m, String id) =>
@@ -1097,14 +1179,17 @@ class FirestoreService {
     final String subtitle;
     final DateTime? due;
     final DateTime reservedAt;
+    final String resourceId;
     if (seat) {
       final s = _joinSeat(m['seatId'] as String?, seats);
+      resourceId = s.id;
       title = 'Seat ${s.label}';
       subtitle = 'Floor ${s.floor} · ${s.zoneLabel}';
       due = _dt(m['endTime']);
       reservedAt = _dt(m['startTime']) ?? DateTime.now();
     } else {
       final b = _joinBook(m, books);
+      resourceId = b.id;
       title = b.title;
       subtitle = '${b.author} · ${b.shelfLocation}';
       due = _dt(m['pickupBy']);
@@ -1123,6 +1208,10 @@ class FirestoreService {
       status: _enum(ReservationStatus.values, m['status'],
           seat ? ReservationStatus.active : ReservationStatus.ready),
       path: d.reference.path,
+      resourceId: resourceId,
+      startAt: seat ? _dt(m['startTime']) : null,
+      endAt: seat ? due : null,
+      checkedInAt: seat ? _dt(m['checkedInAt']) : null,
     );
   }
 
@@ -1214,8 +1303,8 @@ class FirestoreService {
         author: m['author'] as String? ?? '',
         subject: m['subject'] as String? ?? '',
         isbn: m['isbn'] as String? ?? '',
-        availability: _enum(
-            BookAvailability.values, m['availability'], BookAvailability.available),
+        availability: _enum(BookAvailability.values, m['availability'],
+            BookAvailability.available),
         shelfLocation: m['shelfLocation'] as String? ?? '',
         copiesAvailable: (m['copiesAvailable'] as num?)?.toInt() ?? 0,
         description: m['description'] as String? ?? '',
@@ -1294,8 +1383,8 @@ class FirestoreService {
         id: id,
         book: book,
         reservedAt: _dt(m['reservedAt']) ?? DateTime.now(),
-        pickupBy: _dt(m['pickupBy']) ??
-            DateTime.now().add(const Duration(days: 7)),
+        pickupBy:
+            _dt(m['pickupBy']) ?? DateTime.now().add(const Duration(days: 7)),
         pickupLocation: m['pickupLocation'] as String? ?? 'Main Library',
         qrCode: (m['qrPass'] ?? m['qrCode']) as String? ?? id,
         status: _resStatus(m['status'], ReservationStatus.ready),
@@ -1318,8 +1407,8 @@ class FirestoreService {
         seat: seat,
         date: _dt(m['date']) ?? DateTime.now(),
         startTime: _dt(m['startTime']) ?? DateTime.now(),
-        endTime: _dt(m['endTime']) ??
-            DateTime.now().add(const Duration(hours: 3)),
+        endTime:
+            _dt(m['endTime']) ?? DateTime.now().add(const Duration(hours: 3)),
         qrCode: (m['qrPass'] ?? m['qrCode']) as String? ?? id,
         status: _resStatus(m['status'], ReservationStatus.active),
         checkedInAt: _dt(m['checkedInAt']),
@@ -1436,8 +1525,7 @@ class FirestoreService {
     );
   }
 
-  UserProfile _profileFromMap(Map<String, dynamic> m, String id) =>
-      UserProfile(
+  UserProfile _profileFromMap(Map<String, dynamic> m, String id) => UserProfile(
         name: m['name'] as String? ?? 'Library Member',
         studentId: m['studentId'] as String? ?? id,
         email: m['email'] as String? ?? '',
