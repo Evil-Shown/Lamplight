@@ -1,0 +1,13 @@
+{
+  "name": "lamplight-admin-e2e",
+  "private": true,
+  "description": "Browser tests for the Lamplight staff dashboard (admin-web)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

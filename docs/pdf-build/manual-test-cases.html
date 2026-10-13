@@ -1,0 +1,335 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Lamplight Manual Test Cases</title><style>
+@page { size: A4 landscape; margin: 12mm; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #1b1b1b; }
+h1 { font-size: 18pt; color: #3b2314; border-bottom: 2px solid #b5651d; padding-bottom: 4px; }
+h2 { font-size: 13pt; color: #3b2314; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 8.5pt; }
+th, td { border: 1px solid #bbb; padding: 4px 5px; vertical-align: top; text-align: left; }
+th { background: #f3e7d8; }
+tr { page-break-inside: avoid; }
+code { font-size: 8.5pt; }
+</style></head><body><h1>Lamplight: Manual Functional Test Cases (TC01 to TC28)</h1>
+<p>Written for: the group, the examiner and anyone repeating the tests on a phone.</p>
+<p>These are the device-level tests for the 28 functional cases in the Milestone 03 report (Section 8). Each case lists its steps, expected result and requirement. Record the result, tester and date after each run. Do not mark a case Pass unless you ran it on the installed build.</p>
+<h2>Environment</h2>
+<ul>
+<li><strong>Build:</strong> release APK (<code>flutter build apk --release</code>) or <code>flutter run</code> on an Android phone. Record the device model and Android version.</li>
+<li><strong>Network:</strong> Wi-Fi or 4G for every run. TC28 needs a stated connection.</li>
+<li><strong>Backend:</strong> cases marked <strong>Live</strong> need the Cloud Functions and rules deployed to the Firebase project. Without them, the case cannot pass.</li>
+<li><strong>Accounts</strong> (create or confirm before the run):</li>
+<li><code>Student A</code>: <code>student@lamplight.test</code></li>
+<li><code>Student B</code>: a second student account, for the two-user cases (TC11, TC14)</li>
+<li><code>Staff</code>: <code>staff@lamplight.test</code></li>
+<li>Use the passwords you set. Do not write them in this file.</li>
+<li><strong>Test data:</strong> search for "Introduction to Human Computer Interaction" for TC01 and TC05. Use a book with copies above zero and one with zero for TC03 and TC06. Set copies to zero from the staff Catalog screen if needed.</li>
+</ul>
+<h2>Result key</h2>
+<ul>
+<li><strong>Pass:</strong> the expected result happened as written.</li>
+<li><strong>Pass*:</strong> passed after a fix. Note the defect ID (for example D01).</li>
+<li><strong>Fail:</strong> the expected result did not happen. Log a defect.</li>
+<li><strong>Blocked:</strong> the case could not run (for example, the backend is not deployed). Say why.</li>
+</ul>
+<h2>Test cases</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test (operation)</th>
+<th>Steps</th>
+<th>Expected result</th>
+<th>Req.</th>
+<th>Live</th>
+<th>Result</th>
+<th>Tester / date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TC01</td>
+<td>Book search: title (Read)</td>
+<td>Log in as Student A. Open Books. Type "Introduction to Human Computer Interaction". Submit.</td>
+<td>Matching book(s) listed.</td>
+<td>FR01</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC02</td>
+<td>Search by author, ISBN and subject chip (Read)</td>
+<td>Search author "Dix". Clear. Search an ISBN. Clear. Tap a subject chip. Search a nonsense term.</td>
+<td>Each search returns matches. The nonsense term shows the empty state.</td>
+<td>FR02</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC03</td>
+<td>Availability status (Read)</td>
+<td>Open a book with copies above zero, then one with zero.</td>
+<td>Shows Available and Unavailable correctly.</td>
+<td>FR03</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC04</td>
+<td>Open book details (Read)</td>
+<td>Open any book.</td>
+<td>Description, shelf location and due date are shown.</td>
+<td>FR04</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC05</td>
+<td>Reserve an available book (Create)</td>
+<td>Open an available book. Tap Reserve. Confirm. Note the copy count before and after.</td>
+<td>Reservation saved. Copy count drops by 1.</td>
+<td>FR05</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC06</td>
+<td>Reserve an unavailable book</td>
+<td>Open a book with zero copies. Try to reserve.</td>
+<td>Reserve is blocked. A waiting list option is offered.</td>
+<td>FR05, FR13</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC07</td>
+<td>Confirmation after reserving (Read)</td>
+<td>Complete TC05. Stay on the success screen.</td>
+<td>Success screen shows the book, details and pickup deadline.</td>
+<td>FR07</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC08</td>
+<td>Seat map is live (Read)</td>
+<td>Student A opens Seats. Student B books a seat on another phone. Watch Student A's screen without refreshing.</td>
+<td>The seat changes to taken on Student A's screen.</td>
+<td>FR08</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC09</td>
+<td>Seat details (Read)</td>
+<td>Open Seats. Tap any seat.</td>
+<td>Power, quiet and window information is shown.</td>
+<td>FR09</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC10</td>
+<td>Floor, area and feature filters (Update)</td>
+<td>Open the filter sheet. Pick a floor, an area and a feature. Apply.</td>
+<td>Map shows only matching seats. A recommended seat is displayed.</td>
+<td>FR10</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC11</td>
+<td>Two users book the same seat and time</td>
+<td>Student A books a seat and time. Student B tries the same seat and time on another phone.</td>
+<td>Student B's booking is rejected with a message.</td>
+<td>FR11, NFR03</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC12</td>
+<td>Reserve a seat (Create)</td>
+<td>Choose a free seat and time. Confirm.</td>
+<td>Reservation saved. Confirmation screen shown.</td>
+<td>FR11, FR12</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC13</td>
+<td>Join the seat waiting list (Create)</td>
+<td>Find a full seat. Join the waiting list.</td>
+<td>Entry saved. Queue position shown.</td>
+<td>FR13</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC14</td>
+<td>Seat freed while a user is waiting</td>
+<td>Student A is on the waiting list for a seat. Student B cancels that seat (or staff releases it).</td>
+<td>Student A is notified.</td>
+<td>FR14</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC15</td>
+<td>Seat status after cancel or expiry</td>
+<td>Cancel your own seat booking. Check the seat on the map.</td>
+<td>Seat shows Available again.</td>
+<td>NFR03</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC16</td>
+<td>Leave the waiting list (Delete)</td>
+<td>Open the waiting list entry. Leave it.</td>
+<td>Entry removed. Remaining positions update.</td>
+<td>FR13</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC17</td>
+<td>My Reservations (Read)</td>
+<td>Open Bookings. Check the Books, Seats and Waiting tabs.</td>
+<td>Active book and seat reservations are listed in the right tabs.</td>
+<td>FR06</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC18</td>
+<td>Cancel a reservation (Update or Delete)</td>
+<td>Open a reservation. Tap Cancel. Read the dialog. Confirm.</td>
+<td>Dialog states the consequence before confirming. Status becomes cancelled.</td>
+<td>FR15</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC19</td>
+<td>Reservation expires after grace period</td>
+<td>Let a reservation pass its pickup deadline and grace period. Wait for the scheduled run.</td>
+<td>Status becomes expired. Resource is released. Known issue D02: the expiry can show late until the scheduled run.</td>
+<td>FR15</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC20</td>
+<td>Notifications list (Read)</td>
+<td>Open Notifications.</td>
+<td>Reminder and status notifications are listed.</td>
+<td>FR16, FR18</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC21</td>
+<td>Mark read or dismiss a notification (Update or Delete)</td>
+<td>Tap a notification. Mark all read.</td>
+<td>Unread marker clears. Item is removed or marked read.</td>
+<td>FR18</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC22</td>
+<td>Open the QR pass for a seat (Read)</td>
+<td>Open a seat reservation. Open the QR pass.</td>
+<td>QR code shown with its expiry time.</td>
+<td>FR19</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC23</td>
+<td>Staff scans a valid pass</td>
+<td>Staff opens Scan. Scan the QR from TC22.</td>
+<td>Result: Valid. Booking status becomes checked in.</td>
+<td>FR19</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC24</td>
+<td>Staff scans an invalid or expired pass</td>
+<td>Staff enters a made-up code, or scans an expired pass.</td>
+<td>Result: Invalid or Mismatch. No status change.</td>
+<td>FR19</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC25</td>
+<td>Register, log in, wrong password (Create and Read)</td>
+<td>Register a new account. Log out. Log in with the wrong password.</td>
+<td>Account is created. Wrong password is rejected.</td>
+<td>NFR04</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC26</td>
+<td>Student tries staff screens or another user's data</td>
+<td>Log in as Student A. Check there is no staff area. Confirm the rules block reading another user's data (see <code>rules-tests</code>).</td>
+<td>Staff area is not shown. Other users' data is denied by the rules.</td>
+<td>NFR04, NFR05</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC27</td>
+<td>Contrast, labels and tap targets</td>
+<td>Use the Android Accessibility Scanner on key screens (Seats, Books, Bookings). Check status labels appear with colour. Check buttons are at least 48 dp.</td>
+<td>Status is never shown by colour alone. Tap targets are at least 48 dp.</td>
+<td>NFR06</td>
+<td>No</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TC28</td>
+<td>Load time of seat map and search</td>
+<td>With a stopwatch, open Seats and run a book search, three times each, on the stated connection.</td>
+<td>Each load finishes within 3 seconds. Record the three times.</td>
+<td>NFR02</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2>Notes for the examiner</h2>
+<ul>
+<li><strong>Automated coverage:</strong> the Flutter tests (<code>flutter test</code>) and the rules suite (<code>rules-tests</code>) cover parts of TC01, TC02, TC09, TC17, TC20, TC21, TC26 and the staff screens. They do not replace the device runs above.</li>
+<li><strong>Live cases:</strong> when the backend is not deployed, the Live cases are recorded as Blocked, not Pass.</li>
+<li><strong>Known open defect:</strong> D02 (TC19) is recorded as an open limitation in Section 10 of the report.</li>
+</ul></body></html>
