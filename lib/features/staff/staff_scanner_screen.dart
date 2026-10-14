@@ -43,8 +43,10 @@ class _StaffScannerScreenState extends State<StaffScannerScreen>
   bool _cameraUnavailable = false;
   bool _cameraErrorScheduled = false;
   String? _error;
+  // Web is supported too (browser camera); it needs HTTPS or localhost, and
+  // errorBuilder falls back to manual entry if the browser refuses.
   bool get _cameraSupported =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      kIsWeb || Platform.isAndroid || Platform.isIOS;
 
   @override
   void initState() {

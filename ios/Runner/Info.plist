@@ -68,5 +68,8 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
-	</dict>
+		<key>NSCameraUsageDescription</key>
+	<string>Lamplight uses the camera to scan library pass QR codes.</string>
+
+</dict>
 </plist>
