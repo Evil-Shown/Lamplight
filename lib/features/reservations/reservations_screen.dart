@@ -6,6 +6,7 @@ import '../../core/feedback/app_feedback.dart';
 import '../../core/navigation/app_route.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/shared_widgets.dart';
 import '../../models/models.dart';
 import '../books/reservation_cancelled_screen.dart';
@@ -13,6 +14,7 @@ import '../books/reservation_detail_screen.dart';
 import '../qr/qr_ticket_screen.dart';
 import '../waitlist/waitlist_joined_screen.dart';
 import 'live_widgets.dart';
+import 'reservation_watchdog.dart';
 
 /// P-10 My Reservations.
 ///
@@ -82,6 +84,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         bottom: false,
         child: Column(
           children: [
+            // Keeps deadline notifications firing while this screen is open.
+            const ReservationWatchdog(),
             // App-level cached-data banner (D-14).
             ConnectivityBanner(lastSyncedAt: state.lastSyncedAt),
             Padding(
@@ -165,9 +169,9 @@ class _BookHolds extends StatelessWidget {
     if (reservations.isEmpty) {
       return _PullEmpty(
         icon: Icons.bookmark_border_rounded,
-        title: history ? 'No past holds' : 'No active holds',
+        title: history ? 'No cancelled holds' : 'No active holds',
         message: history
-            ? 'Collected and cancelled book reservations will be listed here.'
+            ? 'Cancelled book reservations will be listed here.'
             : 'Search the catalog and reserve a book to see it listed here.',
         actionLabel: history ? null : 'Browse books',
         onAction:
@@ -237,19 +241,16 @@ class _BookHoldCard extends StatelessWidget {
                     StatusPill(
                       label: switch (reservation.status) {
                         ReservationStatus.cancelled => 'Cancelled',
-                        ReservationStatus.completed => 'Collected',
                         ReservationStatus.ready => 'Ready for pickup',
                         _ => 'Active',
                       },
                       color: switch (reservation.status) {
                         ReservationStatus.cancelled => AppColors.error,
-                        ReservationStatus.completed => AppColors.neutral,
                         ReservationStatus.ready => AppColors.success,
                         _ => AppColors.primary,
                       },
                       icon: switch (reservation.status) {
                         ReservationStatus.cancelled => Icons.close_rounded,
-                        ReservationStatus.completed => Icons.done_all_rounded,
                         ReservationStatus.ready => Icons.check_rounded,
                         _ => Icons.schedule_rounded,
                       },
@@ -378,21 +379,9 @@ class _SeatBookingCard extends StatelessWidget {
                 ),
               ),
               StatusPill(
-                label: history
-                    ? (booking.status == ReservationStatus.cancelled
-                        ? 'Cancelled'
-                        : 'Completed')
-                    : 'Active',
-                color: !history
-                    ? AppColors.success
-                    : (booking.status == ReservationStatus.cancelled
-                        ? AppColors.error
-                        : AppColors.neutral),
-                icon: !history
-                    ? Icons.check_rounded
-                    : (booking.status == ReservationStatus.cancelled
-                        ? Icons.close_rounded
-                        : Icons.done_all_rounded),
+                label: history ? 'Completed' : 'Active',
+                color: history ? AppColors.neutral : AppColors.success,
+                icon: history ? Icons.done_all_rounded : Icons.check_rounded,
                 compact: true,
                 pulse: !history,
               ),
@@ -425,7 +414,7 @@ class _SeatBookingCard extends StatelessWidget {
                 Expanded(
                   child: PrimaryButton(
                     label: 'Cancel',
-                    tone: ButtonTone.secondary,
+                    tone: ButtonTone.cancel,
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
@@ -441,22 +430,39 @@ class _SeatBookingCard extends StatelessWidget {
                                   Navigator.of(dialogContext).pop(false),
                               child: const Text('Keep booking'),
                             ),
-                            TextButton(
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFFDC2626),
+                                  width: 1.5,
+                                ),
+                                foregroundColor: const Color(0xFFDC2626),
+                                backgroundColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                overlayColor:
+                                    const Color(0x1ADC2626).withAlpha(26),
+                              ),
                               onPressed: () =>
                                   Navigator.of(dialogContext).pop(true),
-                              child: const Text('Cancel booking'),
+                              child: const Text(
+                                'Cancel booking',
+                                style: TextStyle(color: Color(0xFFDC2626)),
+                              ),
                             ),
                           ],
                         ),
                       );
                       if (confirmed != true || !context.mounted) return;
                       AppScope.read(context).cancelSeatBooking(booking.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Seat ${booking.seat.label} booking cancelled',
-                          ),
-                        ),
+                      showAppToast(
+                        context,
+                        title: 'Booking cancelled',
+                        message:
+                            'Seat ${booking.seat.label} has been released and offered to the next person waiting.',
+                        tone: ToastTone.success,
+                        icon: Icons.event_busy_rounded,
                       );
                     },
                   ),
@@ -582,9 +588,8 @@ class _WaitlistCard extends StatelessWidget {
 }
 
 /// Navigates to the cancelled-receipt screen after a cancel is confirmed.
-void openReservationCancelled(
-    BuildContext context, BookReservation reservation) {
-  AppRoute.push(context, ReservationCancelledScreen(reservation: reservation));
+void openReservationCancelled(BuildContext context) {
+  AppRoute.push(context, const ReservationCancelledScreen());
 }
 
 /// [EmptyState] inside a scroll view so pull-to-refresh still works.
