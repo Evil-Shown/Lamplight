@@ -1,1 +1,17 @@
-{ "projects": { "default": "sliit-quick-book" } }
+{
+  "projects": {
+    "default": "sliit-quick-book"
+  },
+  "targets": {
+    "sliit-quick-book": {
+      "hosting": {
+        "admin": [
+          "sliit-quick-book"
+        ],
+        "app": [
+          "sliit-quick-book-app"
+        ]
+      }
+    }
+  }
+}
